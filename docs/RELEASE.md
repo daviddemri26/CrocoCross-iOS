@@ -1,0 +1,46 @@
+# Release configuration and gates
+
+## Apple identity
+
+- Display name: CrocoCross
+- Bundle ID: `com.daviddemri.crococross`
+- Development team: `57XAAX65VC` (public certificate metadata verified locally)
+- Initial version/build:1.0.0/1
+- Target families: iPhone+iPad; iOS18+
+- No third-party runtime packages, advertisements, purchases or background audio entitlement.
+
+Create/verify the independent App ID and App Store Connect record under the owner's account; do not reuse another project's identity. The checked-in identifiers are configuration, not proof of remote creation.
+
+## Game Center
+
+Configure **Best Score** and submit these with the first app version:
+
+| ID | Type | Format | Sort |
+|---|---|---|---|
+| com.daviddemri.crococross.weekly.score.v1 | Recurring7days | Integer points | High to low |
+| com.daviddemri.crococross.weekly.time.v1 | Recurring7days | Elapsed time in centiseconds | Low to high |
+| com.daviddemri.crococross.endless.score.v1 | Classic | Integer points | High to low |
+
+Both weekly boards must start on the same Monday at 00:00 UTC, with a duration and restart interval of 604,800 seconds. The native service validates each board's start, duration, and `nextStartDate - startDate`, and requires matching occurrences before permitting a ranked weekly start. A seven-day duration with a longer restart interval is rejected. Apple exposes the next occurrence's beginning through [`GKLeaderboard.nextStartDate`](https://developer.apple.com/documentation/gamekit/gkleaderboard/nextstartdate).
+
+Choose a Monday that is still in the future when creating the leaderboards: Apple does not allow the initial start date to be in the past. If configuring on September 12, 2026, the next valid anchor is `2026-09-14T00:00:00Z`. Schedule beta competition testing after that first occurrence begins; until then, weekly practice and the classic Endless board remain available. Recompute the future Monday if configuration happens later, verify the actual returned dates, and use separate test accounts. [Apple's recurring-leaderboard setup walkthrough](https://developer.apple.com/videos/play/wwdc2021/10067/).
+
+Required live proof: sign in, load matching week, finish a real run, submit points/time, read entries back for the same player and occurrence; repeat with another player. Test retry, sign-out/account change and expired-week behavior. Never fabricate leaderboard entries for testing.
+
+## Store materials
+
+-1024px opaque icon included.
+-Capture actual iPhone and iPad screens from the validated release build.
+-Create a concise description covering weekly4000m challenge, Endless,9riders/9worlds and touch controls.
+-Publish independent support/privacy URLs; owner support contact must be confirmed.
+-Complete age rating, encryption/export questions, EU trader information where applicable, and privacy disclosures based on actual Game Center data flows. The privacy manifest is not a substitute for the App Store privacy questionnaire.
+-Confirm supplied art/music distribution rights.
+-Recheck Apple's SDK requirements on submission day.
+-TestFlight internal beta, then external beta/review if needed; record feedback fixes.
+-Submit the final candidate and Game Center components; choose manual release.
+
+## Platform-specific validation
+
+Physical iPhone: sustained play/performance, heat, interruptions, headphones/Bluetooth, silent switch, lock/unlock and multitouch. iPad: landscape, resizing, safe areas, menus. Duo: Xcode27.1+ DeviceHub poses and physical testing when available. Do not infer these from a generic successful build.
+
+Support/privacy hosting, live Game Center configuration, TestFlight distribution and public release are separate operations; no local script performs them automatically.

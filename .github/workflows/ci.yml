@@ -1,0 +1,47 @@
+name: iOS CI
+
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Core tests and simulator build
+    runs-on: macos-26
+    timeout-minutes: 25
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: Verify generated Xcode project
+        run: |
+          python3 scripts/generate-project.py
+          git diff --exit-code -- CrocoCross.xcodeproj
+      - name: Test game rules and physics
+        run: swift test --disable-sandbox
+      - name: Test local persistence
+        run: |
+          xcrun swiftc -swift-version 6 App/Services/LocalStore.swift scripts/check-local-store.swift -o "$RUNNER_TEMP/crococross-store-check"
+          "$RUNNER_TEMP/crococross-store-check"
+      - name: Build iOS simulator app
+        run: |
+          xcodebuild -project CrocoCross.xcodeproj -scheme CrocoCross \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/crococross-derived" \
+            CODE_SIGNING_ALLOWED=NO build
