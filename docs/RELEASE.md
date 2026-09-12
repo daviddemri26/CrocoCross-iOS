@@ -34,7 +34,7 @@ Required live proof: sign in, load matching week, finish a real run, submit poin
 -Create a concise description covering weekly4000m challenge, Endless,9riders/9worlds and touch controls.
 -Publish independent support/privacy URLs; owner support contact must be confirmed.
 -Complete age rating, encryption/export questions, EU trader information where applicable, and privacy disclosures based on actual Game Center data flows. The privacy manifest is not a substitute for the App Store privacy questionnaire.
--Confirm supplied art/music distribution rights.
+- Asset publication authorized by David Demri on September 12, 2026; original artwork/music authorship and rights confirmation are recorded in [SOURCE-PROVENANCE.md](SOURCE-PROVENANCE.md).
 -Recheck Apple's SDK requirements on submission day.
 -TestFlight internal beta, then external beta/review if needed; record feedback fixes.
 -Submit the final candidate and Game Center components; choose manual release.

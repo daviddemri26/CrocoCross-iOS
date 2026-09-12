@@ -81,7 +81,7 @@ xcodebuild -project CrocoCross.xcodeproj -scheme CrocoCross \
   -derivedDataPath /tmp/crococross-derived CODE_SIGNING_ALLOWED=NO build
 ```
 
-Repository access is required to clone a private repository. Assets are bundled for offline use and remain subject to their own rights; see [source and asset provenance](docs/SOURCE-PROVENANCE.md).
+This repository is public. Original artwork and music are by David Demri, who has confirmed that he holds all rights to them and authorized publication of the bundled project files. See [source and asset provenance](docs/SOURCE-PROVENANCE.md).
 
 The [development guide](docs/DEVELOPMENT.md) covers project regeneration, architecture, saves and controls. GitHub Actions runs core tests, the persistence harness, project consistency checks and an unsigned simulator build; it does not publish the app.
 
@@ -89,7 +89,7 @@ The [development guide](docs/DEVELOPMENT.md) covers project regeneration, archit
 
 The existing [validation record](docs/VALIDATION.md) documents 27 passing core tests, five iPhone and five iPad UI scenarios, and a signed physical-device installation and process launch. Those recorded results are separate from ongoing CI.
 
-Remaining work includes physical gameplay and audio checks, live Game Center score submission and read-back, actual window resizing and dedicated foldable-device testing, asset-rights confirmation, store details and TestFlight validation. See the [release checklist](docs/RELEASE.md) for the full sequence.
+Remaining work includes physical gameplay and audio checks, live Game Center score submission and read-back, actual window resizing and dedicated foldable-device testing, store details and TestFlight validation. See the [release checklist](docs/RELEASE.md) for the full sequence.
 
 ## Explore the project
 

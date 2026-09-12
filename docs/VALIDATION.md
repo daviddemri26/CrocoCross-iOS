@@ -54,5 +54,11 @@ The app uses scene bounds and independent safe-area insets, but adaptive iPad sc
 2. Physical play sessions: handling and difficulty, multitouch cancellation, headphones/Bluetooth, silent switch, background/lock interruptions, sustained frame rate, memory and heat.
 3. Configure the independent App Store Connect app and the three Game Center boards documented in `GAME-CENTER-SETUP.md`. Prove real score write/readback for the correct player and weekly occurrence; repeat with another player and account/network transitions.
 4. Test actual iPad window resizing and dedicated Duo opening, closing, rotation and safe areas using the supported SDK and hardware when available.
-5. Complete support/privacy URLs, owner contacts, asset rights confirmation, store disclosures and release screenshots; draft copy is in `STORE-LISTING.md`.
+5. Complete support/privacy URLs, owner contacts, store disclosures and release screenshots; draft copy is in `STORE-LISTING.md`.
 6. TestFlight validation and App Store review. No upload, public release or live leaderboard submission has been performed.
+
+## Repository publication preparation
+
+On September 12, 2026, David Demri confirmed that he created all images and the three music tracks and holds all rights to them, and authorized publication of all bundled project files in the public GitHub repository. See [SOURCE-PROVENANCE.md](SOURCE-PROVENANCE.md). This resolves the earlier repository-privacy and pending asset-rights notes; it does not change the remaining gameplay, Game Center or App Store validation steps.
+
+Before the initial GitHub push, 27 core tests passed with zero failures, the local persistence harness passed, and the unsigned iOS simulator build succeeded. Project regeneration, local Markdown links, YAML syntax and staged-file checks also passed. UI and physical-device tests were not rerun for this documentation and repository setup change.
