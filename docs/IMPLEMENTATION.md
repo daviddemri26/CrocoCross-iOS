@@ -9,8 +9,8 @@ Updated 2026-09-12 from David's execution instructions; supersedes the initial d
 5. Keep the original visual identity, improve native animations, parallax, biome surface textures, beneath-terrain life and subtle rider movement.
 6. Support portrait on compact iPhone; wide layout on iPad landscape and an open foldable. Use available scene bounds and safe areas, never a model-name detector or UIScreen.main.
 7. Native Game Center identity and three independent leaderboards. No accounts/server shared with Sites, no backend replay verification in this version.
-8. Save preferences, records, suspended runs and pending score submissions locally. Keep local practice available without login/network.
-9. Free, no ads, no purchases. English UI retained. iOS18 baseline.
+8. Save preferences, records and pending score submissions locally. Runs remain in memory only: Pause and Keep riding suspend and resume play; returning Home or backgrounding abandons the run, and relaunch opens Home. Starting or restarting begins immediately, without Continue or confirmation. Keep local practice available without login/network; connection and leaderboard status belong in Rankings, with no practice-status label during play.
+9. Free, no ads, no purchases. English UI retained. iOS18 baseline. Settings uses General, Audio and About tabs; Audio provides music enablement, track and playback-mode selection, mute and volumes, without transport buttons.
 
 ## Work sequence
 

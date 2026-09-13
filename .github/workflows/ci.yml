@@ -39,6 +39,10 @@ jobs:
         run: |
           xcrun swiftc -swift-version 6 App/Services/LocalStore.swift scripts/check-local-store.swift -o "$RUNNER_TEMP/crococross-store-check"
           "$RUNNER_TEMP/crococross-store-check"
+      - name: Test audio preferences and playlist
+        run: |
+          xcrun swiftc -swift-version 6 -module-cache-path "$RUNNER_TEMP/crococross-audio-module-cache" App/Services/AudioService.swift scripts/check-audio-settings.swift -o "$RUNNER_TEMP/crococross-audio-check"
+          "$RUNNER_TEMP/crococross-audio-check"
       - name: Build iOS simulator app
         run: |
           xcodebuild -project CrocoCross.xcodeproj -scheme CrocoCross \

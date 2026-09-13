@@ -4,14 +4,19 @@ import UIKit
 
 @MainActor
 final class GameScene: SKScene {
+    static let homePanelWidth: CGFloat = 440
+    static let minimumWideHomeWidth: CGFloat = 700
+
     var onFrame: ((Double) -> Void)?
     var isPreview = false
 
     private let backgroundTiles = (0..<3).map { _ in SKSpriteNode() }
     private let lampTiles = (0..<3).map { _ in SKNode() }
     private let atmosphere = AmbientNode()
+    private let wayside = WaysideNode()
     private let track = TrackNode()
     private let bike = BikeNode()
+    private let effects = RideEffectsNode()
     private let finish = SKNode()
     private let distanceLabel = SKLabelNode(fontNamed: "AvenirNext-DemiBold")
     private let dust = SKEmitterNode()
@@ -25,7 +30,9 @@ final class GameScene: SKScene {
     private var lastPreview = false
     private var renderScale: CGFloat = 0
     private var lastViewportSize: CGSize = .zero
+    private var bikeHiddenByCrash = false
     private var worldID = ""
+    private var scenerySeed = UInt64.random(in: UInt64.min...UInt64.max)
     private var textureSize = CGSize(width: 16, height: 9)
 
     override init(size: CGSize) {
@@ -41,10 +48,14 @@ final class GameScene: SKScene {
         }
         atmosphere.zPosition = -10
         addChild(atmosphere)
+        wayside.zPosition = -1
+        addChild(wayside)
         track.zPosition = 0
         addChild(track)
         bike.zPosition = 5
         addChild(bike)
+        effects.zPosition = 8
+        addChild(effects)
         dust.zPosition = 4
         configureDust()
         addChild(dust)
@@ -59,6 +70,19 @@ final class GameScene: SKScene {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
+    #if DEBUG
+    override func didMove(to view: SKView) {
+        if let argument = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("-terrain-review") }) {
+            let world = argument.split(separator: "=", maxSplits: 1).dropFirst().first.map(String.init)
+            DispatchQueue.main.async { TerrainReviewExporter.export(in: view, worldID: world) }
+            return
+        }
+        guard let argument = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("-scenery-review") }) else { return }
+        let world = argument.split(separator: "=", maxSplits: 1).dropFirst().first.map(String.init)
+        DispatchQueue.main.async { SceneryReviewExporter.export(in: view, worldID: world) }
+    }
+    #endif
+
     override func update(_ currentTime: TimeInterval) {
         let elapsed = lastTime.map { max(0, currentTime - $0) } ?? 1.0 / 60
         lastTime = currentTime
@@ -70,37 +94,53 @@ final class GameScene: SKScene {
     func display(state: SimulationState, terrain: (Double) -> Double,
                  characterID: String, worldID: String, reducedMotion: Bool) {
         guard size.width > 0, size.height > 0 else { return }
+        let startsNewRun = lastSeed != nil && (lastSeed != state.seed || state.tick < lastTick)
+        if startsNewRun || lastPreview != isPreview {
+            scenerySeed = UInt64.random(in: UInt64.min...UInt64.max)
+            scenicTime = 0
+        }
+        if isPreview {
+            restoreBikeAfterRespawn()
+        } else if state.status == .recovering || state.status == .crashed {
+            // Keep the complete rig hidden throughout recovery and terminal crash presentation.
+            hideBikeAfterCrash()
+        } else if startsNewRun {
+            restoreBikeAfterRespawn()
+        }
         let world = GameCatalog.world(worldID)
         if self.worldID != world.id { configureWorld(world) }
         let landscape = size.width > size.height
-        let widePreview = size.width >= 650 || landscape
+        let widePreview = size.width >= Self.minimumWideHomeWidth
         // Scale from usable dimensions, never from a particular device model.
         // Faster travel needs more reaction distance, especially in portrait.
         let speedFraction = min(1, max(0, CGFloat(abs(state.bike.velocity.x)) / 22))
         let visibleMetres: CGFloat = landscape ? 19 + speedFraction * 9 : 10 + speedFraction * 5
         let playScale = min(64, max(23, min(size.width / visibleMetres, size.height / 13)))
-        // Match the SwiftUI home's 385-point menu column, including narrow regular windows.
-        let previewContentWidth = max(1, size.width - 385)
+        // Match the SwiftUI home's 440-point menu column, including narrow regular windows.
+        let previewContentWidth = max(1, size.width - Self.homePanelWidth)
         let previewWheelbase = widePreview ? min(240, previewContentWidth * 0.46) : min(185, size.width * 0.43)
         let desiredScale = isPreview ? previewWheelbase / CGFloat(PhysicsConfiguration().wheelbase) : playScale
         let reset = lastSeed != state.seed || state.tick < lastTick || lastPreview != isPreview || lastViewportSize != size
+        // The core stops velocity at impact. Holding the last camera also prevents
+        // that speed change from zooming or sliding the explosion under the HUD.
+        let holdCrashCamera = bikeHiddenByCrash && !reset && renderScale > 0
         if reset || renderScale == 0 { renderScale = desiredScale }
-        else { renderScale += (desiredScale - renderScale) * min(1, frameDuration * 2.8) }
+        else if !holdCrashCamera { renderScale += (desiredScale - renderScale) * min(1, frameDuration * 2.8) }
         let ppm = renderScale
         let playAnchor = (landscape ? CGFloat(0.30) : 0.28) - speedFraction * (landscape ? 0.06 : 0.04)
-        let previewCentre = widePreview ? 385 + previewContentWidth / 2 : size.width / 2
+        let previewCentre = widePreview ? Self.homePanelWidth + previewContentWidth / 2 : size.width / 2
         let horizontalFraction: CGFloat = isPreview ? previewCentre / size.width : playAnchor
         let desiredX = state.bike.position.x - Double(size.width * horizontalFraction / ppm)
         let ahead = terrain(state.bike.position.x + (landscape ? 5 : 3))
         let near = terrain(state.bike.position.x)
         let followedHeight = max(near * 0.6 + ahead * 0.4, state.bike.position.y - (landscape ? 2.4 : 3.2))
-        let verticalFraction: CGFloat = isPreview ? (widePreview ? 0.38 : 0.43) : (landscape ? 0.40 : 0.39)
+        let verticalFraction: CGFloat = isPreview ? (widePreview ? 0.38 : 0.55) : (landscape ? 0.40 : 0.39)
         let desiredY = (isPreview ? near : followedHeight) - Double(size.height * verticalFraction / ppm)
         if reset {
             cameraX = desiredX
             cameraY = desiredY
             dust.resetSimulation()
-        } else {
+        } else if !holdCrashCamera {
             cameraX += (desiredX - cameraX) * min(1, frameDuration * 11)
             cameraY += (desiredY - cameraY) * min(1, frameDuration * 4)
         }
@@ -113,12 +153,18 @@ final class GameScene: SKScene {
         func project(_ p: Vector2) -> CGPoint { CGPoint(x: CGFloat(p.x - left) * ppm, y: CGFloat(p.y - bottom) * ppm) }
 
         displayBackground(world: world, ppm: ppm, reducedMotion: reducedMotion)
-        atmosphere.display(world: world, size: size, cameraX: cameraX, seconds: scenicTime, reducedMotion: reducedMotion)
-        track.display(world: world, size: size, left: cameraX, ppm: ppm, seconds: scenicTime, reducedMotion: reducedMotion, ground: ground)
-        bike.display(state, rider: GameCatalog.rider(characterID), pointsPerMetre: ppm, project: project, terrain: terrain, reducedMotion: reducedMotion)
+        atmosphere.display(world: world, size: size, cameraX: cameraX, seconds: scenicTime,
+                           reducedMotion: reducedMotion, seed: scenerySeed)
+        wayside.display(world: world, size: size, left: cameraX, ppm: ppm, seed: scenerySeed, ground: ground)
+        track.display(world: world, size: size, left: cameraX, ppm: ppm, seconds: scenicTime,
+                      reducedMotion: reducedMotion, seed: scenerySeed, ground: ground)
+        if !bikeHiddenByCrash {
+            bike.display(state, rider: GameCatalog.rider(characterID), pointsPerMetre: ppm, project: project, terrain: terrain, reducedMotion: reducedMotion, seconds: scenicTime, isPreview: isPreview)
+        }
+        effects.display(time: scenicTime, ppm: ppm, world: world, reducedMotion: reducedMotion, project: project)
         let rear = project(state.bike.rear.position)
         dust.position = CGPoint(x: rear.x, y: rear.y - ppm * 0.28)
-        dust.particleBirthRate = !reducedMotion && state.status == .active && state.bike.rear.contact ? CGFloat(min(30, abs(state.bike.velocity.x) * 2)) : 0
+        dust.particleBirthRate = !bikeHiddenByCrash && !reducedMotion && state.status == .active && state.bike.rear.contact ? CGFloat(min(30, abs(state.bike.velocity.x) * 2)) : 0
         dust.particleColor = world.edge
         dust.particleSpeed = ppm * (0.45 + CGFloat(abs(state.bike.velocity.x)) * 0.22)
         dust.particleScale = ppm / 320
@@ -133,6 +179,49 @@ final class GameScene: SKScene {
         distanceLabel.text = "\(Int(markerDistance)) M"
         distanceLabel.isHidden = isPreview
         distanceLabel.position = CGPoint(x: CGFloat(markerX - left) * ppm, y: ground(markerX) - ppm * 0.65)
+    }
+
+    /// Intensity is normalized to 0...1. The session owns the matching audio event.
+    func playCrash(at position: Vector2, impact: Double = 1) {
+        hideBikeAfterCrash()
+        effects.play(at: position, intensity: impact, landing: false, time: scenicTime)
+    }
+
+    func playLanding(at position: Vector2, intensity: Double) {
+        guard !bikeHiddenByCrash else { return }
+        // Core impact is the approach speed in metres per second.
+        let strength = min(1, max(0, intensity / 12))
+        bike.reactToLanding(intensity: strength)
+        guard strength > 0.12 else { return }
+        effects.play(at: position, intensity: strength, landing: true, time: scenicTime)
+    }
+
+    /// Explicit respawns and presentation resets restore the complete rig.
+    /// The next active frame places the complete rig at its new physical wheel centres.
+    func restoreBikeAfterRespawn() {
+        guard bikeHiddenByCrash else { return }
+        bikeHiddenByCrash = false
+        bike.isHidden = false
+        bike.resetAnimation()
+    }
+
+    /// New runs and the home preview reset presentation state.
+    /// If the simulation is still recovering, `display` keeps the rig hidden before rendering.
+    func clearTransientEffects() {
+        effects.clear()
+        restoreBikeAfterRespawn()
+        bike.resetAnimation()
+        dust.particleBirthRate = 0
+        dust.resetSimulation()
+    }
+
+    private func hideBikeAfterCrash() {
+        guard !bikeHiddenByCrash else { return }
+        bikeHiddenByCrash = true
+        // The common parent contains chassis, both complete wheels, hardware and shadow.
+        bike.isHidden = true
+        dust.particleBirthRate = 0
+        dust.resetSimulation()
     }
 
     private func configureWorld(_ world: World) {

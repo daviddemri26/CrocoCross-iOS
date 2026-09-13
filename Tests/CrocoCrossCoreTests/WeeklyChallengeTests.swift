@@ -21,8 +21,9 @@ final class WeeklyChallengeTests: XCTestCase {
 
     func testFrozenVersionedFNVFixture() {
         let challenge = WeeklyChallenge.practice(now: date("2026-09-12T22:14:00Z"))
-        XCTAssertEqual(challenge.identifier, "native-1.weekly.1788739200")
-        XCTAssertEqual(challenge.seed, 1_608_399_012)
+        XCTAssertEqual(challenge.identifier, "native-3.weekly.1788739200")
+        XCTAssertEqual(challenge.seed, 2_621_406_994)
+        XCTAssertEqual(WeeklyChallenge.courseVersion, PhysicsConfiguration.engineVersion)
         XCTAssertEqual(WeeklyChallenge(start: challenge.start, end: challenge.end), challenge)
     }
 

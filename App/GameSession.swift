@@ -1,7 +1,7 @@
+import CrocoCrossCore
 import Foundation
 import Observation
 import SpriteKit
-import CrocoCrossCore
 
 @MainActor @Observable
 final class GameSession {
@@ -19,8 +19,9 @@ final class GameSession {
     var ranked = false
     var pedalReset = 0
     var eventText: String?
-    var notice: String?
-    var hasSavedRun = false
+    var eventPoints = 0
+    var resultsVisible = false
+    var newRecord = false
     var characterID: String { didSet { defaults.set(characterID, forKey: "rider") } }
     var worldID: String { didSet { defaults.set(worldID, forKey: "world") } }
     var bestWeekly: Int { didSet { defaults.set(bestWeekly, forKey: "bestWeekly") } }
@@ -35,7 +36,9 @@ final class GameSession {
     @ObservationIgnored private var input = ControlInput.neutral
     @ObservationIgnored private var accumulator: Double = 0
     @ObservationIgnored private var lastHUD: Double = 0
-    @ObservationIgnored private var lastSaveTick = 0
+    @ObservationIgnored private var lastSubmissionTick = 0
+    @ObservationIgnored private var resultsAt: Double = 0
+    @ObservationIgnored private var recordToBeat = 0
     @ObservationIgnored private var eventUntil: Double = 0
     @ObservationIgnored private var frameTime: Double = 0
     @ObservationIgnored private var playerID: String?
@@ -44,17 +47,7 @@ final class GameSession {
     @ObservationIgnored private var reducedMotion = false
     @ObservationIgnored private var interrupted = false
     @ObservationIgnored private var discardNextPlayingDelta = false
-    @ObservationIgnored private var savedURL: URL?
-
-    struct SavedRun: Codable {
-        var version = 1
-        var simulation: GameSimulation
-        var characterID: String
-        var worldID: String
-        var challenge: WeeklyChallenge?
-        var playerID: String?
-        var ranked: Bool
-    }
+    @ObservationIgnored private var awaitingFirstSimulationStep = true
 
     init() {
         let prefs = UserDefaults.standard
@@ -62,9 +55,11 @@ final class GameSession {
         worldID = prefs.string(forKey: "world") ?? "canyon"
         bestWeekly = prefs.integer(forKey: "bestWeekly")
         bestEndless = prefs.integer(forKey: "bestEndless")
-        if let directory = try? FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true) {
-            savedURL = directory.appendingPathComponent("active-run-v1.json")
-            hasSavedRun = FileManager.default.fileExists(atPath: savedURL!.path)
+        if let directory = try? FileManager.default.url(
+            for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
+        {
+            // Retire only the old resumable ride; records, preferences and queued scores remain.
+            try? FileManager.default.removeItem(at: directory.appendingPathComponent("active-run-v1.json"))
         }
         scene.scaleMode = .resizeFill
         scene.onFrame = { [weak self] dt in self?.frame(dt) }
@@ -74,6 +69,10 @@ final class GameSession {
 
     func start(_ mode: RunMode) {
         self.mode = mode
+        recordToBeat = mode == .weekly ? bestWeekly : bestEndless
+        newRecord = false
+        resultsVisible = false
+        scene.clearTransientEffects()
         let confirmedWeek = gameCenter.weeklyChallenge.flatMap { $0.contains(Date()) ? $0 : nil }
         challenge = mode == .weekly ? (confirmedWeek ?? .practice(now: Date())) : nil
         playerID = gameCenter.currentPlayerID
@@ -82,73 +81,102 @@ final class GameSession {
         let seed = challenge?.seed ?? UInt32.random(in: 1...UInt32.max)
         simulation = GameSimulation(mode: mode, seed: seed)
         previousState = simulation.state
-        accumulator = 0; lastSaveTick = 0; clearPedals()
+        accumulator = 0
+        lastSubmissionTick = 0
+        clearPedals()
         discardNextPlayingDelta = true
-        eventText = nil; notice = nil; finished = false
+        awaitingFirstSimulationStep = true
+        eventText = nil
+        eventPoints = 0
+        finished = false
         phase = .playing
         interrupted = false
         audio.setPaused(false)
         audio.startMusic()
-        refreshHUD(); save()
+        refreshHUD()
     }
 
     func setPedal(right: Bool, value: Double) {
-        guard phase == .playing, simulation.state.status == .active else { input = .neutral; return }
+        guard phase == .playing, simulation.state.status == .active else {
+            input = .neutral
+            return
+        }
         if right { input.throttle = value } else { input.brake = value }
         input.lean = input.throttle - input.brake
     }
 
     func pause() {
         guard phase == .playing else { return }
-        phase = .paused; clearPedals(); accumulator = 0
+        phase = .paused
+        clearPedals()
+        accumulator = 0
         audio.setPaused(true)
-        save(); submitProgress()
+        submitProgress()
     }
 
     func resume() {
         guard phase == .paused else { return }
-        clearPedals(); accumulator = 0
+        clearPedals()
+        accumulator = 0
         discardNextPlayingDelta = true
-        if let challenge, Date() >= challenge.end { ranked = false; notice = "This challenge has ended. Finish your practice run." }
-        phase = .playing; interrupted = false; audio.setPaused(false)
+        awaitingFirstSimulationStep = true
+        if let challenge, Date() >= challenge.end {
+            ranked = false
+        }
+        phase = .playing
+        interrupted = false
+        audio.setPaused(false)
     }
 
     func goHome() {
-        if phase == .playing || phase == .paused { save(); submitProgress() }
-        phase = .home; clearPedals(); audio.setPaused(true)
+        if phase == .playing || phase == .paused { submitProgress() }
+        phase = .home
+        accumulator = 0
+        discardNextPlayingDelta = true
+        awaitingFirstSimulationStep = true
+        resultsVisible = false
+        newRecord = false
+        finished = false
+        eventText = nil
+        eventPoints = 0
+        wasRankedAtStart = false
+        ranked = false
+        playerID = nil
+        challenge = nil
+        simulation = GameSimulation(mode: mode, seed: 42)
+        previousState = simulation.state
+        lastSubmissionTick = 0
+        refreshHUD()
+        scene.clearTransientEffects()
+        clearPedals()
+        audio.setPaused(true)
     }
 
-    func restore() {
-        guard let savedURL else { return }
-        do {
-            let saved = try JSONDecoder().decode(SavedRun.self, from: Data(contentsOf: savedURL))
-            guard saved.version == 1, saved.simulation.state.status == .active || saved.simulation.state.status == .recovering else {
-                clearSave(); return
-            }
-            simulation = saved.simulation
-            previousState = simulation.state
-            characterID = GameCatalog.riders.contains(where: { $0.id == saved.characterID }) ? saved.characterID : "croco"
-            worldID = GameCatalog.worlds.contains(where: { $0.id == saved.worldID }) ? saved.worldID : "canyon"
-            challenge = saved.challenge; playerID = saved.playerID
-            let coherentChallenge = simulation.state.mode == .endless ? saved.challenge == nil : saved.challenge?.seed == simulation.state.seed
-            wasRankedAtStart = saved.ranked && coherentChallenge && saved.playerID != nil
-            mode = simulation.state.mode; phase = .paused
-            accumulator = 0; clearPedals(); lastSaveTick = simulation.state.tick
-            refreshHUD()
-        } catch {
-            notice = "Your previous ride could not be restored. Your saved records are safe."
-            clearSave()
-        }
+    /// A transient inactive state pauses; actually leaving the app abandons the ride.
+    func leaveApp() {
+        goHome()
+        interrupted = true
+        audio.shutdown()
     }
 
     func setActive(_ active: Bool) {
-        if !active { pause(); interrupted = true; audio.shutdown() }
-        else { interrupted = false; audio.startMusic(); Task { await gameCenter.refresh() } }
+        if !active {
+            pause()
+            interrupted = true
+            audio.shutdown()
+        } else {
+            interrupted = false
+            audio.startMusic()
+            Task { await gameCenter.refresh() }
+        }
     }
 
     func setReducedMotion(_ enabled: Bool) { reducedMotion = enabled }
 
-    func showLeaderboards() { pause(); gameCenter.showLeaderboards() }
+    func showLeaderboards() {
+        pause()
+        gameCenter.showLeaderboards()
+    }
 
     private func frame(_ rawDelta: Double) {
         let dt = rawDelta.isFinite ? max(0, min(rawDelta, 0.1)) : 0
@@ -156,41 +184,54 @@ final class GameSession {
         if phase == .playing && !interrupted {
             // GameScene has established a fresh timestamp for this frame. Its interval
             // may include menu, pause or setup work, so gameplay begins on the next one.
-            if discardNextPlayingDelta { discardNextPlayingDelta = false }
-            // Long scheduler gaps during an established ride still pause the game.
-            else if rawDelta > 0.25 { pause() }
-            else {
+            if discardNextPlayingDelta {
+                discardNextPlayingDelta = false
+            }
+            // Loading the first track frame can take longer than one interval.
+            // Drop that startup time; only an already advancing ride should pause.
+            else if rawDelta > 0.25 {
+                if !awaitingFirstSimulationStep { pause() }
+            } else {
                 accumulator += dt
                 var steps = 0
                 while accumulator >= 1.0 / 120 && steps < 12 && phase == .playing {
                     previousState = simulation.state
                     let events = simulation.step(input: input)
+                    awaitingFirstSimulationStep = false
                     for event in events { handle(event) }
-                    accumulator -= 1.0 / 120; steps += 1
+                    accumulator -= 1.0 / 120
+                    steps += 1
                 }
-                if simulation.state.tick - lastSaveTick >= 1_200 {
-                    lastSaveTick = simulation.state.tick
-                    save(); submitProgress()
+                if simulation.state.tick - lastSubmissionTick >= 1_200 { submitProgress() }
+                if frameTime - lastHUD >= 0.08 {
+                    refreshHUD()
+                    lastHUD = frameTime
                 }
-                if frameTime - lastHUD >= 0.08 { refreshHUD(); lastHUD = frameTime }
                 audio.update(bike: simulation.state.bike)
             }
         }
-        if eventText != nil && frameTime > eventUntil { eventText = nil }
+        if eventText != nil && frameTime > eventUntil {
+            eventText = nil
+            eventPoints = 0
+        }
+        if phase == .results && !resultsVisible && frameTime >= resultsAt { resultsVisible = true }
         scene.isPreview = phase == .home
         if phase == .home {
-            scene.display(state: previewSimulation.state, terrain: previewSimulation.terrainHeight,
-                          characterID: characterID, worldID: worldID, reducedMotion: reducedMotion)
+            scene.display(
+                state: previewSimulation.state, terrain: previewSimulation.terrainHeight,
+                characterID: characterID, worldID: worldID, reducedMotion: reducedMotion)
         } else {
-            scene.display(state: renderedState(), terrain: simulation.terrainHeight,
-                          characterID: characterID, worldID: worldID, reducedMotion: reducedMotion)
+            scene.display(
+                state: renderedState(), terrain: simulation.terrainHeight,
+                characterID: characterID, worldID: worldID, reducedMotion: reducedMotion)
         }
     }
 
     /// Blend only presentation coordinates; scoring and contact always use fixed-step state.
     private func renderedState() -> SimulationState {
         guard phase == .playing, previousState.status == simulation.state.status,
-              abs(previousState.bike.position.x - simulation.state.bike.position.x) < 2 else { return simulation.state }
+            abs(previousState.bike.position.x - simulation.state.bike.position.x) < 2
+        else { return simulation.state }
         let alpha = max(0, min(1, accumulator * 120))
         func point(_ a: Vector2, _ b: Vector2) -> Vector2 {
             Vector2(x: a.x + (b.x - a.x) * alpha, y: a.y + (b.y - a.y) * alpha)
@@ -210,54 +251,74 @@ final class GameSession {
     private func handle(_ event: GameEvent) {
         audio.handle(event: event)
         switch event {
-        case .flip(let count): eventText = count > 1 ? "\(count)× FLIP" : "CLEAN FLIP"; eventUntil = frameTime + 1.6
+        case .flip(let count):
+            let prefix = count == 2 ? "DOUBLE " : count == 3 ? "TRIPLE " : count > 3 ? "\(count)× " : ""
+            eventText = "\(prefix)FLIP!"
+            eventPoints = GameSimulation.flipBonus(for: count)
+            eventUntil = frameTime + 1.8
         case .crashed:
+            scene.playCrash(at: simulation.state.bike.position, impact: min(2, max(0.6, speed / 35)))
+            eventText = nil
+            eventPoints = 0
             clearPedals()
             refreshHUD()
             if simulation.state.status == .crashed { endRun() }
-        case .finished: finished = true; endRun()
-        case .landed: break
-        case .respawned: clearPedals(); eventText = "BACK ON TRACK"; eventUntil = frameTime + 1.3
+        case .finished:
+            finished = true
+            endRun()
+        case .landed(let impact):
+            let x = simulation.state.bike.position.x
+            scene.playLanding(at: Vector2(x: x, y: simulation.terrainHeight(at: x)), intensity: impact)
+        case .respawned:
+            scene.restoreBikeAfterRespawn()
+            clearPedals()
+            eventPoints = 0
+            eventText = "BACK ON TRACK"
+            eventUntil = frameTime + 1.3
         }
     }
 
     private func refreshHUD() {
         let state = simulation.state
-        ranked = wasRankedAtStart && playerID == gameCenter.currentPlayerID && playerID != nil && (challenge.map { $0.contains(Date()) } ?? true)
-        score = state.score; distance = state.distance; elapsed = state.elapsed
-        lives = state.lives; flips = state.flips
+        ranked =
+            wasRankedAtStart && playerID == gameCenter.currentPlayerID && playerID != nil
+            && (challenge.map { $0.contains(Date()) } ?? true)
+        score = state.score
+        distance = state.distance
+        elapsed = state.elapsed
+        lives = state.lives
+        flips = state.flips
         speed = hypot(state.bike.velocity.x, state.bike.velocity.y) * 3.6
         recovering = state.status == .recovering
     }
 
     private func endRun() {
-        refreshHUD(); input = .neutral; phase = .results
+        refreshHUD()
+        clearPedals()
+        phase = .results
+        newRecord = score > recordToBeat && (mode == .endless || finished)
+        resultsVisible = false
+        // Let the explosion complete before covering the crash with the score card.
+        resultsAt = frameTime + (finished || reducedMotion ? 0.3 : 1.8)
         audio.setPaused(true)
-        submitProgress(); clearSave()
+        submitProgress()
     }
 
     private func submitProgress() {
         let state = simulation.state
-        if state.mode == .endless { bestEndless = max(bestEndless, state.score) }
-        else if state.status == .finished { bestWeekly = max(bestWeekly, state.score) }
+        if state.mode == .endless {
+            bestEndless = max(bestEndless, state.score)
+        } else if state.status == .finished {
+            bestWeekly = max(bestWeekly, state.score)
+        }
+        // Pause followed immediately by backgrounding must not enqueue the same tick twice.
+        guard state.tick != lastSubmissionTick else { return }
+        lastSubmissionTick = state.tick
         if wasRankedAtStart { gameCenter.record(state: state, challenge: challenge, playerID: playerID) }
     }
 
-    private func save() {
-        guard let savedURL, simulation.state.status == .active || simulation.state.status == .recovering else { return }
-        do {
-            let saved = SavedRun(simulation: simulation, characterID: characterID, worldID: worldID,
-                                 challenge: challenge, playerID: playerID, ranked: wasRankedAtStart)
-            let data = try JSONEncoder().encode(saved)
-            try data.write(to: savedURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
-            hasSavedRun = true
-        } catch { notice = "This ride could not be saved. Keep the app open to finish." }
+    private func clearPedals() {
+        input = .neutral
+        pedalReset &+= 1
     }
-
-    private func clearSave() {
-        if let savedURL { try? FileManager.default.removeItem(at: savedURL) }
-        hasSavedRun = false
-    }
-
-    private func clearPedals() { input = .neutral; pedalReset &+= 1 }
 }

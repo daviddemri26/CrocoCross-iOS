@@ -2,7 +2,7 @@ import Foundation
 
 /// A frozen weekly course. This value describes a period; it is not proof of Game Center eligibility.
 public struct WeeklyChallenge: Codable, Equatable, Sendable {
-    public static let courseVersion = "native-1"
+    public static let courseVersion = PhysicsConfiguration.engineVersion
     public static let duration: TimeInterval = 7 * 24 * 60 * 60
 
     public let seed: UInt32

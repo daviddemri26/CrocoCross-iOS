@@ -32,7 +32,7 @@ Start with **three lives** and see how far your riding takes you. Procedural hil
 
 Meet Rocco the crocodile, Kenji the Shiba Inu, Duke the eagle, Axel the tiger, Bjorn the polar bear, Pinky the flamingo, Rio the toucan, Bandit the raccoon and Bubbles the axolotl.
 
-Explore Canyon, Japan Mountains, American Sunset, Tropical Jungle, Arctic Aurora, Old Gold Mine, San Francisco, Paris and Cloud Nine. Illustrated backdrops, parallax, ambient animation and textured trails give each world its own mood.
+Explore Canyon, Japan Mountains, American Sunset, Tropical Jungle, Arctic Aurora, Old Gold Mine, San Francisco, Paris and Cloud Nine. Illustrated backdrops, parallax and textured trails give each world its own mood. Small painted details appear occasionally in the sky, below the trail and along the roadside.
 
 **Every rider shares the same physics.** Pick the look you love; success comes from how you ride.
 
@@ -47,11 +47,11 @@ Speed, slope and balance shape every jump. Rear-wheel traction creates natural w
 ## Made for the ride
 
 - **Play offline:** Endless and weekly practice stay available without signing in.
-- **Come back to your run:** local saves restore an unfinished ride in a paused state.
-- **Set the mood:** adjust music, engine sounds, effects and haptics independently.
+- **Pause during a run:** tap Pause, then Keep riding to resume. Returning Home or leaving the app ends the ride; reopening always starts at Home. New runs and restarts begin immediately.
+- **Set the mood:** open Settings > Audio to choose music and adjust sound levels, or Settings > General for haptics.
 - **Phone or tablet:** portrait play on iPhone and landscape play on iPad.
-- **Optional competition:** Game Center integration targets weekly score, fastest weekly finish and Endless score. Live service validation is still pending.
-- **Local storage:** settings, personal records and saved rides stay on the device; eligible online scores use Apple's Game Center. No custom backend or third-party analytics SDK is included.
+- **Optional competition:** open Rankings for personal bests and Game Center connection. Online boards target weekly score, fastest weekly finish and Endless score. Live service validation is still pending.
+- **Local storage:** settings, personal records and pending score submissions stay on the device; eligible online scores use Apple's Game Center. No custom backend or third-party analytics SDK is included.
 
 ## Under the hood
 
@@ -83,7 +83,7 @@ xcodebuild -project CrocoCross.xcodeproj -scheme CrocoCross \
 
 This repository is public. Original artwork and music are by David Demri, who has confirmed that he holds all rights to them and authorized publication of the bundled project files. See [source and asset provenance](docs/SOURCE-PROVENANCE.md).
 
-The [development guide](docs/DEVELOPMENT.md) covers project regeneration, architecture, saves and controls. GitHub Actions runs core tests, the persistence harness, project consistency checks and an unsigned simulator build; it does not publish the app.
+The [development guide](docs/DEVELOPMENT.md) covers project regeneration, architecture, the run lifecycle and controls. GitHub Actions runs core tests, the persistence harness, project consistency checks and an unsigned simulator build; it does not publish the app.
 
 ## Road to release
 

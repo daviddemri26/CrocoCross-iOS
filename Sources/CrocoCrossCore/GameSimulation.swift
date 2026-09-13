@@ -7,6 +7,12 @@ public struct GameSimulation: Codable, Sendable {
     public static let engineVersion = PhysicsConfiguration.engineVersion
     public static let weeklyDistance = PhysicsConfiguration.weeklyDistance
     public static let timeStep = PhysicsConfiguration.timeStep
+    /// One landed combo: 1,000 / 3,000 / 7,000 points, capped at sixteen turns.
+    /// The HUD and score ledger share this rule; airborne turns remain unbanked.
+    public static func flipBonus(for count: Int) -> Int {
+        guard count > 0 else { return 0 }
+        return 1_000 * ((1 << min(count, 16)) - 1)
+    }
     public private(set) var state: SimulationState
     public let configuration: PhysicsConfiguration
     private let saveVersion: String
@@ -125,7 +131,8 @@ public struct GameSimulation: Codable, Sendable {
             let driveRatio = max(0, tangentVelocity) / c.motorTopSpeed
             let drive = rear ? bike.throttle * c.maximumDriveForce * max(0, 1 - driveRatio * driveRatio) : 0
             let inverseMass = 1 / c.mass + pow(lever.cross(contact.tangent), 2) / c.inertia
-            let braking = min(brake * c.brakeForce * (rear ? 0.42 : 0.58), abs(tangentVelocity) / (dt * inverseMass)) * sign(tangentVelocity)
+            let brakeShare = rear ? c.rearBrakeShare : 1 - c.rearBrakeShare
+            let braking = min(brake * c.brakeForce * brakeShare, abs(tangentVelocity) / (dt * inverseMass)) * sign(tangentVelocity)
             let rolling = normalForce * 0.012 * tanh(tangentVelocity * 2)
             let traction = bounded(drive - braking - rolling, -c.tireGrip * normalForce, c.tireGrip * normalForce)
             let tireForce = contact.normal * normalForce + contact.tangent * traction
@@ -210,7 +217,7 @@ public struct GameSimulation: Codable, Sendable {
                                        airborne: !grounded, safeContact: safe, terminal: finishing)
             if landed > 0 {
                 state.flips += landed
-                stuntScore += 1_000 * ((1 << min(landed, 16)) - 1)
+                stuntScore += Self.flipBonus(for: landed)
                 events.append(.flip(landed))
             }
             if finishing { state.status = .finished; events.append(.finished) }

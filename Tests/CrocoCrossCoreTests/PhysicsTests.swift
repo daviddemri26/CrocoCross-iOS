@@ -3,6 +3,146 @@ import XCTest
 @testable import CrocoCrossCore
 
 final class PhysicsTests: XCTestCase {
+    func testDownhillCoursesKeepClimbableRampsAndSmoothDescendingJoins() {
+        for seed: UInt32 in [0, 1, 3, 42, 913, .max] {
+            let terrain = TerrainGenerator(seed: seed)
+            var descending = 0, climbing = 0, steepest = 0.0, crests = 0
+            var ascending = false
+            for x in stride(from: TerrainGenerator.entryLength, through: 4_024, by: 0.25) {
+                let slope = terrain.slope(at: x)
+                if slope < 0 { descending += 1 }
+                if slope > 0.15 { climbing += 1; ascending = true }
+                if ascending && slope < -0.15 { crests += 1; ascending = false }
+                steepest = max(steepest, abs(slope))
+            }
+            XCTAssertGreaterThan(Double(descending) / 16_001, 0.60, "Most of seed \(seed) must descend.")
+            XCTAssertGreaterThan(climbing, 800, "The descent still needs ramps, not just a tilted road.")
+            XCTAssertLessThan(steepest, 1.15, "Ramps may be steep but must remain climbable, without vertical walls.")
+            XCTAssertGreaterThan(crests, 150, "The weekly course needs two distinct hills per 48m section.")
+            for boundary in [12.0] + (0...30).map({ TerrainGenerator.entryLength + Double($0) * TerrainGenerator.sectionLength }) {
+                XCTAssertEqual(terrain.height(at: boundary - 0.0001), terrain.height(at: boundary + 0.0001), accuracy: 0.0001)
+                XCTAssertEqual(terrain.slope(at: boundary - 0.001), terrain.slope(at: boundary + 0.001), accuracy: 0.001)
+            }
+            let start = TerrainGenerator.entryLength
+            let end = start + 100 * TerrainGenerator.sectionLength
+            XCTAssertEqual(terrain.height(at: end) - terrain.height(at: start),
+                           -(end - start) * TerrainGenerator.descentGrade, accuracy: 0.00001)
+        }
+    }
+
+    func testRearContactBrakingCatchesARisingWheelieWithoutLeanAssistance() {
+        var wheelie = GameSimulation(mode: .weekly, seed: 3, configuration: flat)
+        for _ in 0 ..< 240 {
+            wheelie.step(input: .init(throttle: 1))
+            if wheelie.state.bike.angle >= 0.45 { break }
+        }
+        XCTAssertEqual(wheelie.state.status, .active)
+        XCTAssertTrue(wheelie.state.bike.rear.contact)
+        XCTAssertFalse(wheelie.state.bike.front.contact)
+        XCTAssertGreaterThan(wheelie.state.bike.angularVelocity, 0)
+        var braking = wheelie, coasting = wheelie, universalBrake = wheelie
+        braking.step(input: .init(brake: 1))
+        coasting.step(input: .neutral)
+        universalBrake.step(input: .init(brake: 1, lean: -1))
+        XCTAssertLessThan(braking.state.bike.angularVelocity, coasting.state.bike.angularVelocity - 0.025,
+                          "The rear contact lever must reduce nose-up angular velocity immediately.")
+        XCTAssertEqual(braking.state.bike.angle, universalBrake.state.bike.angle)
+        XCTAssertEqual(braking.state.bike.velocity, universalBrake.state.bike.velocity)
+        var brakedLanding: Int?, coastingLanding: Int?
+        for tick in 1 ... 240 {
+            braking.step(input: .init(brake: 1))
+            coasting.step(input: .neutral)
+            if braking.state.bike.front.contact && brakedLanding == nil { brakedLanding = tick }
+            if coasting.state.bike.front.contact && coastingLanding == nil { coastingLanding = tick }
+        }
+        XCTAssertEqual(braking.state.status, .active)
+        XCTAssertLessThan(abs(braking.state.bike.angle), 0.1)
+        XCTAssertTrue(braking.state.bike.front.contact && braking.state.bike.rear.contact)
+        XCTAssertLessThan(brakedLanding ?? 241, coastingLanding ?? 241,
+                          "Rear braking must bring the front down sooner than throttle release alone.")
+    }
+
+    func testTwoThumbBrakingRecoversARisingWheelieWhileThrottleStaysHeld() {
+        var wheelie = GameSimulation(mode: .weekly, seed: 3, configuration: flat)
+        for _ in 0 ..< 240 {
+            wheelie.step(input: .init(throttle: 1))
+            if wheelie.state.bike.angle >= 0.45 { break }
+        }
+        XCTAssertEqual(wheelie.state.status, .active)
+        XCTAssertTrue(wheelie.state.bike.rear.contact)
+        XCTAssertFalse(wheelie.state.bike.front.contact)
+        XCTAssertGreaterThan(wheelie.state.bike.angularVelocity, 0)
+
+        var braking = wheelie, gasOnly = wheelie, brakingWithoutLean = wheelie
+        var frontContact: Int?, gasOnlyFrontContact: Int?
+        var peakAngle = wheelie.state.bike.angle
+        for tick in 1 ... 240 {
+            // Match the app's simultaneous pedals, including lean = throttle - brake.
+            braking.step(input: .init(throttle: 0.9, brake: 1, lean: -0.1))
+            gasOnly.step(input: .init(throttle: 0.9, lean: 0.9))
+            brakingWithoutLean.step(input: .init(throttle: 0.9, brake: 1))
+            peakAngle = max(peakAngle, braking.state.bike.angle)
+            if braking.state.bike.front.contact && frontContact == nil { frontContact = tick }
+            if gasOnly.state.bike.front.contact && gasOnlyFrontContact == nil { gasOnlyFrontContact = tick }
+            if tick == 1 {
+                XCTAssertLessThan(braking.state.bike.angularVelocity, gasOnly.state.bike.angularVelocity - 0.04)
+            }
+            XCTAssertTrue(braking.state.bike.grounded, "The recovery must use actual tire contact.")
+            XCTAssertEqual(braking.state.bike.angle, brakingWithoutLean.state.bike.angle)
+            XCTAssertEqual(braking.state.bike.position, brakingWithoutLean.state.bike.position)
+        }
+        XCTAssertEqual(braking.state.status, .active)
+        XCTAssertLessThan(peakAngle, 0.51, "Braking must catch the rising wheelie despite sustained gas.")
+        XCTAssertLessThan(frontContact ?? 241, 65, "The stronger rear brake should settle the front within about half a second.")
+        XCTAssertTrue(braking.state.bike.front.contact && braking.state.bike.rear.contact)
+        XCTAssertLessThan(abs(braking.state.bike.angle), 0.1)
+        XCTAssertGreaterThanOrEqual(braking.state.bike.throttle, 0.89, "The test must never release the throttle.")
+        XCTAssertEqual(gasOnly.state.status, .crashed, "The same over-acceleration without braking must remain risky.")
+        XCTAssertNil(gasOnlyFrontContact)
+    }
+
+    func testStrongerBrakesShortenGroundStopWithoutFrontFlip() {
+        var legacy = flat
+        legacy.brakeForce = 1_800; legacy.rearBrakeShare = 0.55 // native-2 tuning
+        var initial = SimulationState(mode: .weekly, seed: 3)
+        initial.bike.position = .init(x: 3, y: flat.restingRideHeight)
+        initial.bike.velocity.x = 10
+        var distances: [Double] = []
+        for config in [flat, legacy] {
+            var sim = GameSimulation(state: initial, configuration: config)
+            for _ in 0 ..< 600 {
+                sim.step(input: .init(brake: 1))
+                if abs(sim.state.bike.velocity.x) < 0.1 { break }
+            }
+            XCTAssertEqual(sim.state.status, .active)
+            XCTAssertLessThan(abs(sim.state.bike.velocity.x), 0.1)
+            distances.append(sim.state.distance)
+        }
+        XCTAssertLessThan(distances[0], distances[1] * 0.95, "Braking should shorten a 10m/s stop by at least 5% versus native-2.")
+    }
+
+    func testAngledReceptionOnDownhillTerrainRemainsRecoverable() {
+        let terrain = TerrainGenerator(seed: 3)
+        for offset in [-0.25, 0.25] {
+            var initial = SimulationState(mode: .weekly, seed: 3)
+            initial.bike.position = .init(x: 62, y: terrain.height(at: 62) + 2.5)
+            initial.bike.velocity = .init(x: 9, y: -2)
+            initial.bike.angle = atan(terrain.slope(at: 62)) + offset
+            var sim = GameSimulation(state: initial, configuration: .init())
+            var landings = 0, compression = 0.0
+            for _ in 0 ..< 240 {
+                for event in sim.step(input: .neutral) {
+                    if case .landed = event { landings += 1 }
+                }
+                compression = max(compression, sim.state.bike.rear.compression, sim.state.bike.front.compression)
+            }
+            XCTAssertEqual(sim.state.status, .active, "offset=\(offset)")
+            XCTAssertGreaterThan(landings, 0)
+            XCTAssertGreaterThan(compression, 0.1)
+            XCTAssertTrue(sim.state.bike.grounded)
+        }
+    }
+
     func testWeeklyCourseIsCompletableOnRealSeededHillsWithBoundedRiderInputs() {
         // This test-only rider anticipates the landing slope and meters the pedals.
         // It never modifies simulation state or supplies an automatic balance force.
@@ -10,25 +150,7 @@ final class PhysicsTests: XCTestCase {
             for seed: UInt32 in [3, 8, 11] {
                 var sim = GameSimulation(mode: .weekly, seed: seed)
                 for _ in 0 ..< 120 * 700 {
-                    let b = sim.state.bike
-                    let slope = (sim.terrainHeight(at: b.position.x + 0.1) - sim.terrainHeight(at: b.position.x - 0.1)) / 0.2
-                    var target = atan(slope)
-                    if !b.grounded {
-                        var landingX = b.position.x
-                        for _ in 0 ..< 3 {
-                            let height = max(0, b.position.y - sim.terrainHeight(at: landingX) - 0.83)
-                            let time = max(0.05, min(2.0, (b.velocity.y + sqrt(b.velocity.y * b.velocity.y + 2 * 9.81 * height)) / 9.81))
-                            landingX = b.position.x + b.velocity.x * time
-                        }
-                        target = atan((sim.terrainHeight(at: landingX + 0.1) - sim.terrainHeight(at: landingX - 0.1)) / 0.2)
-                    }
-                    let error = atan2(sin(target - b.angle), cos(target - b.angle))
-                    let lean = b.grounded ? 0 : min(1, max(-1, error * 6 - b.angularVelocity * 2.2))
-                    let acceleration = (targetSpeed - b.velocity.x) * 1.5 + 9.81 * slope
-                    var throttle = min(0.95, max(0, acceleration * sim.configuration.mass / sim.configuration.maximumDriveForce))
-                    if b.angle - atan(slope) > 0.15 { throttle = min(0.15, throttle) }
-                    let brake = acceleration < -1 ? min(0.6, -acceleration * sim.configuration.mass / sim.configuration.brakeForce) : 0
-                    sim.step(input: .init(throttle: throttle, brake: brake, lean: lean))
+                    sim.step(input: TestRider.controls(sim, speed: targetSpeed))
                     if sim.state.status != .active { break }
                 }
                 XCTAssertEqual(sim.state.status, .finished, "seed=\(seed), target=\(targetSpeed)m/s")
@@ -55,29 +177,59 @@ final class PhysicsTests: XCTestCase {
     }
 
     func testSeededRideCorpusHasNaturalJumpsAndRecoverableRoutes() {
-        var survivingRides = 0, totalJumps = 0
+        var survivingRides = 0, totalJumps = 0, totalPlayableJumps = 0
         for seed: UInt32 in 1 ... 12 {
             var sim = GameSimulation(mode: .endless, seed: seed)
             var jumps = 0, priorGrounded = true
+            var flightTicks = 0, flightClearance = 0.0, playableJumps = 0
+            var pendingLanding = false, landingTicks = 0
             for _ in 0 ..< 120 * 60 {
-                let bike = sim.state.bike
-                let slope = atan((sim.terrainHeight(at: bike.position.x + 4) - sim.terrainHeight(at: bike.position.x)) / 4)
-                let error = atan2(sin(slope - bike.angle), cos(slope - bike.angle))
-                let lean = bike.grounded ? 0 : min(1, max(-1, error * 3 - bike.angularVelocity * 1.4))
-                let throttle = bike.angle > 0.25 ? 0.2 : 0.6
-                sim.step(input: .init(throttle: throttle, lean: lean))
-                if priorGrounded && !sim.state.bike.grounded { jumps += 1 }
+                let wasActive = sim.state.status == .active
+                let events = sim.step(input: TestRider.controls(sim, speed: 12))
+                let interrupted = !wasActive || sim.state.status != .active || events.contains {
+                    switch $0 {
+                    case .crashed, .respawned: true
+                    default: false
+                    }
+                }
+                if interrupted {
+                    // A crash pose and its respawn are never airtime or a reception.
+                    flightTicks = 0; flightClearance = 0
+                    pendingLanding = false; landingTicks = 0
+                } else if !sim.state.bike.grounded {
+                    if priorGrounded { jumps += 1 }
+                    pendingLanding = false; landingTicks = 0
+                    flightTicks += 1
+                    let position = sim.state.bike.position
+                    flightClearance = max(flightClearance, position.y - sim.terrainHeight(at: position.x) - sim.configuration.restingRideHeight)
+                } else {
+                    if !priorGrounded {
+                        pendingLanding = flightTicks >= 150 && flightClearance >= 2
+                        landingTicks = 0
+                        flightTicks = 0; flightClearance = 0
+                    }
+                    if pendingLanding {
+                        // Confirm real contact long enough to exclude delayed crash detection.
+                        landingTicks += 1
+                        if landingTicks >= 8 {
+                            playableJumps += 1; pendingLanding = false
+                        }
+                    }
+                }
                 priorGrounded = sim.state.bike.grounded
                 XCTAssertTrue(sim.state.bike.position.x.isFinite && sim.state.bike.velocity.y.isFinite)
                 if sim.state.status == .crashed { break }
             }
-            XCTAssertGreaterThan(sim.state.distance, 150, "A cautious rider can clear the introduction on seed \(seed).")
+            XCTAssertGreaterThan(sim.state.distance, 450, "A cautious rider can clear the introduction on seed \(seed).")
             XCTAssertGreaterThan(jumps, 1)
+            XCTAssertGreaterThanOrEqual(playableJumps, 4, "Seed \(seed) needs real flights lasting at least 1.25s and clearing 2m.")
             survivingRides += sim.state.status == .active ? 1 : 0
             totalJumps += jumps
+            totalPlayableJumps += playableJumps
         }
         XCTAssertGreaterThanOrEqual(survivingRides, 8, "A simple test rider can recover ordinary landings; failures remain possible.")
         XCTAssertGreaterThan(totalJumps, 100)
+        XCTAssertGreaterThan(totalPlayableJumps, 60, "Contact chatter cannot satisfy the jump acceptance test.")
     }
     private var flat: PhysicsConfiguration {
         var c = PhysicsConfiguration(); c.terrainStyle = .flat; return c
@@ -185,7 +337,7 @@ final class PhysicsTests: XCTestCase {
             let boundary = TerrainGenerator.entryLength + Double(index) * TerrainGenerator.sectionLength
             XCTAssertEqual(a.height(at: boundary - 0.0001), a.height(at: boundary + 0.0001), accuracy: 0.0001)
             XCTAssertEqual(a.slope(at: boundary - 0.001), a.slope(at: boundary + 0.001), accuracy: 0.001)
-            for offset in stride(from: 0.0, to: 64, by: 3) {
+            for offset in stride(from: 0.0, to: TerrainGenerator.sectionLength, by: 3) {
                 let x = boundary + offset
                 XCTAssertEqual(a.height(at: x), b.height(at: x))
                 XCTAssertTrue(a.height(at: x).isFinite)
@@ -296,8 +448,11 @@ final class PhysicsTests: XCTestCase {
         let sim = GameSimulation(mode: .weekly, seed: 1)
         let encoded = try JSONEncoder().encode(sim)
         var object = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
-        object["saveVersion"] = "future-engine"
-        XCTAssertThrowsError(try JSONDecoder().decode(GameSimulation.self, from: JSONSerialization.data(withJSONObject: object)))
+        XCTAssertEqual(PhysicsConfiguration.engineVersion, "native-3")
+        for priorVersion in ["native-1", "native-2"] {
+            object["saveVersion"] = priorVersion
+            XCTAssertThrowsError(try JSONDecoder().decode(GameSimulation.self, from: JSONSerialization.data(withJSONObject: object)))
+        }
         object = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
         var config = try XCTUnwrap(object["configuration"] as? [String: Any]); config["mass"] = 0; object["configuration"] = config
         XCTAssertThrowsError(try JSONDecoder().decode(GameSimulation.self, from: JSONSerialization.data(withJSONObject: object)))

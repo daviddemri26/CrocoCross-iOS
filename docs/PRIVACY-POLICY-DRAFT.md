@@ -14,17 +14,16 @@ CrocoCross runs on your device. It has no developer-operated game backend, adver
 
 ## Information on your device
 
-The app saves information needed to remember your choices and continue your ride:
+The app saves information needed to remember your choices and records:
 
 - Selected rider and world, sound and music preferences, haptic settings, and local best scores.
-- Your unfinished ride, including progress, course information and, for a run started with Game Center, its original player identifier.
 - Pending Game Center submissions, including the original player identifier, target leaderboard, score or completion time, supporting run context and the relevant weekly period.
 
-Settings and records remain until changed or removed. An unfinished ride is replaced when you start a new one and cleared when it ends. Pending submissions are removed from the local queue when GameKit accepts them; expired weekly submissions are discarded when the queue is next processed. Signing out does not erase the queue, and a pending result is never reassigned to another player.
+Settings and records remain until changed or removed. Unfinished rides are kept only in memory and are abandoned when you return Home or leave the app. The legacy saved-ride file from earlier development builds is removed on launch. Pending submissions are removed from the local queue when GameKit accepts them; expired weekly submissions are discarded when the queue is next processed. Signing out does not erase the queue, and a pending result is never reassigned to another player.
 
 ## Optional Game Center
 
-When connected to Game Center, CrocoCross reads your game-specific player identifier and display name, displays your name in the app, and sends eligible scores, completion times and supporting score/timing context to Apple. The identifier also keeps saved runs and pending scores associated with the player who started them. CrocoCross does not receive your Apple Account password or request your contacts or Game Center friends list.
+When connected to Game Center, CrocoCross reads your game-specific player identifier and display name, displays your name in the app, and sends eligible scores, completion times and supporting score/timing context to Apple. The identifier also keeps pending scores associated with the player who started them. CrocoCross does not receive your Apple Account password or request your contacts or Game Center friends list.
 
 Apple provides Game Center and processes information about its use under its own policy. For games with global leaderboards, Apple states that your nickname, avatar and scores are visible to other Game Center users. Other activity sharing depends on your Apple settings. Review [Game Center & Privacy](https://www.apple.com/legal/privacy/data/en/game-center/) before participating.
 
@@ -32,7 +31,7 @@ Apple provides Game Center and processes information about its use under its own
 
 Endless and weekly practice can be played offline. If your device is already signed in to Game Center, the app may connect automatically. To review sharing or sign out, open the device's **Settings > Game Center**. Runs started as guest/practice are not uploaded retrospectively. [Apple's Game Center settings guide](https://support.apple.com/en-nz/guide/iphone/iph3b2f23e83/ios).
 
-Deleting CrocoCross removes this installation's settings, records, saved ride and pending submissions. **Offload App** keeps documents and data. [Apple's explanation of app deletion and offloading](https://support.apple.com/en-au/108429).
+Deleting CrocoCross removes this installation's settings, records and pending submissions. **Offload App** keeps documents and data. [Apple's explanation of app deletion and offloading](https://support.apple.com/en-au/108429).
 
 App data may also be included in your device backups, depending on your Apple backup settings. CrocoCross does not provide its own cloud-save service. Manage existing backups separately. [What iCloud backs up](https://support.apple.com/en-euro/108770).
 

@@ -1,8 +1,11 @@
-import SwiftUI
-import SpriteKit
 import CrocoCrossCore
+import SpriteKit
+import SwiftUI
 
-private enum GamePanel: String, Identifiable { case riders, worlds, settings, help; var id: String { rawValue } }
+private enum GamePanel: String, Identifiable {
+    case riders, worlds, settings, help, rankings
+    var id: String { rawValue }
+}
 
 enum CrocoTheme {
     static let ink = Color(red: 0.04, green: 0.10, blue: 0.12)
@@ -16,12 +19,10 @@ struct GameRootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reducedMotion
     @State private var panel: GamePanel?
-    @State private var replacingSavedRun: RunMode?
-    @State private var confirmRestart = false
 
     var body: some View {
         GeometryReader { geometry in
-            let wide = geometry.size.width >= 650 || geometry.size.width > geometry.size.height
+            let wide = geometry.size.width >= GameScene.minimumWideHomeWidth
             // System bars change safe-area insets when a ride starts. Pause only
             // when the window itself resizes, not when those bars disappear.
             let viewportSize = CGSize(
@@ -31,28 +32,36 @@ struct GameRootView: View {
             ZStack {
                 SpriteView(scene: session.scene, preferredFramesPerSecond: 60)
                     .ignoresSafeArea().accessibilityHidden(true)
-                if session.phase == .home { home(wide: wide, height: geometry.size.height) }
-                else {
-                    playOverlay(wide: wide)
+                if session.phase == .home {
+                    home(wide: wide, height: geometry.size.height)
+                } else {
+                    playOverlay(wide: wide, height: geometry.size.height)
                     if session.phase == .paused { pauseOverlay }
-                    if session.phase == .results { resultsOverlay }
+                    if session.phase == .results && session.resultsVisible {
+                        resultsOverlay.transition(.opacity.combined(with: .scale(scale: 0.94)))
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .overlay(alignment: .top) {
-                if let notice = session.notice {
-                    Text(notice).font(.footnote.weight(.medium)).padding(12)
-                        .background(CrocoTheme.ink.opacity(0.96), in: RoundedRectangle(cornerRadius: 14))
-                        .padding(.horizontal, 20).padding(.top, 65).allowsHitTesting(false)
-                }
-            }
+            .animation(
+                reducedMotion ? nil : .spring(response: 0.4, dampingFraction: 0.86), value: session.resultsVisible
+            )
             .onChange(of: viewportSize) { old, new in
                 if abs(old.width - new.width) > 30 || abs(old.height - new.height) > 30 { session.pause() }
             }
         }
         .tint(CrocoTheme.lime)
         .background(ScenePresentation().frame(width: 0, height: 0))
-        .onChange(of: scenePhase) { _, value in session.setActive(value == .active) }
+        .onChange(of: scenePhase) { _, value in
+            switch value {
+            case .active: session.setActive(true)
+            case .inactive: session.setActive(false)
+            case .background:
+                panel = nil
+                session.leaveApp()
+            @unknown default: session.setActive(false)
+            }
+        }
         .onChange(of: reducedMotion) { _, value in session.setReducedMotion(value) }
         .task {
             session.setReducedMotion(reducedMotion)
@@ -61,21 +70,27 @@ struct GameRootView: View {
         }
         .sheet(item: $panel) { item in
             NavigationStack {
-                panelContent(item)
-                    .navigationTitle(panelTitle(item))
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { panel = nil }.accessibilityIdentifier("closePanel") } }
+                VStack(spacing: 0) {
+                    panelContent(item)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    if item != .settings {
+                        HStack {
+                            Spacer()
+                            PanelCloseButton { panel = nil }
+                        }
+                        .padding(.horizontal, 14).padding(.vertical, 8)
+                        .background(CrocoTheme.ink)
+                        .overlay(alignment: .top) {
+                            Rectangle().fill(.white.opacity(0.12)).frame(height: 1)
+                        }
+                    }
+                }
+                .background(CrocoTheme.ink)
+                .navigationTitle(panelTitle(item))
+                .navigationBarTitleDisplayMode(.inline)
             }
             .presentationDetents([.large]).presentationDragIndicator(.visible)
             .tint(CrocoTheme.lime).preferredColorScheme(.dark)
-        }
-        .confirmationDialog("Start a new ride?", isPresented: Binding(get: { replacingSavedRun != nil }, set: { if !$0 { replacingSavedRun = nil } })) {
-            if let mode = replacingSavedRun {
-                Button("Replace saved ride", role: .destructive) { replacingSavedRun = nil; session.start(mode) }
-            }
-        } message: { Text("Your unfinished ride will be replaced. Your records will stay saved.") }
-        .confirmationDialog("Restart this ride?", isPresented: $confirmRestart) {
-            Button("Restart", role: .destructive) { session.start(session.mode) }
         }
         .statusBarHidden(session.phase == .playing)
         .persistentSystemOverlays(session.phase == .playing ? .hidden : .automatic)
@@ -83,27 +98,38 @@ struct GameRootView: View {
 
     private func home(wide: Bool, height: CGFloat) -> some View {
         ZStack {
-            LinearGradient(colors: [CrocoTheme.ink.opacity(0.6), .clear, CrocoTheme.ink.opacity(0.96)], startPoint: .top, endPoint: .bottom).ignoresSafeArea()
+            LinearGradient(
+                colors: [CrocoTheme.ink.opacity(0.45), .clear, CrocoTheme.ink.opacity(0.96)],
+                startPoint: .top, endPoint: .bottom
+            ).ignoresSafeArea()
             if wide {
                 HStack(spacing: 0) {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 16) { brand; Spacer(minLength: 4); launchOptions; utilityBar }
-                            .padding(28).frame(minHeight: height)
-                    }.scrollIndicators(.hidden).frame(maxWidth: 385)
-                        .background(CrocoTheme.ink.opacity(0.86))
-                    VStack { accountBar; Spacer(); riderCaption }.padding(28)
+                    VStack(spacing: 0) {
+                        ScrollView {
+                            VStack(spacing: 18) {
+                                brand.frame(maxWidth: 290)
+                                Spacer(minLength: 0)
+                                riderCaption
+                                launchOptions
+                            }.padding(26).frame(minHeight: max(0, height - 100))
+                        }.scrollIndicators(.hidden)
+                        utilityBar.padding(.horizontal, 26).padding(.bottom, 16)
+                    }.frame(width: GameScene.homePanelWidth).background(CrocoTheme.ink.opacity(0.84))
+                    Color.clear
                 }
             } else {
-                ScrollView {
-                    VStack(spacing: 14) {
-                        accountBar
-                        brand.frame(maxWidth: 300)
-                        Spacer(minLength: 36)
-                        riderCaption
-                        launchOptions
-                        utilityBar
-                    }.padding(.horizontal, 22).padding(.vertical, 12).frame(minHeight: height)
-                }.scrollIndicators(.hidden)
+                VStack(spacing: 0) {
+                    ScrollView {
+                        VStack(spacing: 16) {
+                            brand.frame(maxWidth: 250)
+                            Spacer(minLength: 16)
+                            riderCaption
+                            launchOptions
+                        }.padding(.horizontal, 20).padding(.top, 12).padding(.bottom, 16)
+                            .frame(minHeight: max(0, height - 94))
+                    }.scrollIndicators(.hidden)
+                    utilityBar.padding(.horizontal, 20).padding(.bottom, 8)
+                }
             }
         }
     }
@@ -115,177 +141,247 @@ struct GameRootView: View {
             } else {
                 Text("CROCO\nCROSS").font(.system(size: 53, weight: .black, design: .rounded)).italic().lineSpacing(-8)
             }
-            Text("FIND YOUR BALANCE.").font(.system(size: 11, weight: .heavy, design: .monospaced)).tracking(3).foregroundStyle(CrocoTheme.lime)
-        }.accessibilityElement(children: .ignore).accessibilityLabel("CrocoCross. Find your balance.")
-    }
 
-    private var accountBar: some View {
-        HStack {
-            Button {
-                if session.gameCenter.isAuthenticated { session.showLeaderboards() }
-                else { session.gameCenter.authenticate() }
-            } label: {
-                Label(session.gameCenter.isAuthenticated ? session.gameCenter.playerName : "Game Center", systemImage: "person.crop.circle")
-                    .font(.system(size: 13, weight: .semibold)).lineLimit(1)
-            }.accessibilityIdentifier("gameCenter")
-            Spacer()
-            Button { panel = .settings } label: { Image(systemName: "slider.horizontal.3").font(.title3).frame(width: 44, height: 44) }
-                .accessibilityLabel("Settings").accessibilityIdentifier("settings")
-        }.foregroundStyle(.white)
+        }.accessibilityElement(children: .ignore).accessibilityLabel("CrocoCross")
     }
 
     private var riderCaption: some View {
-        HStack(alignment: .bottom) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(GameCatalog.riders.first(where: { $0.id == session.characterID })?.name.uppercased() ?? "ROCCO")
-                    .font(.system(size: 25, weight: .black, design: .rounded)).italic()
-                Text(GameCatalog.worlds.first(where: { $0.id == session.worldID })?.name ?? "Canyon")
-                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(CrocoTheme.muted)
-            }
-            Spacer()
-        }.padding(12).background(CrocoTheme.ink.opacity(0.82), in: RoundedRectangle(cornerRadius: 14))
+        HStack(spacing: 12) {
+            selectionButton(
+                GameCatalog.riders.first(where: { $0.id == session.characterID })?.name ?? "Rocco",
+                title: "Rider", rider: true, id: "riders"
+            ) { panel = .riders }
+            selectionButton(
+                GameCatalog.worlds.first(where: { $0.id == session.worldID })?.name ?? "Canyon",
+                title: "World", rider: false, id: "worlds"
+            ) { panel = .worlds }
+        }
+    }
+
+    private func selectionButton(
+        _ name: String, title: String, rider: Bool, id: String, action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(title).font(.system(size: 10, weight: .heavy, design: .rounded))
+                    .textCase(.uppercase).tracking(1.3).foregroundStyle(CrocoTheme.muted)
+                HStack(spacing: 8) {
+                    Group {
+                        if rider {
+                            LegacyRiderIcon(size: 22)
+                        } else {
+                            Image(systemName: "mountain.2.fill").font(.system(size: 17, weight: .semibold))
+                        }
+                    }.frame(width: 22).foregroundStyle(CrocoTheme.lime)
+                    Text(name).font(.system(size: 14, weight: .bold, design: .rounded))
+                        .lineLimit(1).minimumScaleFactor(0.6).layoutPriority(1)
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
+                        .foregroundStyle(CrocoTheme.muted)
+                }
+            }.padding(.horizontal, 12).frame(maxWidth: .infinity, alignment: .leading).frame(height: 76)
+                .background(CrocoTheme.ink.opacity(0.93), in: RoundedRectangle(cornerRadius: 18))
+                .overlay(RoundedRectangle(cornerRadius: 18).stroke(.white.opacity(0.2), lineWidth: 1))
+        }.foregroundStyle(.white).accessibilityIdentifier(id)
+            .accessibilityLabel("\(title): \(name)")
     }
 
     private var launchOptions: some View {
-        VStack(spacing: 10) {
-            if session.hasSavedRun {
-                Button { session.restore() } label: { Label("Continue your ride", systemImage: "play.circle.fill").frame(maxWidth: .infinity).padding(12) }
-                    .font(.subheadline.bold()).background(CrocoTheme.ink.opacity(0.92), in: RoundedRectangle(cornerRadius: 14))
-                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(CrocoTheme.lime.opacity(0.35), lineWidth: 1))
-                    .accessibilityIdentifier("continueRun")
-            }
-            Button { start(.weekly) } label: {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("WEEKLY CHALLENGE").font(.system(size: 19, weight: .black, design: .rounded))
-                        Text("4,000 m  ·  One life  ·  One shared trail").font(.system(size: 11, weight: .semibold))
-                    }
-                    Spacer(minLength: 4)
-                    Image(systemName: "arrow.up.right").font(.title2.bold())
-                }.padding(.horizontal, 18).padding(.vertical, 17)
-                    .foregroundStyle(CrocoTheme.ink).background(CrocoTheme.lime, in: RoundedRectangle(cornerRadius: 20))
-            }.accessibilityIdentifier("startWeekly")
-            Button { start(.endless) } label: {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("ENDLESS RIDE").font(.system(size: 17, weight: .black, design: .rounded))
-                        Text("Three lives. See how far you can go.").font(.system(size: 11, weight: .medium)).foregroundStyle(CrocoTheme.muted)
-                    }
-                    Spacer(); Image(systemName: "infinity").font(.title2.bold()).foregroundStyle(CrocoTheme.orange)
-                }.padding(.horizontal, 18).padding(.vertical, 15)
-                    .background(CrocoTheme.ink.opacity(0.92), in: RoundedRectangle(cornerRadius: 20))
-                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(.white.opacity(0.17), lineWidth: 1))
-            }.foregroundStyle(.white).accessibilityIdentifier("startEndless")
+        HStack(spacing: 12) {
+            LaunchTile(weekly: true, reducedMotion: reducedMotion) { session.start(.weekly) }
+            LaunchTile(weekly: false, reducedMotion: reducedMotion) { session.start(.endless) }
         }
     }
 
     private var utilityBar: some View {
-        HStack(spacing: 0) {
-            utility("Riders", icon: "helmet", fallback: "person.fill", id: "riders") { panel = .riders }
-            utility("Worlds", icon: "mountain.2.fill", id: "worlds") { panel = .worlds }
-            utility("Rankings", icon: "trophy.fill", id: "rankings") { session.showLeaderboards() }
+        HStack(spacing: 8) {
+            utility("Rankings", icon: "trophy.fill", id: "rankings") { panel = .rankings }
+            utility("Settings", icon: "slider.horizontal.3", id: "settings") { panel = .settings }
             utility("How to", icon: "questionmark.circle", id: "help") { panel = .help }
-        }.padding(.top, 2)
+        }.padding(7).background(CrocoTheme.ink.opacity(0.9), in: RoundedRectangle(cornerRadius: 25))
     }
 
-    private func utility(_ title: String, icon: String, fallback: String? = nil, id: String, action: @escaping () -> Void) -> some View {
+    private func utility(
+        _ title: String, icon: String, fallback: String? = nil, id: String, action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
             VStack(spacing: 6) {
-                Image(systemName: UIImage(systemName: icon) == nil ? (fallback ?? "circle") : icon).font(.system(size: 18, weight: .semibold))
-                Text(title).font(.system(size: 10, weight: .semibold))
-            }.frame(maxWidth: .infinity).frame(minHeight: 48)
-        }.foregroundStyle(.white.opacity(0.88)).accessibilityIdentifier(id)
+                Image(systemName: UIImage(systemName: icon) == nil ? (fallback ?? "circle") : icon).font(
+                    .system(size: 20, weight: .semibold))
+                Text(title).font(.system(size: 11, weight: .bold))
+            }.frame(maxWidth: .infinity).frame(height: 64).contentShape(Rectangle())
+        }.buttonStyle(.plain).foregroundStyle(.white.opacity(0.88)).accessibilityIdentifier(id)
     }
 
-    private func playOverlay(wide: Bool) -> some View {
-        VStack {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(session.mode == .weekly ? "WEEKLY / 4,000 M" : "ENDLESS RIDE")
-                        .font(.system(size: 10, weight: .bold, design: .monospaced)).tracking(1.5).foregroundStyle(CrocoTheme.lime)
-                    Text(session.score.formatted()).font(.system(size: 32, weight: .black, design: .rounded)).monospacedDigit().accessibilityIdentifier("score")
-                    HStack(spacing: 8) {
-                        Text("\(Int(session.distance)) m").accessibilityIdentifier("distance")
-                        Text("·")
-                        Text(timeString(session.elapsed))
-                    }.font(.system(size: 12, weight: .semibold, design: .monospaced))
-                }.padding(10).background(CrocoTheme.ink.opacity(0.84), in: RoundedRectangle(cornerRadius: 15))
-                Spacer()
-                VStack(alignment: .trailing, spacing: 8) {
-                    Button { session.pause() } label: { Image(systemName: "pause.fill").frame(width: 46, height: 46).background(CrocoTheme.ink.opacity(0.8), in: Circle()) }
-                        .accessibilityLabel("Pause").accessibilityIdentifier("pause")
-                    HStack(spacing: 5) {
-                        ForEach(0..<max(0, session.lives), id: \.self) { _ in Image(systemName: "heart.fill").font(.system(size: 13)).foregroundStyle(CrocoTheme.orange) }
-                    }.accessibilityElement(children: .ignore).accessibilityLabel("\(session.lives) lives remaining")
+    private func playOverlay(wide: Bool, height: CGFloat) -> some View {
+        ZStack(alignment: .bottom) {
+            HStack(spacing: 0) {
+                PedalControl(
+                    right: false, enabled: session.phase == .playing && !session.recovering,
+                    resetToken: session.pedalReset
+                ) { session.setPedal(right: false, value: $0) }
+                PedalControl(
+                    right: true, enabled: session.phase == .playing && !session.recovering,
+                    resetToken: session.pedalReset
+                ) { session.setPedal(right: true, value: $0) }
+            }.frame(height: max(180, height * 0.49))
+                .opacity(session.phase == .playing ? 1 : 0)
+                .allowsHitTesting(session.phase == .playing)
+            VStack(spacing: 12) {
+                HStack(alignment: .top, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(session.mode == .weekly ? "WEEKLY" : "ENDLESS")
+                            .font(.system(size: 9, weight: .heavy, design: .monospaced)).tracking(1.5).foregroundStyle(
+                                CrocoTheme.lime)
+                        Text(session.score.formatted()).font(.system(size: 30, weight: .black, design: .rounded))
+                            .lineLimit(1).minimumScaleFactor(0.6)
+                            .monospacedDigit().contentTransition(.numericText()).accessibilityIdentifier("score")
+                    }
+                    Spacer(minLength: 0)
+                    RideSpeedometer(speed: session.speed)
+                    Spacer(minLength: 0)
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text("DISTANCE").font(.system(size: 8, weight: .heavy, design: .monospaced))
+                            .tracking(1).foregroundStyle(CrocoTheme.muted)
+                        Text("\(Int(session.distance).formatted()) m")
+                            .font(.system(size: 20, weight: .black, design: .rounded))
+                            .lineLimit(1).minimumScaleFactor(0.7).monospacedDigit()
+                            .accessibilityIdentifier("distance")
+                        HStack(spacing: 7) {
+                            Text(timeString(session.elapsed))
+                                .font(.system(size: 11, weight: .bold, design: .monospaced)).monospacedDigit()
+                            HStack(spacing: 3) {
+                                ForEach(0..<max(0, session.lives), id: \.self) { _ in
+                                    Image(systemName: "heart.fill").font(.system(size: 10))
+                                        .foregroundStyle(CrocoTheme.orange)
+                                }
+                            }.accessibilityElement(children: .ignore)
+                                .accessibilityLabel("\(session.lives) lives remaining")
+                        }.foregroundStyle(CrocoTheme.muted)
+                    }
+                }.padding(14).background(CrocoTheme.ink.opacity(0.9), in: RoundedRectangle(cornerRadius: 19))
+                if session.mode == .weekly {
+                    GeometryReader { geo in
+                        Capsule().fill(CrocoTheme.ink.opacity(0.6))
+                        Capsule().fill(CrocoTheme.lime).frame(
+                            width: geo.size.width * min(1, max(0, session.distance / 4_000)))
+                    }.frame(height: 4).accessibilityLabel("Course progress").accessibilityValue(
+                        "\(Int(min(100, session.distance / 40))) percent")
                 }
-            }
-            .shadow(color: .black.opacity(0.8), radius: 6)
-            if session.mode == .weekly {
-                GeometryReader { geo in
-                    Capsule().fill(.white.opacity(0.16))
-                    Capsule().fill(CrocoTheme.lime).frame(width: geo.size.width * min(1, max(0, session.distance / 4_000)))
-                }.frame(height: 3)
-            }
-            Spacer()
-            if let text = session.eventText {
-                Text(text).font(.system(size: 24, weight: .black, design: .rounded)).italic().foregroundStyle(CrocoTheme.lime)
-                    .shadow(color: .black.opacity(0.6), radius: 8).padding(.bottom, 12)
-            }
-            if session.recovering { Text("GETTING BACK UP…").font(.caption.bold()).padding(10).background(CrocoTheme.ink.opacity(0.8), in: Capsule()) }
-            HStack(alignment: .bottom) {
-                PedalControl(right: false, enabled: session.phase == .playing && !session.recovering, resetToken: session.pedalReset) { session.setPedal(right: false, value: $0) }.frame(width: wide ? 124 : 108, height: 76)
+                if let text = session.eventText {
+                    HStack(spacing: 12) {
+                        Image(systemName: "arrow.trianglehead.2.clockwise.rotate.90").font(.title2.bold())
+                        Text(text).font(.system(size: 22, weight: .black, design: .rounded)).italic()
+                        if session.eventPoints > 0 {
+                            Text("+\(session.eventPoints.formatted())").font(
+                                .system(size: 22, weight: .black, design: .rounded)
+                            ).monospacedDigit()
+                        }
+                    }.foregroundStyle(CrocoTheme.lime).padding(.horizontal, 18).padding(.vertical, 12)
+                        .background(CrocoTheme.ink.opacity(0.94), in: RoundedRectangle(cornerRadius: 17))
+                        .accessibilityElement(children: .combine).accessibilityIdentifier("stuntNotice")
+                        .transition(.opacity.combined(with: .scale(scale: 0.85)))
+                }
                 Spacer()
-                VStack(spacing: 3) {
-                    Text("\(Int(session.speed))").font(.system(size: 22, weight: .bold, design: .rounded)).monospacedDigit()
-                    Text("KM/H").font(.system(size: 9, weight: .bold, design: .monospaced)).tracking(1.5)
-                    if !session.ranked { Text("PRACTICE").font(.system(size: 8, weight: .bold)).foregroundStyle(CrocoTheme.lime).padding(.top, 5) }
-                }.padding(10).background(CrocoTheme.ink.opacity(0.84), in: RoundedRectangle(cornerRadius: 14))
-                    .padding(.bottom, 4).shadow(color: .black, radius: 8)
-                Spacer()
-                PedalControl(right: true, enabled: session.phase == .playing && !session.recovering, resetToken: session.pedalReset) { session.setPedal(right: true, value: $0) }.frame(width: wide ? 124 : 108, height: 76)
-            }.opacity(session.phase == .playing ? 1 : 0).allowsHitTesting(session.phase == .playing)
-        }.padding(.horizontal, wide ? 28 : 18).padding(.top, 12).padding(.bottom, 12).foregroundStyle(.white)
+                if session.recovering {
+                    Text("RECOVERING…").font(.caption.bold()).padding(10).background(
+                        CrocoTheme.ink.opacity(0.88), in: Capsule())
+                }
+            }.padding(.horizontal, wide ? 28 : 16).padding(.top, 12).padding(.bottom, 160).allowsHitTesting(false)
+            VStack(spacing: 5) {
+                Button {
+                    session.pause()
+                } label: {
+                    Image(systemName: "pause.fill").font(.system(size: 19, weight: .black)).frame(width: 54, height: 54)
+                        .background(CrocoTheme.ink.opacity(0.94), in: Circle())
+                        .overlay(Circle().stroke(.white.opacity(0.24), lineWidth: 1))
+                }.accessibilityLabel("Pause").accessibilityIdentifier("pause")
+
+            }.padding(.bottom, 24).opacity(session.phase == .playing ? 1 : 0).allowsHitTesting(
+                session.phase == .playing)
+        }.foregroundStyle(.white)
+            .animation(reducedMotion ? nil : .spring(response: 0.3, dampingFraction: 0.8), value: session.eventText)
     }
 
     private var pauseOverlay: some View {
         modal {
-            Text("TAKE A BREATHER.").font(.system(size: 27, weight: .black, design: .rounded)).italic()
-            Text("Your ride is paused.").foregroundStyle(CrocoTheme.muted)
+            Text("PAUSED").font(.system(size: 27, weight: .black, design: .rounded)).italic()
             primaryButton("Keep riding", icon: "play.fill", id: "resume") { session.resume() }
-            HStack {
-                Button("Restart") { confirmRestart = true }
-                Spacer()
-                Button("Sound") { panel = .settings }
-                Spacer()
-                Button("Home") { session.goHome() }.accessibilityIdentifier("home")
-            }.font(.subheadline.bold()).padding(.vertical, 14)
+            HStack(spacing: 10) {
+                menuAction("Restart", icon: "arrow.counterclockwise", id: "restart") { session.start(session.mode) }
+                menuAction("Settings", icon: "slider.horizontal.3", id: "pauseSettings") { panel = .settings }
+                menuAction("Home", icon: "house.fill", id: "home") { session.goHome() }
+            }
+
         }
+    }
+
+    private func menuAction(_ title: String, icon: String, id: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 10) {
+                Image(systemName: icon).font(.system(size: 23, weight: .semibold))
+                    .foregroundStyle(CrocoTheme.lime)
+                Text(title).font(.system(size: 12, weight: .bold))
+            }.frame(maxWidth: .infinity).frame(height: 86)
+                .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 18))
+                .overlay(RoundedRectangle(cornerRadius: 18).stroke(.white.opacity(0.12), lineWidth: 1))
+        }.foregroundStyle(.white).accessibilityIdentifier(id)
     }
 
     private var resultsOverlay: some View {
         modal {
-            Text(session.finished ? "TRAIL CONQUERED." : "ONE MORE RUN?")
-                .font(.system(size: 27, weight: .black, design: .rounded)).italic()
-            Text(session.score.formatted()).font(.system(size: 55, weight: .black, design: .rounded)).foregroundStyle(CrocoTheme.lime).monospacedDigit()
             HStack {
-                resultStat("DISTANCE", value: "\(Int(session.distance)) m")
-                Spacer(); resultStat("TIME", value: timeString(session.elapsed))
-                Spacer(); resultStat("FLIPS", value: "\(session.flips)")
+                Image(systemName: session.finished ? "flag.checkered" : "bolt.fill")
+                    .font(.system(size: 24, weight: .black)).foregroundStyle(CrocoTheme.orange)
+                Text(session.finished ? "FINISH!" : "GAME OVER")
+                    .font(.system(size: 29, weight: .black, design: .rounded)).italic()
             }
-            if let message = session.gameCenter.statusMessage, session.ranked { Text(message).font(.footnote).foregroundStyle(CrocoTheme.muted) }
+            VStack(alignment: .leading, spacing: 5) {
+                if session.newRecord {
+                    Label("NEW BEST", systemImage: "trophy.fill").font(
+                        .system(size: 11, weight: .black, design: .rounded)
+                    )
+                    .foregroundStyle(CrocoTheme.ink).padding(.horizontal, 10).padding(.vertical, 6)
+                    .background(CrocoTheme.orange, in: Capsule())
+                }
+                ScoreCounter(score: session.score, reducedMotion: reducedMotion)
+                Text("POINTS").font(.system(size: 10, weight: .heavy, design: .monospaced)).tracking(2).foregroundStyle(
+                    CrocoTheme.muted)
+            }
+            HStack(spacing: 8) {
+                resultStat(
+                    "DISTANCE", value: "\(Int(session.distance)) m",
+                    icon: "point.bottomleft.forward.to.point.topright.scurvepath")
+                resultStat("TIME", value: timeString(session.elapsed), icon: "stopwatch")
+                resultStat("FLIPS", value: "\(session.flips)", icon: "arrow.clockwise")
+            }
+            if session.mode == .weekly {
+                VStack(spacing: 6) {
+                    ProgressView(value: min(4_000, session.distance), total: 4_000).tint(CrocoTheme.lime)
+                    HStack {
+                        Text("\(Int(min(100, session.distance / 40)))%")
+                        Spacer()
+                        Text("4,000 m")
+                    }
+                    .font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundStyle(CrocoTheme.muted)
+                }
+            }
             primaryButton("Ride again", icon: "arrow.clockwise", id: "rideAgain") { session.start(session.mode) }
-            HStack {
-                Button("Leaderboards") { session.showLeaderboards() }
-                Spacer(); Button("Home") { session.goHome() }.accessibilityIdentifier("home")
-            }.font(.subheadline.bold()).padding(.top, 6)
+            HStack(spacing: 10) {
+                menuAction("Rankings", icon: "trophy.fill", id: "resultsRankings") { panel = .rankings }
+                menuAction("Home", icon: "house.fill", id: "home") { session.goHome() }
+            }
         }
     }
 
-    private func resultStat(_ title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(title).font(.system(size: 9, weight: .bold, design: .monospaced)).foregroundStyle(CrocoTheme.muted)
-            Text(value).font(.system(size: 17, weight: .bold, design: .rounded))
-        }
+    private func resultStat(_ title: String, value: String, icon: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Image(systemName: icon).font(.system(size: 16, weight: .bold)).foregroundStyle(CrocoTheme.orange)
+            Text(value).font(.system(size: 18, weight: .black, design: .rounded)).lineLimit(1).minimumScaleFactor(0.7)
+                .monospacedDigit()
+            Text(title).font(.system(size: 8, weight: .heavy, design: .monospaced)).foregroundStyle(CrocoTheme.muted)
+        }.frame(maxWidth: .infinity, alignment: .leading).padding(11)
+            .background(.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 14))
     }
 
     private func modal<Content: View>(@ViewBuilder content: () -> Content) -> some View {
@@ -314,56 +410,159 @@ struct GameRootView: View {
             ScrollView {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 145), spacing: 14)], spacing: 14) {
                     ForEach(GameCatalog.riders) { rider in
-                        catalogCard(id: rider.id, name: rider.name, subtitle: rider.subtitle, asset: rider.assetName, selected: session.characterID == rider.id, imageHeight: 105) { session.characterID = rider.id }
+                        catalogCard(
+                            id: rider.id, name: rider.name, asset: rider.assetName,
+                            selected: session.characterID == rider.id, rider: true
+                        ) {
+                            session.characterID = rider.id
+                            panel = nil
+                        }
                     }
                 }.padding(18)
-                Text("Every rider shares the same physics. Pick your style.").font(.footnote).foregroundStyle(CrocoTheme.muted).padding()
             }.background(CrocoTheme.ink)
         case .worlds:
             ScrollView {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 155), spacing: 14)], spacing: 14) {
                     ForEach(GameCatalog.worlds) { world in
-                        catalogCard(id: world.id, name: world.name, subtitle: world.subtitle, asset: world.assetName, selected: session.worldID == world.id, imageHeight: 112) { session.worldID = world.id }
+                        catalogCard(
+                            id: world.id, name: world.name, asset: world.assetName,
+                            selected: session.worldID == world.id
+                        ) {
+                            session.worldID = world.id
+                            panel = nil
+                        }
                     }
                 }.padding(18)
             }.background(CrocoTheme.ink)
-        case .settings: SettingsPanel(session: session)
+        case .settings: SettingsPanel(session: session) { panel = nil }
+        case .rankings: RankingsPanel(session: session)
         case .help:
             ScrollView {
                 VStack(alignment: .leading, spacing: 26) {
-                    helpRow("arrow.right", "Right thumb", "Accelerate on the ground. Lean back in the air. Feed the throttle in short bursts: too much torque can lift the front wheel.")
-                    helpRow("arrow.left", "Left thumb", "Brake on the ground. Lean forward in the air. Release the controls to let momentum carry you.")
-                    helpRow("hand.draw.fill", "A lighter touch", "Hold a pedal and slide your thumb down to reduce its strength. Lift your thumb to release it.")
-                    helpRow("arrow.down.right", "Land with the slope", "Match the bike to the landing. Suspension absorbs a measured impact; a hard sideways landing can end your ride. Flips count only when you land safely.")
-                    helpRow("calendar", "One week. One trail.", "The 4,000-metre challenge changes every Monday at 00:00 UTC. One life, no time limit. Finish to enter the weekly score and time leaderboards.")
-                    helpRow("wifi.slash", "Ride anywhere", "Endless and weekly practice work offline. Connect to Game Center before starting a ranked challenge. Expired weekly results stay local.")
+                    helpRow(
+                        "arrow.right", "Right thumb",
+                        "Accelerate on the ground. Lean back in the air. Feed the throttle in short bursts: too much torque can lift the front wheel."
+                    )
+                    helpRow(
+                        "arrow.left", "Left thumb",
+                        "Brake on the ground. Lean forward in the air. Release the controls to let momentum carry you.")
+                    helpRow(
+                        "hand.draw.fill", "Touch controls",
+                        "Place your thumbs anywhere in the lower left and right corners. The controls follow your thumbs. Slide down to reduce power, up to increase it. Lift to release."
+                    )
+                    helpRow(
+                        "arrow.down.right", "Land with the slope",
+                        "Match the bike to the landing. Suspension absorbs a measured impact; a hard sideways landing can end your ride. Flips count only when you land safely."
+                    )
+                    helpRow(
+                        "calendar", "One week. One trail.",
+                        "The 4,000-metre challenge changes every Monday at 00:00 UTC. One life, no time limit. Finish to enter the weekly score and time leaderboards."
+                    )
+                    helpRow(
+                        "wifi.slash", "Ride anywhere",
+                        "Both game modes work offline. Open Rankings to connect and compare scores."
+                    )
                 }.padding(24)
             }.background(CrocoTheme.ink)
         }
     }
 
-    private func catalogCard(id: String, name: String, subtitle: String, asset: String, selected: Bool, imageHeight: CGFloat, action: @escaping () -> Void) -> some View {
+    private func catalogCard(
+        id: String, name: String, asset: String, selected: Bool, rider: Bool = false, action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 8) {
-                if let image = GameAssets.image(named: asset) {
-                    Image(uiImage: image).resizable().scaledToFit().frame(maxWidth: .infinity).frame(height: imageHeight).clipped()
+            VStack(alignment: .leading, spacing: 0) {
+                ZStack(alignment: .topTrailing) {
+                    Group {
+                        if rider {
+                            RiderArtworkView(riderID: id, animated: selected).frame(height: 116)
+                        } else if let image = GameAssets.image(named: asset) {
+                            GeometryReader { geometry in
+                                Image(uiImage: image).resizable().scaledToFill()
+                                    .frame(width: geometry.size.width, height: 116).clipped()
+                            }.frame(height: 116)
+                        }
+                    }.frame(maxWidth: .infinity).background(.white.opacity(0.025))
+                    Image(systemName: selected ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 22, weight: .bold)).foregroundStyle(
+                            selected ? CrocoTheme.lime : .white.opacity(0.6)
+                        )
+                        .background(CrocoTheme.ink.opacity(0.8), in: Circle()).padding(9)
                 }
-                HStack { Text(name).font(.headline); Spacer(minLength: 2); if selected { Image(systemName: "checkmark.circle.fill").foregroundStyle(CrocoTheme.lime) } }
-                Text(subtitle).font(.caption).foregroundStyle(CrocoTheme.muted).lineLimit(2).frame(minHeight: 29, alignment: .top)
-            }.padding(12).background(.white.opacity(selected ? 0.10 : 0.035), in: RoundedRectangle(cornerRadius: 18))
-                .overlay(RoundedRectangle(cornerRadius: 18).stroke(selected ? CrocoTheme.lime : .white.opacity(0.12), lineWidth: selected ? 2 : 1))
-        }.foregroundStyle(.white).accessibilityIdentifier("select-\(id)").accessibilityAddTraits(selected ? [.isSelected] : [])
+                Text(name).font(.system(size: 14, weight: .bold, design: .rounded))
+                    .lineLimit(1).minimumScaleFactor(0.6).layoutPriority(1).frame(
+                        maxWidth: .infinity, alignment: .leading
+                    )
+                    .padding(.horizontal, 12).frame(height: 45)
+            }.background(.white.opacity(selected ? 0.10 : 0.035), in: RoundedRectangle(cornerRadius: 18))
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18).stroke(
+                        selected ? CrocoTheme.lime : .white.opacity(0.12), lineWidth: selected ? 2 : 1))
+        }.foregroundStyle(.white).accessibilityIdentifier("select-\(id)")
+            .accessibilityLabel(name).accessibilityAddTraits(selected ? [.isSelected] : [])
     }
 
     private func helpRow(_ icon: String, _ title: String, _ text: String) -> some View {
         HStack(alignment: .top, spacing: 16) {
             Image(systemName: icon).foregroundStyle(CrocoTheme.lime).font(.title2).frame(width: 28)
-            VStack(alignment: .leading, spacing: 6) { Text(title).font(.headline); Text(text).font(.body).foregroundStyle(CrocoTheme.muted) }
+            VStack(alignment: .leading, spacing: 6) {
+                Text(title).font(.headline)
+                Text(text).font(.body).foregroundStyle(CrocoTheme.muted)
+            }
         }
     }
     private func panelTitle(_ item: GamePanel) -> String {
-        switch item { case .riders: "Choose your rider"; case .worlds: "Choose your world"; case .settings: "Settings"; case .help: "Find your balance" }
+        switch item {
+        case .riders: "Riders"
+        case .worlds: "Worlds"
+        case .settings: "Settings"
+        case .rankings: "Rankings"
+        case .help: "How to play"
+        }
     }
-    private func start(_ mode: RunMode) { if session.hasSavedRun { replacingSavedRun = mode } else { session.start(mode) } }
-    private func timeString(_ seconds: Double) -> String { String(format: "%d:%02d", Int(seconds) / 60, Int(seconds) % 60) }
+    private func timeString(_ seconds: Double) -> String {
+        String(format: "%d:%02d", Int(seconds) / 60, Int(seconds) % 60)
+    }
+}
+
+private struct ScoreCounter: View {
+    let score: Int
+    let reducedMotion: Bool
+    @State private var shown = 0
+    var body: some View {
+        Text(shown.formatted()).font(.system(size: 58, weight: .black, design: .rounded))
+            .foregroundStyle(CrocoTheme.lime).monospacedDigit().contentTransition(.numericText())
+            .lineLimit(1).minimumScaleFactor(0.55).accessibilityIdentifier("finalScore").accessibilityLabel(
+                "\(score.formatted()) points"
+            )
+            .task(id: score) {
+                if reducedMotion {
+                    shown = score
+                    return
+                }
+                for step in 1...24 {
+                    do { try await Task.sleep(for: .milliseconds(25)) } catch { return }
+                    withAnimation(.easeOut(duration: 0.08)) {
+                        shown = Int(Double(score) * (1 - pow(1 - Double(step) / 24, 3)))
+                    }
+                }
+                shown = score
+            }
+    }
+}
+
+/// Shared dismissal action, anchored outside each panel's scrolling content.
+struct PanelCloseButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "checkmark").font(.system(size: 18, weight: .bold))
+                .frame(width: 48, height: 48)
+                .foregroundStyle(.white.opacity(0.9))
+                .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 15))
+                .overlay(RoundedRectangle(cornerRadius: 15).stroke(.white.opacity(0.16), lineWidth: 1))
+        }.buttonStyle(.plain).accessibilityLabel("Close").accessibilityIdentifier("closePanel")
+    }
 }

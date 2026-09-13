@@ -8,8 +8,8 @@ Native SwiftUI / SpriteKit motorcycle game. Independent from the continuing Chat
 - Endless: three lives, procedural hills, stable-ground recovery and local records.
 - Rear-wheel drive, chassis inertia, damped suspension, traction-limited acceleration, natural wheelies and gravity-driven jumps. No owner workshop or automatic upright assist.
 - Nine cosmetic riders and nine animated worlds, textured terrain, below-ground details, native audio and haptics.
-- iPhone portrait, iPad landscape, adaptive scene bounds for wide/foldable displays. Both pedals remain bottom left/right.
-- Game Center only: weekly points, weekly completion time, endless points. Offline practice is independent of authentication.
+- iPhone portrait, iPad landscape, adaptive scene bounds for wide/foldable displays. Floating controls follow each thumb in the lower left/right touch zones; Pause stays at bottom centre.
+- Game Center only: weekly points, weekly completion time, endless points. Both modes remain playable offline; connection status appears only in Rankings.
 - Free; no ads, purchases, custom backend or third-party analytics.
 
 ## Open and build
@@ -31,18 +31,46 @@ The checked-in project selects David Demri's development team. Signing certifica
 ## Architecture
 
 - `Sources/CrocoCrossCore`: portable, Codable 120 Hz simulation, procedural terrain, stunt tracking, weekly date/seed model. Metres, seconds, positive-up coordinates.
-- `App/GameSession.swift`: fixed-step clock, render interpolation, run lifecycle, safe pause, records, atomic restore.
+- `App/GameSession.swift`: fixed-step clock, render interpolation, run lifecycle, safe pause, records and ephemeral rides.
 - `App/Scene`: SpriteKit rendering; no physics authority. Gameplay and decorative randomization are separate.
 - `App/UI`: adaptive SwiftUI menus and UIKit-backed cancellable multi-pedal controls.
 - `App/Services`: Game Center, persistent score queue, AVFAudio, file storage.
 
+Painted scenery, its independent random placement, asset provenance and simulator review commands are documented in [Scenery](SCENERY.md).
+
 Physics constants live in `PhysicsConfiguration`. Score/terrain changes that make records incomparable require a new engine/course version and new Game Center leaderboard identifiers. Existing App Store clients retain their own rule/board versions. Do not port the historical web verification engines or connect the original Sites database.
+
+The current development engine is `native-3`. Hills follow a 10% downhill baseline with two distinct rises per 48-metre section, including seeded main ramps around 5.4–6.2 metres above the baseline before introduction/variation scaling. Full braking requests 2,800 N, split 65% rear / 35% front: 1,820 N rear and 980 N front before contact, traction and stopping-force limits. A wheel without ground contact cannot brake. Ground rotation comes from tire forces and weight transfer; no jump impulse or automatic angle correction is applied.
+
+Rides are no longer saved or restored. The legacy `active-run-v1.json` file is removed on launch; records, preferences and the pending Game Center score queue remain. The three unpublished Game Center IDs retain their `.v1` suffix for the first release; this is a development transition, not a migration of live scores. After publication, an incompatible physics, terrain or scoring change must advance the engine/course version and use new leaderboard IDs.
+
+## Navigation
+
+Home has one named rider selector with the original Lucide Bike symbol and a Rider label, one named world selector with a World label, two equally sized animated square mode buttons and a fixed bottom bar for Rankings, Settings and Help. Layout switches to the sidebar only when the window is at least 700 points wide. Reduce Motion stops decorative mode-button motion. Rankings, Settings and Help share the same neutral button style and equal dimensions; none appears selected on Home. Every panel has a fixed Close button at bottom right. Settings integrates it beside the section tabs. Choosing a rider or world applies that choice and dismisses the picker immediately; closing without selecting preserves the current choice.
+
+Settings uses fixed bottom tabs: General (haptics), Audio (music and volumes), and About (version, privacy, credits). Personal records and Game Center connection/leaderboards live together in the dedicated Rankings panel. The game HUD uses the same normal presentation in every run; it does not show Practice/Unranked labels or connection notices. Eligibility checks for online score submission remain enforced internally.
 
 ## Controls
 
-Right pedal: throttle on the ground, backward rotation in flight. Left: braking on the ground, forward rotation in flight. Hold then slide down to reduce a pedal's strength; release to return to zero. This is touch position, not unsupported force-pressure detection. Ground inputs do not directly apply rotation torque.
+The lower 49% of the play area (minimum height 180 points) is split into equal left and right touch zones. Place a thumb anywhere in either zone: the grip follows the touch instead of requiring a small fixed target. Both controls can be held at once. Pause remains a separate button at bottom centre.
 
-Backgrounding, opening a game menu, a large layout change, or a long frame stall pauses the run. Resume explicitly. An atomic run snapshot is saved every 10 simulation seconds and when pausing; abrupt termination can lose the most recent unsaved segment. A restored run opens paused. An expired weekly run can continue as local practice only.
+Right / GAS: throttle on the ground, backward rotation in flight; a new touch starts at 90%. Left / BRAKE: braking on the ground, forward rotation in flight; a new touch starts at 100%. Slide down to reduce strength to zero or up to increase it to 100%. The vertical indicator remains visible at zero while the touch is held. Release or cancellation returns the input to zero. This is touch position, not unsupported force-pressure detection. Ground inputs do not directly apply rotation torque.
+
+Returning Home or backgrounding the app abandons the ride and resets the controls; relaunch always opens Home. Starting and restarting begin immediately, without a Continue button or confirmation. Manual pause, a transient system interruption, a large layout change or a long frame stall pauses the ride in memory; Keep riding resumes it. Personal records and eligible pending Game Center scores survive leaving the ride. Progress is submitted every 1,200 simulation ticks and when pausing; weekly scores still require finishing. An expired weekly ride can continue locally after a temporary pause, without a status label.
+
+## Effects and scores
+
+The HUD speedometer applies a presentation-only multiplier of 2 to `hypot(vx, vy) * 3.6`. Its display is therefore an arcade scale, not physical km/h; the dial uses a matching 200-unit range. Simulation velocities remain metres per second, course distance is still horizontal progress in metres, and timers/scoring are unchanged.
+
+Landings produce dust and impact feedback. A crash immediately hides the complete rider/bike assembly and dust, and triggers the explosion and bundled sound from the same event. The camera stays steady through the blast. The bike returns only for a respawn, new run or home preview; normal finishes keep it visible. The final score card waits 1.8 seconds after a crash so the blast is visible; finishing or Reduce Motion uses a shorter 0.3-second delay. Reduced Motion also limits the visual effects.
+
+Landed flips show a prominent combo notice with the actual awarded points: 1,000 for a single, 3,000 for a double and 7,000 for a triple. Airborne turns are not banked before landing. The HUD and score ledger share `GameSimulation.flipBonus(for:)`; rendering does not award points. Results use an animated score counter and highlight a new local best, with distance, time and flips alongside the total. Ride again, Rankings and Home all use icon buttons; pause and results share the same action-tile style.
+
+## Audio
+
+The Audio tab contains Music, Tracks and Volume. Music can be switched off, play the three bundled tracks in a repeating playlist, or repeat one selected track with **One track**. Selecting a track starts it. The track list is the sole track display; there are no previous/play/next transport buttons. Haptic feedback is separate in General.
+
+Music, engine and effects have separate volumes. Mute all sound preserves those levels; haptic feedback has its own switch. Track selection, playback mode, music enablement, explicit pause, volumes and mute/haptic preferences survive relaunch. Playback position is saved when pausing or backgrounding. Game pause silences the engine while allowing music to continue, and returning to the game does not undo a deliberate music pause. Backgrounding silences audio. System interruptions and a disconnected audio output are handled without rewriting playback preferences or automatically switching music to the speaker.
 
 ## Online setup
 
@@ -61,8 +89,19 @@ xcrun swiftc -swift-version 6 App/Services/LocalStore.swift scripts/check-local-
 /tmp/crococross-store-check
 ```
 
+## Audio harness
+
+```sh
+xcrun swiftc -swift-version 6 -module-cache-path /tmp/crococross-audio-module-cache \
+  App/Services/AudioService.swift scripts/check-audio-settings.swift \
+  -o /tmp/crococross-check-audio-settings
+/tmp/crococross-check-audio-settings
+```
+
+This Foundation-only harness checks playlist order and wraparound, single-track repeat, selection, preference restoration, legacy track-index migration and invalid volume values. It uses isolated preferences and does not play audio. Actual output, route changes and interruption behavior require simulator/device validation.
+
 ## GitHub CI
 
 The workflow uses macOS 26 with Xcode 26.6, matching the locally validated Xcode version. Runner availability is documented in the [official GitHub runner image inventory](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-Readme.md). The checkout action is pinned to a verified commit; Dependabot checks action updates monthly.
 
-CI checks generated-project consistency, core tests, local persistence and an unsigned simulator build. UI scenarios stay available in the shared Xcode scheme for focused simulator runs. Physical-device interaction and real Game Center write/read-back require separate validation.
+CI checks generated-project consistency, core tests, local persistence, audio preferences and playlist behavior, and an unsigned simulator build. UI scenarios stay available in the shared Xcode scheme for focused simulator runs. Physical-device interaction and real Game Center write/read-back require separate validation.

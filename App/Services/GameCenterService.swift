@@ -86,7 +86,7 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
                 presenter.present(controller, animated: true)
                 pendingAuthenticationController = nil
             } else if !isAuthenticated {
-                statusMessage = "Sign in to Game Center in Settings to compare scores. Local play is always available."
+                statusMessage = "Sign in to Game Center in your device Settings to compare scores."
             }
             return
         }
@@ -100,7 +100,7 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
                         presenter.present(controller, animated: true)
                         self.pendingAuthenticationController = nil
                     } else {
-                        self.statusMessage = "Game Center sign-in is available from the main menu."
+                        self.statusMessage = "Open Rankings to connect with Game Center."
                     }
                     return
                 }
@@ -171,7 +171,7 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
                 pendingAuthenticationController = nil
                 return
             }
-            statusMessage = "Sign in to Game Center in Settings to compare scores. Local play is always available."
+            statusMessage = "Sign in to Game Center in your device Settings to compare scores."
             return
         }
         guard let presenter = Self.presenter(), presenter.presentedViewController == nil else { return }

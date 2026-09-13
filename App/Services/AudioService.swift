@@ -1,58 +1,178 @@
+import Foundation
+
+enum MusicPlaybackMode: String, CaseIterable, Identifiable, Sendable {
+    case playlist, track
+    var id: String { rawValue }
+    var title: String { self == .playlist ? "Playlist" : "One track" }
+}
+
+struct MusicTrack: Identifiable, Equatable, Sendable {
+    let id: String
+    let filename: String
+    let title: String
+
+    static let all = [
+        MusicTrack(id: "quarter-in-the-slot", filename: "quarter_in_the_slot", title: "Quarter in the Slot"),
+        MusicTrack(id: "crossing-the-black-river", filename: "crossing_the_black_river", title: "Crossing the Black River"),
+        MusicTrack(id: "miles-past-the-skyline", filename: "miles_past_the_skyline", title: "Miles Past the Skyline")
+    ]
+}
+
+/// Playback intent survives lifecycle pauses. A system interruption never rewrites it.
+struct MusicPlaybackState: Equatable {
+    var enabled: Bool
+    var wantsPlayback: Bool
+    var mode: MusicPlaybackMode
+    private(set) var trackID: String
+    var position: TimeInterval
+
+    var track: MusicTrack { MusicTrack.all.first { $0.id == trackID } ?? MusicTrack.all[0] }
+
+    init(defaults: UserDefaults) {
+        enabled = defaults.object(forKey: "audio.musicEnabled") == nil || defaults.bool(forKey: "audio.musicEnabled")
+        wantsPlayback = defaults.object(forKey: "audio.musicWantsPlayback") == nil || defaults.bool(forKey: "audio.musicWantsPlayback")
+        mode = MusicPlaybackMode(rawValue: defaults.string(forKey: "audio.musicPlaybackMode") ?? "") ?? .playlist
+        let savedID = defaults.string(forKey: "audio.trackID")
+        let legacyIndex = defaults.integer(forKey: "audio.trackIndex")
+        let fallback = MusicTrack.all.indices.contains(legacyIndex) ? MusicTrack.all[legacyIndex] : MusicTrack.all[0]
+        trackID = MusicTrack.all.first { $0.id == savedID }?.id ?? fallback.id
+        let savedPosition = defaults.double(forKey: "audio.trackPosition")
+        position = savedPosition.isFinite ? max(0, savedPosition) : 0
+    }
+
+    @discardableResult mutating func select(_ id: String) -> Bool {
+        guard MusicTrack.all.contains(where: { $0.id == id }) else { return false }
+        if trackID != id { trackID = id; position = 0 }
+        return true
+    }
+
+    mutating func move(forward: Bool) {
+        let index = MusicTrack.all.firstIndex { $0.id == trackID } ?? 0
+        let offset = forward ? 1 : MusicTrack.all.count - 1
+        trackID = MusicTrack.all[(index + offset) % MusicTrack.all.count].id
+        position = 0
+    }
+
+    mutating func finishTrack() {
+        if mode == .playlist { move(forward: true) }
+        else { position = 0 }
+    }
+
+    func save(to defaults: UserDefaults) {
+        defaults.set(enabled, forKey: "audio.musicEnabled")
+        defaults.set(wantsPlayback, forKey: "audio.musicWantsPlayback")
+        defaults.set(mode.rawValue, forKey: "audio.musicPlaybackMode")
+        defaults.set(trackID, forKey: "audio.trackID")
+        defaults.set(position.isFinite ? max(0, position) : 0, forKey: "audio.trackPosition")
+    }
+}
+
+enum AudioPreferenceStorage {
+    static func volume(_ value: Double, fallback: Double) -> Double {
+        value.isFinite ? min(1, max(0, value)) : fallback
+    }
+
+    static func savedVolume(_ key: String, fallback: Double, defaults: UserDefaults) -> Double {
+        guard let number = defaults.object(forKey: key) as? NSNumber else { return fallback }
+        return volume(number.doubleValue, fallback: fallback)
+    }
+}
+
+#if canImport(UIKit)
 import AVFAudio
 import CrocoCrossCore
-import Foundation
 import Observation
 import UIKit
 
 /// All control changes are on MainActor. The engine renders a precomputed seamless PCM loop.
 @MainActor @Observable
 final class AudioService: NSObject, AVAudioPlayerDelegate {
-    private struct Track {
-        let filename: String
-        let title: String
-    }
-    private static let tracks = [
-        Track(filename: "quarter_in_the_slot", title: "Quarter in the Slot"),
-        Track(filename: "crossing_the_black_river", title: "Crossing the Black River"),
-        Track(filename: "miles_past_the_skyline", title: "Miles Past the Skyline")
-    ]
+    private var storedMusicVolume: Double
+    private var storedEngineVolume: Double
+    private var storedEffectsVolume: Double
+    private var storedHapticsEnabled: Bool
+    private var storedMuted: Bool
+    private var playback: MusicPlaybackState
 
-    var musicVolume: Double = 0.45 {
-        didSet {
-            let normalized = Self.clamp(musicVolume, fallback: 0.45)
-            if musicVolume != normalized { musicVolume = normalized; return }
-            defaults.set(musicVolume, forKey: "audio.musicVolume")
-            musicPlayer?.volume = Float(musicVolume)
+    var tracks: [MusicTrack] { MusicTrack.all }
+    var selectedTrackID: String { playback.trackID }
+    var currentTrackTitle: String { playback.track.title }
+
+    var musicVolume: Double {
+        get { storedMusicVolume }
+        set {
+            let normalized = AudioPreferenceStorage.volume(newValue, fallback: 0.45)
+            guard normalized != storedMusicVolume else { return }
+            let wasSilent = storedMusicVolume == 0
+            storedMusicVolume = normalized
+            defaults.set(normalized, forKey: "audio.musicVolume")
+            musicPlayer?.volume = Float(normalized)
+            if normalized == 0 { pauseMusicPlayer() }
+            else if wasSilent { startMusic() }
         }
     }
-    var engineVolume: Double = 0.65 {
-        didSet {
-            let normalized = Self.clamp(engineVolume, fallback: 0.65)
-            if engineVolume != normalized { engineVolume = normalized; return }
-            defaults.set(engineVolume, forKey: "audio.engineVolume")
-            if engineVolume == 0 { motor.volume = 0 }
+    var engineVolume: Double {
+        get { storedEngineVolume }
+        set {
+            let normalized = AudioPreferenceStorage.volume(newValue, fallback: 0.65)
+            guard normalized != storedEngineVolume else { return }
+            storedEngineVolume = normalized
+            defaults.set(normalized, forKey: "audio.engineVolume")
+            if normalized == 0 { motor.volume = 0; lastMotorVolume = 0 }
         }
     }
-    var effectsVolume: Double = 0.4 {
-        didSet {
-            let normalized = Self.clamp(effectsVolume, fallback: 0.4)
-            if effectsVolume != normalized { effectsVolume = normalized; return }
-            defaults.set(effectsVolume, forKey: "audio.effectsVolume")
-            explosionPlayer?.volume = Float(effectsVolume)
-            effectMixer.outputVolume = Float(effectsVolume)
+    var effectsVolume: Double {
+        get { storedEffectsVolume }
+        set {
+            let normalized = AudioPreferenceStorage.volume(newValue, fallback: 0.4)
+            guard normalized != storedEffectsVolume else { return }
+            storedEffectsVolume = normalized
+            defaults.set(normalized, forKey: "audio.effectsVolume")
+            explosionPlayer?.volume = isMuted ? 0 : Float(normalized)
+            effectMixer.outputVolume = isMuted ? 0 : Float(normalized)
         }
     }
-    var hapticsEnabled = true {
-        didSet { defaults.set(hapticsEnabled, forKey: "audio.hapticsEnabled") }
+    var hapticsEnabled: Bool {
+        get { storedHapticsEnabled }
+        set { storedHapticsEnabled = newValue; defaults.set(newValue, forKey: "audio.hapticsEnabled") }
     }
-    var musicEnabled = true {
-        didSet {
-            defaults.set(musicEnabled, forKey: "audio.musicEnabled")
-            if musicEnabled { startMusic() }
-            else { musicPlayer?.pause(); musicPlaying = false }
+    var isMuted: Bool {
+        get { storedMuted }
+        set {
+            guard storedMuted != newValue else { return }
+            storedMuted = newValue
+            defaults.set(newValue, forKey: "audio.muted")
+            effectMixer.outputVolume = newValue ? 0 : Float(effectsVolume)
+            explosionPlayer?.volume = newValue ? 0 : Float(effectsVolume)
+            if newValue {
+                motor.volume = 0; lastMotorVolume = 0
+                pauseMusicPlayer()
+            } else { startMusic() }
         }
     }
-    private(set) var currentTrackTitle = "Quarter in the Slot"
+    var musicEnabled: Bool {
+        get { playback.enabled }
+        set {
+            guard playback.enabled != newValue else { return }
+            playback.enabled = newValue
+            if newValue {
+                playback.wantsPlayback = true
+                routeNeedsUserResume = false
+                musicNeedsUserResume = false
+            }
+            playback.save(to: defaults)
+            if newValue { startMusic() }
+            else { pauseMusicPlayer() }
+        }
+    }
+    var musicPlaybackMode: MusicPlaybackMode {
+        get { playback.mode }
+        set {
+            playback.mode = newValue
+            playback.save(to: defaults)
+            musicPlayer?.numberOfLoops = newValue == .track ? -1 : 0
+        }
+    }
     private(set) var musicPlaying = false
     private(set) var statusMessage: String?
 
@@ -69,7 +189,6 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
     @ObservationIgnored private var successBuffer: AVAudioPCMBuffer?
     @ObservationIgnored private var musicPlayer: AVAudioPlayer?
     @ObservationIgnored private var explosionPlayer: AVAudioPlayer?
-    @ObservationIgnored private var trackIndex = 0
     @ObservationIgnored private var configured = false
     @ObservationIgnored private var motorScheduled = false
     @ObservationIgnored private var gamePaused = true
@@ -77,6 +196,7 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
     @ObservationIgnored private var suspended = false
     @ObservationIgnored private var interrupted = false
     @ObservationIgnored private var routeNeedsUserResume = false
+    @ObservationIgnored private var musicNeedsUserResume = false
     @ObservationIgnored private var lastEffectTime: TimeInterval = 0
     @ObservationIgnored private var lastHapticTime: TimeInterval = 0
     @ObservationIgnored private var lastSpeedRate: Float = 0.8
@@ -86,14 +206,13 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
     init(defaults: UserDefaults = .standard, bundle: Bundle = .main) {
         self.defaults = defaults
         self.bundle = bundle
+        storedMusicVolume = AudioPreferenceStorage.savedVolume("audio.musicVolume", fallback: 0.45, defaults: defaults)
+        storedEngineVolume = AudioPreferenceStorage.savedVolume("audio.engineVolume", fallback: 0.65, defaults: defaults)
+        storedEffectsVolume = AudioPreferenceStorage.savedVolume("audio.effectsVolume", fallback: 0.4, defaults: defaults)
+        storedHapticsEnabled = defaults.object(forKey: "audio.hapticsEnabled") == nil || defaults.bool(forKey: "audio.hapticsEnabled")
+        storedMuted = defaults.bool(forKey: "audio.muted")
+        playback = MusicPlaybackState(defaults: defaults)
         super.init()
-        musicVolume = Self.savedVolume("audio.musicVolume", fallback: 0.45, defaults: defaults)
-        engineVolume = Self.savedVolume("audio.engineVolume", fallback: 0.65, defaults: defaults)
-        effectsVolume = Self.savedVolume("audio.effectsVolume", fallback: 0.4, defaults: defaults)
-        hapticsEnabled = defaults.object(forKey: "audio.hapticsEnabled") == nil || defaults.bool(forKey: "audio.hapticsEnabled")
-        musicEnabled = defaults.object(forKey: "audio.musicEnabled") == nil || defaults.bool(forKey: "audio.musicEnabled")
-        trackIndex = min(max(defaults.integer(forKey: "audio.trackIndex"), 0), Self.tracks.count - 1)
-        currentTrackTitle = Self.tracks[trackIndex].title
         observeAudioLifecycle()
     }
 
@@ -101,10 +220,10 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
     func startMusic() {
         guard UIApplication.shared.applicationState == .active else { return }
         suspended = false
-        guard !interrupted, !routeNeedsUserResume, musicEnabled || !gamePaused else { return }
+        guard !interrupted, !routeNeedsUserResume, shouldPlayMusic || !gamePaused else { return }
         do {
             try prepareAudio()
-            guard musicEnabled else { return }
+            guard shouldPlayMusic else { return }
             if musicPlayer == nil { try loadCurrentTrack() }
             musicPlayer?.volume = Float(musicVolume)
             musicPlaying = musicPlayer?.play() ?? false
@@ -115,22 +234,59 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
         }
     }
 
-    func nextTrack() {
-        trackIndex = (trackIndex + 1) % Self.tracks.count
-        defaults.set(trackIndex, forKey: "audio.trackIndex")
-        currentTrackTitle = Self.tracks[trackIndex].title
+    func selectTrack(id: String) {
+        let oldID = playback.trackID
+        guard playback.select(id) else { return }
+        if oldID != playback.trackID { discardMusicPlayer() }
+        playMusic()
+    }
+
+    func nextTrack() { moveTrack(forward: true) }
+    func previousTrack() { moveTrack(forward: false) }
+
+    private func moveTrack(forward: Bool) {
+        playback.move(forward: forward)
+        discardMusicPlayer()
+        playback.save(to: defaults)
+        // Browsing tracks preserves an explicit pause or Music Off.
+        startMusic()
+    }
+
+    private func discardMusicPlayer() {
         musicPlayer?.stop()
+        musicPlayer?.delegate = nil
         musicPlayer = nil
         musicPlaying = false
-        routeNeedsUserResume = false
-        if musicEnabled { startMusic() }
     }
 
     func toggleMusicPlayback() {
+        if musicPlaying { pauseMusic() }
+        else { playMusic() }
+    }
+
+    func playMusic() {
+        playback.enabled = true
+        playback.wantsPlayback = true
+        playback.save(to: defaults)
         routeNeedsUserResume = false
-        // A route interruption does not rewrite the user's music preference.
-        if musicEnabled && !musicPlaying { startMusic() }
-        else { musicEnabled.toggle() }
+        musicNeedsUserResume = false
+        startMusic()
+    }
+
+    func pauseMusic() {
+        playback.wantsPlayback = false
+        pauseMusicPlayer()
+    }
+
+    private var shouldPlayMusic: Bool {
+        musicEnabled && playback.wantsPlayback && !isMuted && musicVolume > 0 && !musicNeedsUserResume
+    }
+
+    private func pauseMusicPlayer() {
+        musicPlayer?.pause()
+        musicPlaying = false
+        if let musicPlayer { playback.position = musicPlayer.currentTime }
+        playback.save(to: defaults)
     }
 
     func setPaused(_ paused: Bool) {
@@ -149,7 +305,7 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
     }
 
     func update(bike: BikeState) {
-        guard !gamePaused, !motorSuppressed, !suspended, !interrupted, !routeNeedsUserResume,
+        guard !gamePaused, !motorSuppressed, !suspended, !interrupted, !routeNeedsUserResume, !isMuted,
               bike.velocity.x.isFinite, bike.velocity.y.isFinite, bike.throttle.isFinite else { return }
         guard engine.isRunning else { return }
         let speed = min(1, max(0, hypot(bike.velocity.x, bike.velocity.y) / 30))
@@ -170,7 +326,7 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
             motorSuppressed = true
             motor.volume = 0
             lastMotorVolume = 0
-            if effectsVolume > 0 {
+            if !isMuted, effectsVolume > 0 {
                 if let explosionPlayer {
                     explosionPlayer.currentTime = 0
                     explosionPlayer.volume = Float(effectsVolume)
@@ -182,18 +338,18 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
         case .landed(let impact):
             guard impact.isFinite, impact > 1, now - lastEffectTime > 0.15 else { return }
             lastEffectTime = now
-            if effectsVolume > 0 { playEffect(landingBuffer, volume: Float(min(1, impact / 12))) }
+            if !isMuted, effectsVolume > 0 { playEffect(landingBuffer, volume: Float(min(1, impact / 12))) }
             if hapticsEnabled, now - lastHapticTime > 0.15 {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: min(1, impact / 12))
                 lastHapticTime = now
             }
         case .flip:
-            if effectsVolume > 0 { playEffect(successBuffer, volume: 0.45) }
+            if !isMuted, effectsVolume > 0 { playEffect(successBuffer, volume: 0.45) }
             if hapticsEnabled { UISelectionFeedbackGenerator().selectionChanged() }
         case .finished:
             motorSuppressed = true
             motor.volume = 0
-            if effectsVolume > 0 { playEffect(successBuffer) }
+            if !isMuted, effectsVolume > 0 { playEffect(successBuffer) }
             if hapticsEnabled { UINotificationFeedbackGenerator().notificationOccurred(.success) }
         case .respawned:
             motorSuppressed = false
@@ -204,8 +360,7 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
     /// Background entrypoint. Retains playback position and preferences for foreground restoration.
     func shutdown() {
         suspended = true
-        musicPlayer?.pause()
-        musicPlaying = false
+        pauseMusicPlayer()
         explosionPlayer?.stop()
         motor.volume = 0
         motor.stop()
@@ -242,7 +397,7 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
         engine.connect(effectPlayer, to: effectMixer, format: format)
         engine.connect(effectMixer, to: engine.mainMixerNode, format: format)
         motor.volume = 0
-        effectMixer.outputVolume = Float(effectsVolume)
+        effectMixer.outputVolume = isMuted ? 0 : Float(effectsVolume)
         motorBuffer = Self.makeBuffer(format: format, seconds: 1) { t in
             let phase = t * 2 * Double.pi * 48
             let exhaust = sin(phase) * 0.48 + sin(phase * 2) * 0.23 + sin(phase * 3) * 0.12
@@ -268,17 +423,17 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
     }
 
     private func loadCurrentTrack() throws {
-        let track = Self.tracks[trackIndex]
+        let track = playback.track
         guard let url = assetURL(track.filename, extension: "mp3") else {
             throw NSError(domain: "CrocoCross.Audio", code: 1, userInfo: [NSLocalizedDescriptionKey: "The bundled track is missing."])
         }
         let player = try AVAudioPlayer(contentsOf: url)
         player.delegate = self
         player.volume = Float(musicVolume)
-        player.numberOfLoops = 0
+        player.numberOfLoops = musicPlaybackMode == .track ? -1 : 0
         player.prepareToPlay()
+        player.currentTime = playback.position < player.duration ? playback.position : 0
         musicPlayer = player
-        currentTrackTitle = track.title
     }
 
     private func assetURL(_ filename: String, extension suffix: String) -> URL? {
@@ -310,13 +465,19 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
                 guard let self, let rawType, let type = AVAudioSession.InterruptionType(rawValue: rawType) else { return }
                 if type == .began {
                     self.interrupted = true
-                    self.musicPlayer?.pause()
-                    self.musicPlaying = false
+                    self.pauseMusicPlayer()
+                    self.explosionPlayer?.stop()
+                    self.effectPlayer.stop()
                     self.motor.volume = 0
                     self.engine.pause()
                 } else {
                     self.interrupted = false
                     let mayResume = AVAudioSession.InterruptionOptions(rawValue: rawOptions).contains(.shouldResume)
+                    if !mayResume {
+                        self.routeNeedsUserResume = true
+                        self.musicNeedsUserResume = true
+                        self.statusMessage = "Audio paused. Resume playback or the game."
+                    }
                     if mayResume, !self.suspended, UIApplication.shared.applicationState == .active {
                         self.startMusic()
                     }
@@ -330,10 +491,13 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
                 if AVAudioSession.RouteChangeReason(rawValue: rawReason) == .oldDeviceUnavailable {
                     // Headphones unplugged: do not surprise the player by switching music to the speaker.
                     self.routeNeedsUserResume = true
-                    self.musicPlayer?.pause()
-                    self.musicPlaying = false
+                    self.musicNeedsUserResume = true
+                    self.pauseMusicPlayer()
+                    self.explosionPlayer?.stop()
+                    self.effectPlayer.stop()
                     self.motor.volume = 0
-                    self.statusMessage = "Audio output changed. Tap Play to resume music."
+                    self.engine.pause()
+                    self.statusMessage = "Audio output changed. Resume playback or the game."
                 }
             }
         }))
@@ -361,7 +525,12 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
         Task { @MainActor [weak self] in
             guard let self, let current = self.musicPlayer, ObjectIdentifier(current) == identifier else { return }
             self.musicPlaying = false
-            if flag { self.nextTrack() }
+            if flag {
+                self.playback.finishTrack()
+                self.discardMusicPlayer()
+                self.playback.save(to: self.defaults)
+                self.startMusic()
+            }
             else { self.statusMessage = "Music playback stopped. Tap Play to try again." }
         }
     }
@@ -376,7 +545,8 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
     }
 
     private func rebuildAfterMediaReset() {
-        let musicPosition = musicPlayer?.currentTime ?? 0
+        if let musicPlayer { playback.position = musicPlayer.currentTime }
+        playback.save(to: defaults)
         engine.stop()
         musicPlayer?.stop()
         explosionPlayer?.stop()
@@ -390,25 +560,15 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
         effectMixer = AVAudioMixerNode()
         configured = false
         motorScheduled = false
-        interrupted = false
-        guard !suspended, !routeNeedsUserResume, UIApplication.shared.applicationState == .active else { return }
+        guard !suspended, !interrupted, !routeNeedsUserResume, UIApplication.shared.applicationState == .active else { return }
         do {
             try prepareAudio()
-            if musicEnabled {
+            if shouldPlayMusic {
                 try loadCurrentTrack()
-                musicPlayer?.currentTime = musicPosition
                 musicPlaying = musicPlayer?.play() ?? false
             }
         } catch { statusMessage = "Audio was reset by the system. Try resuming playback." }
     }
 
-    private static func savedVolume(_ key: String, fallback: Double, defaults: UserDefaults) -> Double {
-        guard defaults.object(forKey: key) != nil else { return fallback }
-        return clamp(defaults.double(forKey: key), fallback: fallback)
-    }
-
-    private static func clamp(_ value: Double, fallback: Double) -> Double {
-        value.isFinite ? min(1, max(0, value)) : fallback
-    }
-
 }
+#endif
