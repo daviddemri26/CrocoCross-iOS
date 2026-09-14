@@ -39,23 +39,33 @@ struct TerrainStyle {
     let earthTile: CGFloat
     let depthShade: Float
 
+    /// A restrained highlight matching each painted riding surface.
+    static func roadEdge(for id: String) -> UIColor {
+        let colors: [String: UInt32] = [
+            "canyon": 0xF5C889, "japan": 0xEAA078, "highway": 0xE6E3CC,
+            "jungle": 0xE6D68C, "arctic": 0xF5FEFF, "mine": 0xB8CCD3,
+            "sanfrancisco": 0xF88D63, "paris": 0xECE0C9, "clouds": 0xB7A1CF,
+        ]
+        return .hex(colors[id] ?? 0xFFF8ED)
+    }
+
     static func forWorld(_ id: String) -> TerrainStyle {
         switch id {
-        case "canyon": .init(roadDepth: 0.25, roadTile: 1.4, earthTile: 5.6, depthShade: 0.19)
-        case "japan": .init(roadDepth: 0.24, roadTile: 1.3, earthTile: 4.8, depthShade: 0.24)
-        case "highway": .init(roadDepth: 0.24, roadTile: 1.6, earthTile: 5.4, depthShade: 0.23)
-        case "jungle": .init(roadDepth: 0.25, roadTile: 1.2, earthTile: 4.6, depthShade: 0.12)
-        case "arctic": .init(roadDepth: 0.30, roadTile: 1.7, earthTile: 5.4, depthShade: 0.18)
-        case "mine": .init(roadDepth: 0.23, roadTile: 1.4, earthTile: 4.8, depthShade: 0.23)
-        case "sanfrancisco": .init(roadDepth: 0.24, roadTile: 1.6, earthTile: 5.2, depthShade: 0.22)
-        case "paris": .init(roadDepth: 0.30, roadTile: 1.8, earthTile: 5.4, depthShade: 0.22)
-        default: .init(roadDepth: 0.20, roadTile: 2.2, earthTile: 3.8, depthShade: 0.06)
+        case "canyon": .init(roadDepth: 0.40, roadTile: 3.2, earthTile: 18, depthShade: 0.04)
+        case "japan": .init(roadDepth: 0.40, roadTile: 3.2, earthTile: 18, depthShade: 0.04)
+        case "highway": .init(roadDepth: 0.46, roadTile: 3.6, earthTile: 18, depthShade: 0.04)
+        case "jungle": .init(roadDepth: 0.46, roadTile: 3.0, earthTile: 18, depthShade: 0.04)
+        case "arctic": .init(roadDepth: 0.44, roadTile: 3.2, earthTile: 18, depthShade: 0.04)
+        case "mine": .init(roadDepth: 0.42, roadTile: 3.6, earthTile: 18, depthShade: 0.04)
+        case "sanfrancisco": .init(roadDepth: 0.48, roadTile: 3.0, earthTile: 18, depthShade: 0.04)
+        case "paris": .init(roadDepth: 0.44, roadTile: 2.8, earthTile: 6, depthShade: 0.04)
+        default: .init(roadDepth: 0.44, roadTile: 3.2, earthTile: 18, depthShade: 0.04)
         }
     }
 }
 
-/// A small pool of terrain-conforming strips. Texture coordinates stay anchored to
-/// the course, including when a strip is recycled or the camera changes scale.
+/// Terrain-conforming image strips. Road, foreground painting and decorative
+/// vignettes stay attached to the course while the camera moves.
 @MainActor
 final class TerrainMaterialNode: SKNode {
     private var strips: [MaterialStrip] = []
@@ -71,7 +81,7 @@ final class TerrainMaterialNode: SKNode {
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
     func display(world: World, size: CGSize, left: Double, ppm: CGFloat,
-                 ground: (Double) -> CGFloat) {
+                 parallax: Double = 1, ground: (Double) -> CGFloat) {
         if worldID != world.id {
             worldID = world.id
             artwork = TerrainArtwork.texture(world: world.id, surface: surface)
@@ -87,7 +97,7 @@ final class TerrainMaterialNode: SKNode {
         }
         // Fixed depth, quantized in metres, covers the viewport while keeping the
         // material mapping independent of the visible screen height.
-        let depth = surface ? style.roadDepth : world.id == "clouds" ? 1.1 : max(16, ceil(size.height / ppm) + 12)
+        let depth = surface ? style.roadDepth : max(16, ceil(size.height / ppm) + 12)
         for (index, strip) in strips.enumerated() {
             strip.isHidden = index >= count
             guard index < count else { continue }
@@ -97,7 +107,9 @@ final class TerrainMaterialNode: SKNode {
             strip.colorBlendFactor = artwork == nil ? 1 : 0
             strip.display(start: Double(first + index) * span, span: span, left: left,
                           depth: depth, tile: surface ? style.roadTile : style.earthTile,
-                          shade: surface ? 0 : style.depthShade, blendEdges: !surface, ppm: ppm, ground: ground)
+                          shade: surface ? 0 : style.depthShade, blendEdges: !surface,
+                          parallax: surface ? 1 : parallax, fullHeight: surface,
+                          ppm: ppm, ground: ground)
         }
     }
 }
@@ -107,6 +119,7 @@ private final class MaterialStrip: SKSpriteNode {
     private static let columns = 36
     private let mapping = SKUniform(name: "u_mapping", vectorFloat4: .zero)
     private let shading = SKUniform(name: "u_shading", vectorFloat2: .zero)
+    private let road = SKUniform(name: "u_road", float: 0)
     private var materialShader: SKShader?
     var usesArtwork = true {
         didSet { if usesArtwork != oldValue { shader = usesArtwork ? materialShader : nil } }
@@ -115,15 +128,19 @@ private final class MaterialStrip: SKSpriteNode {
     init() {
         super.init(texture: nil, color: .clear, size: .zero)
         anchorPoint = .zero
-        // The fine road grain can mirror. Large earth surfaces blend shifted edge
-        // samples instead: seamless without the conspicuous symmetry of mirroring.
+        // Each road painting fills the entire thin ribbon. Mirroring only along
+        // the course joins its edges without cropping borders or flipping it upside down.
+        // Broad foreground paintings blend shifted samples near their edges.
         shader = SKShader(source: """
         void main() {
             vec2 metres = vec2(u_mapping.x + v_tex_coord.x * u_mapping.y,
                                (1.0 - v_tex_coord.y) * u_mapping.z);
             vec2 tiled = metres / u_mapping.w;
             vec4 paint;
-            if (u_shading.y > 0.5) {
+            if (u_road > 0.5) {
+                float along = 1.0 - abs(mod(tiled.x, 2.0) - 1.0);
+                paint = texture2D(u_texture, vec2(along, v_tex_coord.y));
+            } else if (u_shading.y > 0.5) {
                 vec2 uv = fract(tiled);
                 vec2 shifted = fract(uv + 0.5);
                 vec2 weight = smoothstep(vec2(0.0), vec2(0.20), uv)
@@ -140,13 +157,14 @@ private final class MaterialStrip: SKSpriteNode {
             float shade = 1.0 - u_shading.x * (1.0 - exp(-metres.y / 5.0));
             gl_FragColor = vec4(paint.rgb * shade, paint.a);
         }
-        """, uniforms: [mapping, shading])
+        """, uniforms: [mapping, shading, road])
         materialShader = shader
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
     func display(start: Double, span: Double, left: Double, depth: CGFloat,
-                 tile: CGFloat, shade: Float, blendEdges: Bool, ppm: CGFloat, ground: (Double) -> CGFloat) {
+                 tile: CGFloat, shade: Float, blendEdges: Bool, parallax: Double, fullHeight: Bool,
+                 ppm: CGFloat, ground: (Double) -> CGFloat) {
         let heights = (0...Self.columns).map { ground(start + span * Double($0) / Double(Self.columns)) }
         let low = heights.min()!, high = heights.max()!
         let height = depth * ppm + high - low
@@ -163,8 +181,10 @@ private final class MaterialStrip: SKSpriteNode {
         warpGeometry = SKWarpGeometryGrid(columns: Self.columns, rows: 1,
                                          sourcePositions: source, destinationPositions: destination)
         // Keep float precision on long runs; mirrored tiles repeat every 2 * tile.
-        let phase = start.truncatingRemainder(dividingBy: Double(tile * 2))
+        let materialX = SceneryMotion.coordinate(screenMetres: start - left, camera: left, factor: parallax)
+        let phase = materialX.truncatingRemainder(dividingBy: Double(tile * 2))
         mapping.vectorFloat4Value = SIMD4(Float(phase), Float(span), Float(depth), Float(tile))
         shading.vectorFloat2Value = SIMD2(shade, blendEdges ? 1 : 0)
+        road.floatValue = fullHeight ? 1 : 0
     }
 }

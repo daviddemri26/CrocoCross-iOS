@@ -16,12 +16,14 @@ enum SceneryArtwork {
         let filename = layer == .wayside ? "wayside" : "\(layer.rawValue)-\(variant)"
         let key = "\(world)/\(filename)" as NSString
         if let texture = cache.object(forKey: key) { return texture }
+        let style = SceneryPresentation.forImage(world: world, layer: layer, variant: variant)
+        let maximumPixels = max(style.width, style.maxHeight) >= 6 ? 1536 : 768
         guard let url = Bundle.main.url(forResource: filename, withExtension: "png",
                                         subdirectory: "GameAssets/Scenery/\(world)"),
               let source = CGImageSourceCreateWithURL(url as CFURL, nil),
               let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
                 kCGImageSourceCreateThumbnailFromImageAlways: true,
-                kCGImageSourceThumbnailMaxPixelSize: 384,
+                kCGImageSourceThumbnailMaxPixelSize: maximumPixels,
                 kCGImageSourceCreateThumbnailWithTransform: true,
                 kCGImageSourceShouldCacheImmediately: true,
               ] as CFDictionary) else { return nil }

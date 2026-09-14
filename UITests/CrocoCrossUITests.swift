@@ -4,10 +4,10 @@ import XCTest
 final class CrocoCrossUITests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
 
-    @MainActor private func launch() -> XCUIApplication {
+    @MainActor private func launch(extraArguments: [String] = []) -> XCUIApplication {
         if UIDevice.current.userInterfaceIdiom == .pad { XCUIDevice.shared.orientation = .landscapeLeft }
         let app = XCUIApplication()
-        app.launchArguments = ["-ui-testing"]
+        app.launchArguments = ["-ui-testing"] + extraArguments
         app.launch()
         let ready = app.buttons["startWeekly"].waitForExistence(timeout: 15)
         if !ready {
@@ -598,6 +598,53 @@ final class CrocoCrossUITests: XCTestCase {
         XCTAssertEqual(
             XCTWaiter.wait(for: [expectation], timeout: 5), .completed,
             "Holding the throttle must increase distance while the ride is still playing", file: file, line: line)
+    }
+
+    @MainActor func testReadableLivesPortraitAndRecovery() throws {
+        try checkReadableLives(orientation: .portrait, recover: true)
+    }
+
+    @MainActor func testReadableLivesLandscape() throws {
+        guard UIDevice.current.userInterfaceIdiom == .pad else {
+            throw XCTSkip("The iPhone app supports portrait; validate landscape on iPad")
+        }
+        try checkReadableLives(orientation: .landscapeLeft, recover: false)
+    }
+
+    @MainActor private func checkReadableLives(orientation: UIDeviceOrientation, recover: Bool) throws {
+        XCUIDevice.shared.orientation = orientation
+        let app = launch(extraArguments: ["-audio.muted", "YES", "-world", "mine"])
+        defer { app.terminate(); XCUIDevice.shared.orientation = .portrait }
+        app.buttons["startEndless"].tap()
+        waitForPlaying(app)
+        let lives = app.descendants(matching: .any).matching(identifier: "lives").firstMatch
+        XCTAssertTrue(lives.waitForExistence(timeout: 5))
+        XCTAssertEqual(lives.value as? String, "3 of 3 remaining")
+        // Accessibility reports the painted SF Symbol bounds, not its padded frame.
+        XCTAssertGreaterThanOrEqual(lives.frame.height, orientation == .portrait ? 17 : 16)
+        XCTAssertLessThanOrEqual(lives.frame.height, 22, "Keep the revised hearts compact")
+        let viewport = app.windows.firstMatch.frame
+        XCTAssertEqual(viewport.width > viewport.height, orientation != .portrait)
+        XCTAssertGreaterThan(lives.frame.minY, app.staticTexts["score"].frame.maxY)
+        XCTAssertGreaterThan(lives.frame.minY, app.staticTexts["distance"].frame.maxY)
+        XCTAssertLessThan(lives.frame.maxY, app.windows.firstMatch.frame.height * 0.42)
+        let height = lives.frame.height
+        capture(orientation == .portrait ? "readable-lives-portrait" : "readable-lives-landscape")
+        if recover {
+            for _ in 0..<8 {
+                if lives.value as? String != "3 of 3 remaining" { break }
+                app.buttons["throttle"].press(forDuration: 3)
+            }
+            XCTAssertNotEqual(lives.value as? String, "3 of 3 remaining", "Exercise a real lost life")
+            XCTAssertFalse(app.buttons["rideAgain"].exists, "A lost life must continue the endless ride")
+            for _ in 0..<4 {
+                XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] 'recovering' OR label CONTAINS[c] 'back on track'")).firstMatch.exists)
+                Thread.sleep(forTimeInterval: 0.4)
+            }
+            XCTAssertEqual(lives.frame.height, height, accuracy: 1)
+            waitForPlaying(app)
+            capture("readable-lives-after-loss")
+        }
     }
 
     @MainActor func testAllRidersAndWorldsRenderAndPlay() throws {

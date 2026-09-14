@@ -1,86 +1,175 @@
-# Painted scenery
+# Painted scenery and foreground
 
-Each of the nine worlds has six original transparent PNGs in `App/Resources/GameAssets/Scenery/<world>/`: three `ground` vignettes, two `sky` silhouettes and one static `wayside` accent. Exact generation prompts and source provenance are recorded in `scenery-prompts/<world>.md`. The built-in image generation tool created the artwork.
+The area below the riding line represents the landscape surface seen in the foreground. Animals, vehicles, boats and small landscape vignettes belong on this plane. Their feet lie below the riding line in perspective; large subjects extend upward and can temporarily hide the motorcycle. This plane does not define a geological cross-section.
 
-The old procedural actors, animated cutaway chambers, repeating wayside objects and San Francisco support braces have been removed. The single weekly finish flag remains a gameplay landmark.
+Each world has six transparent PNGs in `App/Resources/GameAssets/Scenery/<world>/`: three `ground` vignettes, two `sky` silhouettes and one `wayside` accent touching the road. This pass restores the 24 original ground paintings for the eight worlds other than Cloud Nine. The other 30 paintings retain their current versions, including Cloud Nine's warmer golden moon and simplified flying fish and Arctic's revised small polar bird. All 27 ground profiles are balanced by subject size. The 18 sky profiles now combine their subject proportions with stable depth and crossing speed; wayside settings are unchanged.
 
-Scenery has no physics bodies and never consumes the terrain or scoring RNG. A fresh cosmetic seed selects empty intervals, irregular offsets, image variants, sizes and depths for each ride. The same placement remains stable while scrolling or resizing the viewport. Ground images average one occurrence per 110 metres, wayside images per 192 metres, and sky passes per 61 seconds. These are statistical averages, not fixed placement distances; most views contain no extra decoration. Each sky pass lasts 15 seconds including its entry/exit margins.
+## Readable images and motion
 
-Ground images sit below the sampled road height and are clipped by the exact terrain outline, including below Cloud Nine's floating road. Wayside images remain stationary at a fixed world coordinate, with their painted base touching the road. Lanterns, pots and upright props stay vertical; low plant/stone groups follow gentle slopes. Five samples under the image footprint reject steep or uneven bases; accepted props sit on the lowest support, accounting for rotation. Ground vignettes reserve the entire road-material thickness plus at least 0.10 metre of clearance. Their visible content is measured after removing transparent texture padding at load time. Image proportions are preserved. Generated PNG files are copied intact; ImageIO decodes at a maximum of 384 pixels and mipmapped SpriteKit textures use a 20 MiB cache. `SceneryPresentation.swift` defines the subject, dimensions and placement of each of the 54 images separately.
+`SceneryPresentation.swift` gives each complete vignette its own name, width, height budget and placement settings. Ground dimensions are now canonical world metres: fossils, frogs and moles use smaller footprints than foxes and seals, while caravans, pickups and urban vehicles retain widths of 4.8–5.2 metres. These remain readable art-direction proportions, not literal biological measurements.
 
-Motion is limited to a slow sky crossing with a tiny vertical drift and an optional two-point float for Cloud Nine's ground images. Reduce Motion disables that bob/rotation and replaces timed sky movement with a world-anchored image that only passes as the camera advances.
+A stable random depth selects a shared scale for width and height: **0.68 near the riding line → 1.0 lower in the foreground**. The same depth places an object's base farther below the route: depth × 2.4 m in portrait or depth × 1 m in landscape. Aspect ratio is preserved. Eleven selected large-subject profiles use an explicit base depth and grow upward, including the Paris building at an 11 × 13 m budget. Small vignettes keep their previous full-height clearance. World dimensions and footing remain stable through camera zoom. See [Scenery sizes](SCENERY-SIZES.md) for all profiles.
 
-## Local checks
+Foreground images, the broad foreground texture, the riding surface and wayside accents all remain attached to course coordinates at scrolling factor **1**, including with Reduce Motion. The earlier 0.64 experiment is removed: its texture drift and moving terrain sample beneath objects created the reported quicksand impression. Perspective now comes from fixed placement and size, with no independent ground movement. Gameplay physics, collisions, terrain height and scoring are unchanged.
 
-```sh
+Foreground images render independently of the terrain mask, in front of the complete rider rig. A tall building, mast or vehicle can cross the road silhouette and obscure the bike briefly; this has no collision behavior. Nine samples across each fixed world footprint keep the painted base below slopes. The painted foreground surface still fills the region below the route in every world, including Cloud Nine. Foreground objects are hidden in the Home hero preview. Upright wayside props stay vertical; low groups can follow gentle slopes. Five support samples reject steep or uneven wayside positions.
+
+Each sky event keeps a fixed random apparent depth for its full crossing. `SkyPerspective` applies **0.62 scale at the farthest depth → 1.0 at the nearest depth** to both dimension budgets, preserving the original proportions. Far silhouettes sit slightly higher, and near silhouettes draw in front when two events overlap. Width remains based on `min(132 pt, 27% of viewport width)` and height on `min(110 pt, 22% of viewport height)`, multiplied by subject scale, placement variation and depth.
+
+Crossings now take **16–36 seconds**, including off-screen margins. For ordinary subjects, the reference duration decreases from 32 seconds far away to 18 seconds nearby. Two planes have a 1.14 speed factor, the Japanese kite 0.90, the balloon 0.85 and the two butterflies 0.93. Duration is clamped to the 16–36 second range. This produces larger, faster images nearby while retaining calmer movement for balloons and kites. Selection searches the full maximum duration and discards expired events before assigning the two reusable actors, preserving irregular appearances without early disappearance.
+
+The pelican continues leftward; the other painted silhouettes keep their existing rightward direction. Normal sky crossings retain their small vertical drift and rotation. Reduce Motion disables timed transforms and derives passage from camera movement, with the depth-dependent duration producing a correspondingly slower apparent movement for distant images. Ground sprites, including Cloud Nine, remain fixed to the course with no timed oscillation.
+
+See the [18-object sky comparisons](../artifacts/sky-perspective/index.html) for near/far sizes and measured crossing speeds in both orientations.
+
+The complete [27-object size table](SCENERY-SIZES.md) records the current canonical dimensions.
+
+## Irregular appearances
+
+A separate cosmetic seed selects variants, empty cells, offsets and scale for each ride. It never consumes the course or scoring RNG. Existing placements remain stable when the viewport changes.
+
+| Layer | Selection cell | Appearance probability |
+| --- | --- | --- |
+| Ground | 26 metres on the foreground plane | 0.80 |
+| Wayside | 54 metres along the course | 0.66 |
+| Sky | 32 seconds during normal play | 0.84 |
+
+These intervals are sampling cells, not a regular placement cadence. Random offsets and empty cells break repetition. Reduce Motion uses camera-derived sky timing instead of elapsed seconds.
+
+## Artwork loading
+
+`SceneryArtwork.swift` decodes the original PNGs with ImageIO at a maximum dimension of **768 pixels**, or **1536 pixels** for subjects with a width or height budget of at least 6 metres. Transparent padding is trimmed only in the runtime texture; generated files stay intact. Aspect ratios and real PNG alpha are preserved. Linear filtering and mipmaps keep enlarged images smooth, with a **20 MiB** scenery texture cache.
+
+Procedural scenery actors, regular poles, terrain score labels and in-app scenery/terrain export hooks have been removed. The weekly finish flag remains a gameplay landmark.
+
+## Current catalogue: 54 objects
+
+Keys below identify the PNG filename inside each world's scenery folder. Linked generation records contain exact prompts and source provenance.
+
+### Canyon
+
+- `ground-1.png`: Ammonite sur le sable.
+- `ground-2.png`: Fennec sur un rocher.
+- `ground-3.png`: Géode d’améthyste ouverte.
+- `sky-1.png`: Condor.
+- `sky-2.png`: Avion rétro crème et rouge.
+- `wayside.png`: Cactus fleuri.
+
+[Original artwork and prompts](scenery-prompts/canyon.md).
+
+### Japan Mountains
+
+- `ground-1.png`: Bassin de carpes koï.
+- `ground-2.png`: Renard endormi sur la mousse.
+- `ground-3.png`: Pierres, champignons et fougère.
+- `sky-1.png`: Hirondelle.
+- `sky-2.png`: Cerf-volant japonais.
+- `wayside.png`: Lanterne japonaise en pierre.
+
+[Original artwork and prompts](scenery-prompts/japan.md).
+
+### American Sunset
+
+- `ground-1.png`: Caravane rétro.
+- `ground-2.png`: Coyote endormi.
+- `ground-3.png`: Pickup et citrouilles.
+- `sky-1.png`: Avion léger crème et orange.
+- `sky-2.png`: Rapace brun.
+- `wayside.png`: Pneus anciens et fleurs jaunes.
+
+[Original artwork and prompts](scenery-prompts/highway.md).
+
+### Tropical Jungle
+
+- `ground-1.png`: Tapir endormi.
+- `ground-2.png`: Grenouille sur une feuille.
+- `ground-3.png`: Cascade et bassin tropical.
+- `sky-1.png`: Ara rouge, bleu et jaune.
+- `sky-2.png`: Petit papillon bleu.
+- `wayside.png`: Fougères et broméliacée.
+
+[Original artwork and prompts](scenery-prompts/jungle.md).
+
+### Arctic Aurora
+
+- `ground-1.png`: Renard polaire sur la neige.
+- `ground-2.png`: Phoque sur la banquise.
+- `ground-3.png`: Cristaux de glace dressés.
+- `sky-1.png`: Harfang blanc.
+- `sky-2.png`: Petit oiseau polaire.
+- `wayside.png`: Cairn enneigé.
+
+[Original artwork and prompts](scenery-prompts/arctic.md); [current polar-bird revision](scenery-corrections/arctic.md).
+
+### Old Gold Mine
+
+- `ground-1.png`: Wagonnet de minerai.
+- `ground-2.png`: Taupe sur une motte.
+- `ground-3.png`: Géode turquoise ouverte.
+- `sky-1.png`: Petite chauve-souris.
+- `sky-2.png`: Petit papillon de nuit.
+- `wayside.png`: Lanterne portative sur pierres.
+
+[Original artwork and prompts](scenery-prompts/mine.md).
+
+### San Francisco
+
+- `ground-1.png`: Otarie sur un rocher.
+- `ground-2.png`: Voilier sur la baie.
+- `ground-3.png`: Ferry de la baie.
+- `sky-1.png`: Goéland blanc.
+- `sky-2.png`: Pélican brun.
+- `wayside.png`: Bollard, cordage et bouée.
+
+[Current bay direction and replacements](CITY-COHERENCE.md); [original generation records](scenery-prompts/sanfrancisco.md).
+
+### Paris
+
+- `ground-1.png`: Chat sur des livres.
+- `ground-2.png`: 2CV française bleue.
+- `ground-3.png`: Immeuble haussmannien.
+- `sky-1.png`: Pigeon gris lointain (même image que la seconde variante).
+- `sky-2.png`: Pigeon gris.
+- `wayside.png`: Rosier en pot et arrosoir.
+
+[Current Paris street direction and replacements](CITY-COHERENCE.md); [original generation records](scenery-prompts/paris.md).
+
+### Cloud Nine
+
+- `ground-1.png`: Baleine endormie sur un nuage.
+- `ground-2.png`: Îlot flottant fleuri.
+- `ground-3.png`: Lune dorée et étoiles sur un nuage.
+- `sky-1.png`: Montgolfière pastel.
+- `sky-2.png`: Poisson volant pastel.
+- `wayside.png`: Trois fleurs sur un petit nuage.
+
+[Original artwork and prompts](scenery-prompts/clouds.md); [current moon and flying-fish revisions](scenery-corrections/clouds.md).
+
+## Checks for the current pass
+
+The updated placement and presentation harnesses passed for this pass: all nine worlds and 54 profiles, phone visibility budgets, irregular placement, variant coverage, viewport stability and fixed course coordinates through 100 km. These checks validate numerical rules; they do not establish the appearance of a rendered frame. Current native checks cover 63 object views, fixed object/texture coordinates through scrolling and zoom, and rendered ground pixel comparisons in all nine worlds. Earlier portrait/recovery and landscape HUD tests remain historical evidence for the unchanged interface; see [Validation](VALIDATION.md) for scope.
+
+Run from the project root:
+
+~~~sh
 swiftc -swift-version 6 -module-cache-path /tmp/crococross-scenery-swift-cache \
   App/Scene/SceneryPlacement.swift scripts/check-scenery.swift \
   -o /tmp/crococross-check-scenery
 /tmp/crococross-check-scenery
-```
 
-The placement harness checks all nine worlds, all 54 choices, sparse irregular gaps, stable placement across viewport boundaries and new-run variation. It does not validate the appearance of an image.
-
-A Debug-only simulator review can be launched with `-scenery-review` (all worlds) or `-scenery-review=canyon` (one world). It writes native SpriteKit renders and an asset-loading report into the simulator app's Documents/scenery-review directory, using the real image loader, scenery nodes and terrain mask. The review is opt-in and is not compiled into Release. It intentionally frames each selected asset for inspection; normal gameplay uses the sparse schedule.
-
-The asset-integrity harness uses Apple's ImageIO (no extra dependency):
-
-```sh
-swiftc -swift-version 6 -parse-as-library \
-  -module-cache-path /tmp/crococross-scenery-swift-cache \
-  scripts/check-scenery-assets.swift -o /tmp/crococross-check-scenery-assets
-/tmp/crococross-check-scenery-assets
-```
-
-It verifies all 54 files exist, decode, carry alpha and contain both visible artwork and transparent pixels. The JSON output reports original dimensions and the measured transparent fraction. It complements visual review, since a valid alpha channel alone cannot prove a good silhouette.
-
-## Image sets and exact prompts
-
-- [Canyon](scenery-corrections/canyon.md): embedded ammonite, fennec in a burrow, embedded geode, condor, vintage plane, flowering cactus.
-- [Japan Mountains](scenery-corrections/japan.md): buried ceramic pot, fox in a woodland den, mossy recess, small swallow, kite, upright stone lantern.
-- [American Sunset](scenery-corrections/highway.md): buried hubcap, coyote in a den, buried horseshoe, plane, hawk, old tires and wildflowers.
-- [Tropical Jungle](scenery-corrections/jungle.md): tapir in a root shelter, tiny frog in a root pocket, spring in a rock opening, macaw, small blue butterfly, fern and bromeliad.
-- [Arctic Aurora](scenery-corrections/arctic.md): fox in a snow shelter, seal in an icy water opening, embedded ice crystals, snowy owl, small polar bird, frosted cairn.
-- [Old Gold Mine](scenery-corrections/mine.md): mine cart on rails in a gallery, small mole in a burrow, embedded geode, small bat, tiny moth, correctly sized portable lantern.
-- [San Francisco](scenery-corrections/sanfrancisco.md): sea lion in a sea cave, shell fossil, old cable mechanism, gull, pelican, orange poppies.
-- [Paris](scenery-corrections/paris.md): small cat on books in a cellar recess, old railway wheel, buried antique key, small swallow, pigeon, roses and watering can.
-- [Cloud Nine](scenery-corrections/clouds.md): cloud whale, floating island, warmer moon and stars, balloon, simplified flying fish, cloud flowers.
-
-## Initial validation — September 12, 2026
-
-- Final unsigned iOS Simulator build: passed.
-- Original-asset integrity: all 54 PNGs decode and contain real alpha transparency.
-- Placement harness: all nine worlds pass sparse spacing, variant coverage, viewport stability and independent run variation checks.
-- Native SpriteKit review: all 54 targeted views rendered with their expected texture loaded. Reduced Motion assertions confirm that stationary-camera scenery stays still and scrolling passes it in the correct direction.
-- `testAllRidersAndWorldsRenderAndPlay`: passed on the dedicated iPhone 17 / iOS 26.5 simulator, covering selection and gameplay for all nine world/rider pairs (195.966 seconds, zero failures).
-- Visual review: original images inspected by their landscape agents; native views inspected for proportions, transparency, road contact and the floating-road mask.
-
-[Local preview index](../artifacts/scenery-review/README.md). Logs, texture reports, original-alpha measurements and exported gameplay screenshots are in `artifacts/scenery-review/` (ignored build/QA output). The source PNGs, prompts and reproduction scripts are part of the project.
-
-## Object corrections following the visual audit
-
-The review in `artifacts/scenery-audit/` identified oversized small animals/insects, toy-sized vehicles and unsupported objects beneath the road. The revised artwork gives terrestrial animals a painted shelter, puts minerals into their surrounding rock, and replaces incompatible vehicles/boats with appropriately sized buried objects. The two fantasy cloud vignettes already suited to their setting are retained. Full subject lists, exact revision prompts and source provenance are in `scenery-corrections/<world>.md`; original generation records remain in `scenery-prompts/`.
-
-The cosmetic placement schedule remains sparse. `SceneryPresentation` replaces the common image width with explicit per-object dimensions; these dimensions refer to the complete painted vignette, including its support. Small birds/insects get individually reduced screen scales, and butterflies/moths appear lower. The mine lantern is limited to a nominal 0.52-metre height including its stones. Its size, vertical alignment, smaller animals and catalog coverage are checked by:
-
-```sh
 swiftc -module-cache-path /tmp/crococross-scenery-swift-cache \
   App/Scene/SceneryPlacement.swift App/Scene/SceneryPresentation.swift \
   scripts/check-scenery-presentation.swift -o /tmp/crococross-check-scenery-presentation
 /tmp/crococross-check-scenery-presentation
-```
 
-The revised Debug exporter produces 108 views (54 images in both orientations), reports their actual rendered dimensions, checks upright props and Reduce Motion, preserves backdrop proportions, and scales the reference rider by its real wheelbase. [Corrected preview gallery](../artifacts/scenery-corrections/README.md).
+swiftc -swift-version 6 -parse-as-library \
+  -module-cache-path /tmp/crococross-scenery-swift-cache \
+  scripts/check-scenery-assets.swift -o /tmp/crococross-check-scenery-assets
+/tmp/crococross-check-scenery-assets
+~~~
 
+The asset harness checks that all 54 PNGs exist, decode, carry alpha and contain both visible and transparent pixels. A valid alpha channel alone does not prove a clean silhouette or a good composition.
 
-## Corrections validation — September 13, 2026
+The new surface paintings and railway rendering are described in [TERRAIN.md](TERRAIN.md). Earlier [generation records](scenery-prompts) and [correction records](scenery-corrections) remain provenance archives; superseded correction descriptions and earlier validation captures are not evidence for the current presentation.
 
-- 27 PNGs replaced/reworked; all 54 have explicit presentation profiles and pass transparency checks.
-- Unsigned iOS Simulator build passed. The Debug exporter completed 108 native views, 54 images in both orientations, with loaded textures, road clearance, upright props, handheld lantern size and Reduce Motion assertions.
-- The real steep-terrain reproduction (terrain 1234, scenery 3171, Japan at 429.740007 m) is rejected. Gentle upright and slope-following bases pass their contact checks.
-- `testAllRidersAndWorldsRenderAndPlay` passed on the dedicated iPhone 17 / iOS 26.5 simulator: nine world/rider pairs, 201.174 seconds, zero failures on the final run. The first attempt stopped at an unexpected pause overlay at 0 m when starting Arctic; the same unchanged test passed on rerun. The cause of that initial pause was not established. Both logs and the failure recording are retained.
-- Exact source replacements, SHA-256 comparisons, 54-object inventory, native views and gameplay captures are retained in `artifacts/scenery-corrections/`. The original 54 images are preserved in its `before/` directory.
-
-[Visual review and small-detail limitations](../artifacts/scenery-corrections/visual-review.md).
-
-Final visual review covered all 108 targeted views and nine gameplay captures. No blocking visual defect was observed; small-detail limitations are recorded in the linked review.
+Current size and occlusion comparisons are in the [foreground overlap gallery](../artifacts/foreground-overlap/index.html). The [ground perspective gallery](../artifacts/ground-perspective/index.html) records the earlier small-object layout. The earlier [foreground gallery](../artifacts/foreground-refresh/index.html) records the superseded sizes and motion. See [Validation](VALIDATION.md) for the current scope and evidence.

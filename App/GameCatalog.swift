@@ -54,7 +54,7 @@ enum GameCatalog {
         .init(id: "jungle", name: "Tropical Jungle", subtitle: "Wild trails & fireflies", assetName: "tropical-jungle", sky: .hex(0x53CDE9), earth: .hex(0x417D48), deepEarth: .hex(0x1C352E), edge: .hex(0xB4E967), accent: .hex(0xC1F178)),
         .init(id: "arctic", name: "Arctic Aurora", subtitle: "Fresh snow under northern lights", assetName: "arctic-aurora", sky: .hex(0x163E75), earth: .hex(0x9FCCE7), deepEarth: .hex(0x314D85), edge: .hex(0xF2FCFF), accent: .hex(0x89F5E1)),
         .init(id: "mine", name: "Old Gold Mine", subtitle: "Rolling carts & glowing lanterns", assetName: "abandoned-mine", sky: .hex(0x172731), earth: .hex(0x4B3A2E), deepEarth: .hex(0x16191D), edge: .hex(0xB8A487), accent: .hex(0xFFD078)),
-        .init(id: "sanfrancisco", name: "San Francisco", subtitle: "Rolling fog & the Golden Gate", assetName: "san-francisco", sky: .hex(0x8BCEE0), earth: .hex(0x485968), deepEarth: .hex(0x25364C), edge: .hex(0xFFBE77), accent: .hex(0xFF9B68)),
+        .init(id: "sanfrancisco", name: "San Francisco", subtitle: "Rolling fog & the Golden Gate", assetName: "san-francisco", sky: .hex(0x8BCEE0), earth: .hex(0x206881), deepEarth: .hex(0x123D55), edge: .hex(0xFFBE77), accent: .hex(0xFF9B68)),
         .init(id: "paris", name: "Paris", subtitle: "Warm cobblestones & city lights", assetName: "paris", sky: .hex(0xDFB6D2), earth: .hex(0x9C8295), deepEarth: .hex(0x3B3E5C), edge: .hex(0xFFE0AA), accent: .hex(0xFFE4B0)),
         .init(id: "clouds", name: "Cloud Nine", subtitle: "Floating trails above the world", assetName: "cloud-nine", sky: .hex(0x65C7EC), earth: .hex(0xFFFFFF), deepEarth: .hex(0xBAAFEA), edge: .white, accent: .hex(0xFCE6FF))
     ]

@@ -273,8 +273,8 @@ final class GameSession {
             scene.restoreBikeAfterRespawn()
             clearPedals()
             eventPoints = 0
-            eventText = "BACK ON TRACK"
-            eventUntil = frameTime + 1.3
+            eventText = nil
+            eventUntil = 0
         }
     }
 

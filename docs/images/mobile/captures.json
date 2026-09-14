@@ -1,0 +1,85 @@
+{
+  "date": "2026-09-13",
+  "platform": "iPhone 17 simulator",
+  "resolution": [
+    1206,
+    2622
+  ],
+  "appVersion": "1.0.0",
+  "build": "7",
+  "captureMethod": "XCUIScreen screenshot of the complete native app during real UI navigation and pedal input",
+  "configuration": "Debug; muted audio; Game Center authentication suppressed by existing -ui-testing launch flag",
+  "imageProcessing": "Original screenshots copied intact; no crop, compositing, recoloring or resampling",
+  "screenshots": [
+    {
+      "file": "paris.png",
+      "capture": "readme-paris-ride-3",
+      "width": 1206,
+      "height": 2622,
+      "sha256": "1884f5e34a9ceeac2e385b6d18e96c4e06bd1f287ec472d433e307a28c9ced4d"
+    },
+    {
+      "file": "sanfrancisco.png",
+      "capture": "readme-sanfrancisco-ride-2",
+      "width": 1206,
+      "height": 2622,
+      "sha256": "fe0448aeb893bd7b70878aba969010aa0fbaafcb6e7e27a82702901be1e3bae6"
+    },
+    {
+      "file": "mine.png",
+      "capture": "readme-mine-ride-2",
+      "width": 1206,
+      "height": 2622,
+      "sha256": "45d896f9d56859d37b4e0150663d706046be9d0455ce58a298c1a0eedb2a01df"
+    },
+    {
+      "file": "canyon.png",
+      "capture": "readme-canyon-ride-2",
+      "width": 1206,
+      "height": 2622,
+      "sha256": "a92e6343001b2564ce9a29ca49bb6d7e23c5fa6f042b7c0753bfdb19184d2f80"
+    },
+    {
+      "file": "japan.png",
+      "capture": "readme-japan-ride-2",
+      "width": 1206,
+      "height": 2622,
+      "sha256": "0943164478235dfb1684cdc607848769cef04afc9ae832badca21b4326e653df"
+    },
+    {
+      "file": "arctic.png",
+      "capture": "readme-arctic-ride-2",
+      "width": 1206,
+      "height": 2622,
+      "sha256": "593b9456a49f24fb16a098c4d3141336a79806ad7c4f2b0b753a9dbee51d9809"
+    },
+    {
+      "file": "highway.png",
+      "capture": "readme-highway-ride-2",
+      "width": 1206,
+      "height": 2622,
+      "sha256": "14acfe87279f841178e3952f7ccb411ce6a97fa74c608f4ae73a7783e61bc555"
+    },
+    {
+      "file": "jungle.png",
+      "capture": "readme-jungle-ride-2",
+      "width": 1206,
+      "height": 2622,
+      "sha256": "7882dccd3fc7d863961b5e2993f6e564656908e8b837a2eaa85407829a12ba67"
+    },
+    {
+      "file": "clouds.png",
+      "capture": "readme-clouds-ride-2",
+      "width": 1206,
+      "height": 2622,
+      "sha256": "f0f7f30b797db45b715bd915377f3597a386923b4585efc19bab53ab89834036"
+    },
+    {
+      "file": "home.png",
+      "capture": "readme-paris-home",
+      "width": 1206,
+      "height": 2622,
+      "sha256": "9bea71f0edccd8a6eca6bd8171ef6dfffcdf942231eea398a4b1cc845a1ce238"
+    }
+  ]
+}

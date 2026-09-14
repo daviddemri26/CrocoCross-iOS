@@ -11,7 +11,6 @@ final class BikeNode: SKNode {
     private let wheels = [SKNode(), SKNode()]
     private let rotors = [SKSpriteNode(), SKSpriteNode()]
     private let hubs = [SKSpriteNode(), SKSpriteNode()]
-    private let shadow = SKShapeNode(ellipseOf: CGSize(width: 1.9, height: 0.14))
     private var currentID = ""
     private var rider = GameCatalog.riders[0]
     private var wheelbaseInArtwork: CGFloat = 1
@@ -28,10 +27,6 @@ final class BikeNode: SKNode {
 
     override init() {
         super.init()
-        shadow.fillColor = UIColor.black.withAlphaComponent(0.22)
-        shadow.strokeColor = .clear
-        shadow.zPosition = -1
-        addChild(shadow)
         wheels.forEach { addChild($0) }
         addChild(chassis)
         chassis.addChild(body)
@@ -95,12 +90,6 @@ final class BikeNode: SKNode {
                       headX: profile.headX)
         } else { body.warpGeometry = nil }
 
-        let groundPoint = project(Vector2(x: bike.position.x, y: terrain(bike.position.x)))
-        let altitude = max(0, bike.position.y - terrain(bike.position.x) - 0.8)
-        shadow.position = CGPoint(x: groundPoint.x, y: groundPoint.y + 1)
-        shadow.xScale = pointsPerMetre * max(0.5, 1 - CGFloat(altitude) * 0.05)
-        shadow.yScale = pointsPerMetre
-        shadow.alpha = max(0.03, 0.7 - CGFloat(altitude) * 0.08)
         alpha = state.status == .recovering ? 0.55 + 0.2 * sin(Double(state.tick) * 0.13) : 1
     }
 

@@ -1,76 +1,76 @@
 <p align="center">
-  <img src="App/Resources/GameAssets/crococross-logo-768.png" alt="CrocoCross" width="380">
+  <img src="App/Resources/GameAssets/crococross-logo-768.png" alt="CrocoCross" width="220">
 </p>
 
-<h1 align="center">One more hill. One cleaner landing. One more ride.</h1>
+<h1 align="center">Two pedals. Nine worlds. One more ride.</h1>
 
-<p align="center"><strong>A colorful motorcycle adventure for iPhone and iPad.</strong><br>9 animal riders · 9 illustrated worlds · Weekly trails · Endless rides</p>
+<p align="center"><strong>A colorful motorcycle adventure for iPhone and iPad.</strong><br>Animal riders · Illustrated landscapes · Weekly challenges · Endless rides</p>
 
-CrocoCross turns two simple touch controls into a game of momentum, balance and satisfying landings. Choose your animal rider, find your rhythm across rolling hills, and make the next run your best yet.
+CrocoCross is about finding your rhythm: accelerate into a hill, balance in the air, and land ready for the next jump. Choose your rider, explore a new landscape, and turn a short break into one more attempt at your personal best.
 
-**Free to play by design. No ads. No in-app purchases. No separate CrocoCross account.**
+**Free by design. No ads. No in-app purchases. No separate game account.**
 
-> **In development:** this repository contains the native iOS development candidate. There is no public App Store or TestFlight download linked yet. Game Center integration is implemented; live leaderboard configuration and score verification remain release milestones.
+## The latest mobile version
 
-![Bubbles riding through Cloud Nine in the native iPad app](docs/images/cloud-nine-ipad.png)
+<table>
+  <tr><th>Paris</th><th>San Francisco</th><th>Old Gold Mine</th></tr>
+  <tr>
+    <td><img src="docs/images/mobile/paris.png" alt="CrocoCross on iPhone: Parisian buildings, cobbled streets and the Eiffel Tower" width="260"></td>
+    <td><img src="docs/images/mobile/sanfrancisco.png" alt="CrocoCross on iPhone: Golden Gate Bridge and the blue San Francisco Bay" width="260"></td>
+    <td><img src="docs/images/mobile/mine.png" alt="CrocoCross on iPhone: riding the rails through Old Gold Mine" width="260"></td>
+  </tr>
+  <tr><th>Canyon</th><th>Japan Mountains</th><th>Arctic Aurora</th></tr>
+  <tr>
+    <td><img src="docs/images/mobile/canyon.png" alt="CrocoCross on iPhone: desert cliffs and a sandstone trail" width="260"></td>
+    <td><img src="docs/images/mobile/japan.png" alt="CrocoCross on iPhone: Mount Fuji and a Japanese landscape" width="260"></td>
+    <td><img src="docs/images/mobile/arctic.png" alt="CrocoCross on iPhone: icy terrain beneath the northern lights" width="260"></td>
+  </tr>
+  <tr><th>American Sunset</th><th>Tropical Jungle</th><th>Cloud Nine</th></tr>
+  <tr>
+    <td><img src="docs/images/mobile/highway.png" alt="CrocoCross on iPhone: an American highway at sunset" width="260"></td>
+    <td><img src="docs/images/mobile/jungle.png" alt="CrocoCross on iPhone: lush tropical scenery and a bamboo trail" width="260"></td>
+    <td><img src="docs/images/mobile/clouds.png" alt="CrocoCross on iPhone: pastel clouds and floating islands" width="260"></td>
+  </tr>
+</table>
 
-*Actual iPad simulator capture from the development build, September 12, 2026.*
+*Screenshots captured from the current native app on an iPhone 17 simulator, September 13, 2026. See [capture details](docs/images/mobile/README.md).*
 
-## Ride your way
+Every world has its own riding surface and scenery: mine rails, Parisian paving, a vermilion bridge over the bay, ice and bamboo. Pigeons cross Paris, boats populate San Francisco, and larger foreground objects can briefly pass in front of the rider. Backdrops, objects and the camera create depth as you ride.
 
-### A fresh challenge every week
+## Choose your challenge
 
-One trail. **4,000 metres. One life.** Learn the hills, commit to a jump, and keep your nerve all the way to the finish. There is no time limit, so you can build confidence before chasing a faster completion. A new course arrives every Monday at 00:00 UTC.
+| | Weekly | Endless |
+| --- | --- | --- |
+| **The goal** | Complete a shared 4,000 m trail | Ride as far as you can |
+| **Lives** | One | Three |
+| **The course** | A new challenge every Monday at 00:00 UTC | Procedural hills that keep unfolding |
+| **Your next target** | A clean finish, a higher score, a faster time | Distance, stunts and personal bests |
 
-Weekly practice works offline. Online competition uses Apple Game Center and requires a confirmed, active weekly event before the run starts.
+There is no time limit on the weekly trail. Both Endless and weekly practice work offline. Apple Game Center supplies optional online competition; a ranked weekly attempt requires a confirmed active event before starting.
 
-### Keep going in Endless
+## Find your favorite rider
 
-Start with **three lives** and see how far your riding takes you. Procedural hills keep the route unfolding, while local records give you a reason to return. Ride for distance, land a clean flip, or simply enjoy the scenery.
+Rocco, Kenji, Duke, Axel, Bjorn, Pinky, Rio, Bandit and Bubbles each bring a different look and motorcycle to the ride. **All nine share the same physics**, so choose by personality.
 
-### Pick a personality. Change the scenery.
+<p align="center">
+  <img src="docs/images/mobile/home.png" alt="CrocoCross mobile home screen with rider and world selection, Weekly and Endless modes" width="280">
+</p>
 
-Meet Rocco the crocodile, Kenji the Shiba Inu, Duke the eagle, Axel the tiger, Bjorn the polar bear, Pinky the flamingo, Rio the toucan, Bandit the raccoon and Bubbles the axolotl.
+## Simple controls, satisfying landings
 
-Explore Canyon, Japan Mountains, American Sunset, Tropical Jungle, Arctic Aurora, Old Gold Mine, San Francisco, Paris and Cloud Nine. Illustrated backdrops, parallax and textured trails give each world its own mood. Small painted details appear occasionally in the sky, below the trail and along the roadside.
+- **Right pedal:** accelerate on the ground and rotate backward in the air.
+- **Left pedal:** brake on the ground and rotate forward in the air.
+- **Ease off:** keep holding a pedal and slide downward to reduce its strength. Release to stop the input.
 
-**Every rider shares the same physics.** Pick the look you love; success comes from how you ride.
+Traction, suspension, slope and momentum shape each jump. A flip earns points after a safe landing. Tap Pause to take a break and Keep riding to continue; returning Home or leaving the app ends the current run.
 
-## Simple controls, room to improve
+Choose music and sound levels in Settings, adjust haptics, and keep your personal records on the device. The interface adapts to iPhone portrait and iPad landscape layouts.
 
-- **Right pedal:** accelerate on the ground; rotate backward in the air.
-- **Left pedal:** brake on the ground; rotate forward in the air.
-- **A lighter touch:** hold a pedal and slide downward to reduce its strength. Release to stop the input.
+## Build and development
 
-Speed, slope and balance shape every jump. Rear-wheel traction creates natural wheelies, suspension absorbs contact, and a flip counts only after a safe landing.
+The project is a native **Swift 6 / SwiftUI / SpriteKit** app for **iOS and iPadOS 18+**. A local Swift package owns the deterministic 120 Hz simulation, terrain, suspension, traction and scoring. SpriteKit draws the game; SwiftUI supplies its menus and controls. There are no remote Swift package dependencies or third-party analytics SDKs.
 
-## Made for the ride
-
-- **Play offline:** Endless and weekly practice stay available without signing in.
-- **Pause during a run:** tap Pause, then Keep riding to resume. Returning Home or leaving the app ends the ride; reopening always starts at Home. New runs and restarts begin immediately.
-- **Set the mood:** open Settings > Audio to choose music and adjust sound levels, or Settings > General for haptics.
-- **Phone or tablet:** portrait play on iPhone and landscape play on iPad.
-- **Optional competition:** open Rankings for personal bests and Game Center connection. Online boards target weekly score, fastest weekly finish and Endless score. Live service validation is still pending.
-- **Local storage:** settings, personal records and pending score submissions stay on the device; eligible online scores use Apple's Game Center. No custom backend or third-party analytics SDK is included.
-
-## Under the hood
-
-CrocoCross is a native **Swift 6, SwiftUI and SpriteKit** app targeting **iOS / iPadOS 18 or later**. It uses Apple's frameworks and a local Swift package, with no remote package dependencies.
-
-The portable `CrocoCrossCore` package owns a deterministic **120 Hz simulation**, procedural terrain, suspension, traction, stunt scoring and weekly course seeds. SpriteKit renders the world; SwiftUI manages menus and the surrounding interface. Native services handle audio, haptics, local persistence and Game Center.
-
-```text
-App/                      Native app, UI, scenes and services
-Sources/CrocoCrossCore/    Simulation and game rules
-Tests/                    Core regression tests
-UITests/                  iPhone and iPad interface scenarios
-docs/                     Development, validation and release guides
-scripts/                  Project generation and persistence checks
-```
-
-### Build locally
-
-Use macOS with **Xcode 26.6** for the currently validated toolchain. Open `CrocoCross.xcodeproj`, select the **CrocoCross** scheme and choose an iPhone or iPad simulator. For a physical device, configure your own signing team in Xcode; the checked-in project retains the owner's team setting.
+Use macOS and **Xcode 26.6**, the validated toolchain. Open `CrocoCross.xcodeproj`, select the **CrocoCross** scheme and choose a simulator. Physical-device builds require an Apple signing team; the project currently contains the owner's team setting.
 
 ```sh
 git clone https://github.com/daviddemri26/CrocoCross-iOS.git
@@ -81,21 +81,23 @@ xcodebuild -project CrocoCross.xcodeproj -scheme CrocoCross \
   -derivedDataPath /tmp/crococross-derived CODE_SIGNING_ALLOWED=NO build
 ```
 
-This repository is public. Original artwork and music are by David Demri, who has confirmed that he holds all rights to them and authorized publication of the bundled project files. See [source and asset provenance](docs/SOURCE-PROVENANCE.md).
+| Directory | Contents |
+| --- | --- |
+| `App/` | Native interface, rendering, services and bundled art/audio |
+| `Sources/CrocoCrossCore/` | Simulation and game rules |
+| `Tests/` / `UITests/` | Core and native interface checks |
+| `docs/` | Development, artwork, validation and release documentation |
+| `scripts/` | Project generation and focused checks |
 
-The [development guide](docs/DEVELOPMENT.md) covers project regeneration, architecture, the run lifecycle and controls. GitHub Actions runs core tests, the persistence harness, project consistency checks and an unsigned simulator build; it does not publish the app.
+**Development status:** the latest signed build has been installed and launched on a physical iPhone. The current core suite passes 34 tests. Native visual checks cover the revised scenery, rider proportions, zoom and foreground occlusion. [Validation details](docs/VALIDATION.md) distinguish these checks from live Game Center and release validation. This repository does not currently provide an App Store or TestFlight download.
 
-## Road to release
+GitHub Actions runs core tests, persistence and audio checks, project consistency, and a simulator build. It does not publish the app. Live leaderboard submission/read-back, remaining device checks and distribution are tracked in the [release checklist](docs/RELEASE.md).
 
-The existing [validation record](docs/VALIDATION.md) documents 27 passing core tests, five iPhone and five iPad UI scenarios, and a signed physical-device installation and process launch. Those recorded results are separate from ongoing CI.
+## Project information
 
-Remaining work includes physical gameplay and audio checks, live Game Center score submission and read-back, actual window resizing and dedicated foldable-device testing, store details and TestFlight validation. See the [release checklist](docs/RELEASE.md) for the full sequence.
+- [Development](docs/DEVELOPMENT.md) · [Contributing](CONTRIBUTING.md)
+- [Artwork and scenery](docs/SCENERY.md) · [Object sizes](docs/SCENERY-SIZES.md) · [Game Center setup](docs/GAME-CENTER-SETUP.md)
+- [Changelog](CHANGELOG.md) · [Privacy draft](docs/PRIVACY-POLICY-DRAFT.md) · [Security](SECURITY.md)
+- [Asset provenance](docs/SOURCE-PROVENANCE.md) · [Rights and usage](RIGHTS.md)
 
-## Explore the project
-
-- [Development guide](docs/DEVELOPMENT.md) and [contribution guide](CONTRIBUTING.md)
-- [Game Center setup](docs/GAME-CENTER-SETUP.md)
-- [App Store copy](docs/STORE-LISTING.md), [support draft](docs/SUPPORT-DRAFT.md) and [privacy draft](docs/PRIVACY-POLICY-DRAFT.md)
-- [Changelog](CHANGELOG.md), [security reporting](SECURITY.md) and [rights notice](RIGHTS.md)
-
-Created by **David Demri**. This native edition is independent of the original CrocoCross web project.
+Created by **David Demri**. Publication of this repository does not grant an open-source license or downstream rights to its media. This native edition is independent of the original CrocoCross web project.

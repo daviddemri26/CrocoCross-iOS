@@ -35,7 +35,7 @@ struct GameRootView: View {
                 if session.phase == .home {
                     home(wide: wide, height: geometry.size.height)
                 } else {
-                    playOverlay(wide: wide, height: geometry.size.height)
+                    playOverlay(wide: geometry.size.width > geometry.size.height, height: geometry.size.height)
                     if session.phase == .paused { pauseOverlay }
                     if session.phase == .results && session.resultsVisible {
                         resultsOverlay.transition(.opacity.combined(with: .scale(scale: 0.94)))
@@ -228,38 +228,37 @@ struct GameRootView: View {
                 .opacity(session.phase == .playing ? 1 : 0)
                 .allowsHitTesting(session.phase == .playing)
             VStack(spacing: 12) {
-                HStack(alignment: .top, spacing: 10) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(session.mode == .weekly ? "WEEKLY" : "ENDLESS")
-                            .font(.system(size: 9, weight: .heavy, design: .monospaced)).tracking(1.5).foregroundStyle(
-                                CrocoTheme.lime)
-                        Text(session.score.formatted()).font(.system(size: 30, weight: .black, design: .rounded))
-                            .lineLimit(1).minimumScaleFactor(0.6)
-                            .monospacedDigit().contentTransition(.numericText()).accessibilityIdentifier("score")
-                    }
-                    Spacer(minLength: 0)
-                    RideSpeedometer(speed: session.speed)
-                    Spacer(minLength: 0)
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text("DISTANCE").font(.system(size: 8, weight: .heavy, design: .monospaced))
-                            .tracking(1).foregroundStyle(CrocoTheme.muted)
-                        Text("\(Int(session.distance).formatted()) m")
-                            .font(.system(size: 20, weight: .black, design: .rounded))
-                            .lineLimit(1).minimumScaleFactor(0.7).monospacedDigit()
-                            .accessibilityIdentifier("distance")
-                        HStack(spacing: 7) {
+                VStack(spacing: 6) {
+                    HStack(alignment: .top, spacing: 10) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(session.mode == .weekly ? "WEEKLY" : "ENDLESS")
+                                .font(.system(size: 9, weight: .heavy, design: .monospaced)).tracking(1.5).foregroundStyle(
+                                    CrocoTheme.lime)
+                            Text(session.score.formatted()).font(.system(size: 26, weight: .black, design: .rounded))
+                                .lineLimit(1).minimumScaleFactor(0.6)
+                                .monospacedDigit().contentTransition(.numericText()).accessibilityIdentifier("score")
+                        }
+                        Spacer(minLength: 0)
+                        RideSpeedometer(speed: session.speed)
+                            .scaleEffect(0.86).frame(width: 64, height: 56)
+                        Spacer(minLength: 0)
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Text("DISTANCE").font(.system(size: 8, weight: .heavy, design: .monospaced))
+                                .tracking(1).foregroundStyle(CrocoTheme.muted)
+                            Text("\(Int(session.distance).formatted()) m")
+                                .font(.system(size: 20, weight: .black, design: .rounded))
+                                .lineLimit(1).minimumScaleFactor(0.7).monospacedDigit()
+                                .accessibilityIdentifier("distance")
                             Text(timeString(session.elapsed))
                                 .font(.system(size: 11, weight: .bold, design: .monospaced)).monospacedDigit()
-                            HStack(spacing: 3) {
-                                ForEach(0..<max(0, session.lives), id: \.self) { _ in
-                                    Image(systemName: "heart.fill").font(.system(size: 10))
-                                        .foregroundStyle(CrocoTheme.orange)
-                                }
-                            }.accessibilityElement(children: .ignore)
-                                .accessibilityLabel("\(session.lives) lives remaining")
-                        }.foregroundStyle(CrocoTheme.muted)
+                                .foregroundStyle(CrocoTheme.muted)
+                        }
                     }
-                }.padding(14).background(CrocoTheme.ink.opacity(0.9), in: RoundedRectangle(cornerRadius: 19))
+                    Rectangle().fill(.white.opacity(0.10)).frame(height: 1)
+                    livesRow(wide: wide)
+                }.padding(.horizontal, 14).padding(.vertical, 8)
+                    .frame(maxWidth: 560)
+                    .background(CrocoTheme.ink.opacity(0.9), in: RoundedRectangle(cornerRadius: 16))
                 if session.mode == .weekly {
                     GeometryReader { geo in
                         Capsule().fill(CrocoTheme.ink.opacity(0.6))
@@ -283,11 +282,7 @@ struct GameRootView: View {
                         .transition(.opacity.combined(with: .scale(scale: 0.85)))
                 }
                 Spacer()
-                if session.recovering {
-                    Text("RECOVERING…").font(.caption.bold()).padding(10).background(
-                        CrocoTheme.ink.opacity(0.88), in: Capsule())
-                }
-            }.padding(.horizontal, wide ? 28 : 16).padding(.top, 12).padding(.bottom, 160).allowsHitTesting(false)
+            }.padding(.horizontal, wide ? 28 : 16).padding(.top, 12).padding(.bottom, wide ? 88 : 160).allowsHitTesting(false)
             VStack(spacing: 5) {
                 Button {
                     session.pause()
@@ -301,6 +296,24 @@ struct GameRootView: View {
                 session.phase == .playing)
         }.foregroundStyle(.white)
             .animation(reducedMotion ? nil : .spring(response: 0.3, dampingFraction: 0.8), value: session.eventText)
+    }
+
+    private func livesRow(wide: Bool) -> some View {
+        let capacity = session.mode == .endless ? 3 : 1
+        let remaining = min(capacity, max(0, session.lives))
+        return HStack(spacing: wide ? 10 : 12) {
+            ForEach(0..<capacity, id: \.self) { index in
+                Image(systemName: index < remaining ? "heart.fill" : "heart")
+                    .font(.system(size: wide ? 18 : 20, weight: .bold))
+                    .foregroundStyle(index < remaining ? CrocoTheme.orange : .white.opacity(0.22))
+                    .frame(width: wide ? 26 : 28, height: 24)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Lives")
+        .accessibilityValue("\(remaining) of \(capacity) remaining")
+        .accessibilityIdentifier("lives")
     }
 
     private var pauseOverlay: some View {

@@ -36,7 +36,7 @@ The checked-in project selects David Demri's development team. Signing certifica
 - `App/UI`: adaptive SwiftUI menus and UIKit-backed cancellable multi-pedal controls.
 - `App/Services`: Game Center, persistent score queue, AVFAudio, file storage.
 
-Painted scenery, its independent random placement, asset provenance and simulator review commands are documented in [Scenery](SCENERY.md).
+Painted scenery, its independent random placement, asset provenance and isolated visual validation are documented in [Scenery](SCENERY.md). Rider silhouettes, shared wheelbase scale, speed-dependent zoom, preview height limits and recovery/jump framing are documented in [Rider sizes](RIDER-SIZES.md).
 
 Physics constants live in `PhysicsConfiguration`. Score/terrain changes that make records incomparable require a new engine/course version and new Game Center leaderboard identifiers. Existing App Store clients retain their own rule/board versions. Do not port the historical web verification engines or connect the original Sites database.
 
