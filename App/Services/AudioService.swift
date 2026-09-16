@@ -78,6 +78,31 @@ enum AudioPreferenceStorage {
     }
 }
 
+/// A pre-rendered impact with softer, progressively darker echoes.
+/// Kept independent of AVAudioEngine so the cue can be checked offline.
+enum CrashSound {
+    static let duration = 1.7
+
+    static func sample(at time: Double) -> Float {
+        guard time >= 0, time < duration else { return 0 }
+        var value = impact(at: time, brightness: 1)
+        value += 0.30 * impact(at: time - 0.19, brightness: 0.60)
+        value += 0.17 * impact(at: time - 0.38, brightness: 0.35)
+        value += 0.08 * impact(at: time - 0.61, brightness: 0.18)
+        let release = min(1, (duration - time) / 0.08)
+        return Float(tanh(value * 0.85) * release)
+    }
+
+    private static func impact(at time: Double, brightness: Double) -> Double {
+        guard time >= 0 else { return 0 }
+        let texture = sin(time * 13_731) * sin(time * 6_043) + sin(time * 2_749) * 0.3
+        // Descending low tone adds weight; the echoes lose their sharp edge.
+        let low = sin(2 * Double.pi * (62 * time - 9 * time * time))
+        let attack = min(1, time / 0.003)
+        return attack * (texture * 0.24 * brightness * exp(-time * 11) + low * 0.62 * exp(-time * 5.5))
+    }
+}
+
 #if canImport(UIKit)
 import AVFAudio
 import CrocoCrossCore
@@ -324,7 +349,7 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
             motor.volume = 0
             lastMotorVolume = 0
             if !isMuted, effectsVolume > 0 {
-                // The rider and bike fall physically; use the short impact cue.
+                // A weighted impact and fading echoes accompany the slow-motion fall.
                 playEffect(crashBuffer, volume: 0.75)
             }
             if hapticsEnabled { UINotificationFeedbackGenerator().notificationOccurred(.error) }
@@ -399,9 +424,8 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
         landingBuffer = Self.makeBuffer(format: format, seconds: 0.13) { t in
             Float(sin(2 * Double.pi * 75 * t) * exp(-t * 32) * 0.6)
         }
-        crashBuffer = Self.makeBuffer(format: format, seconds: 0.7) { t in
-            let texture = sin(t * 13_731) * sin(t * 6_043) + sin(t * 2_749) * 0.3
-            return Float((texture * 0.3 + sin(t * 2 * Double.pi * 52) * 0.5) * exp(-t * 7))
+        crashBuffer = Self.makeBuffer(format: format, seconds: CrashSound.duration) { t in
+            CrashSound.sample(at: t)
         }
         successBuffer = Self.makeBuffer(format: format, seconds: 0.28) { t in
             let frequency = t < 0.12 ? 660.0 : 880.0

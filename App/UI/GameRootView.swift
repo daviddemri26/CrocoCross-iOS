@@ -37,7 +37,7 @@ struct GameRootView: View {
                             .opacity(session.showingCrash ? 0.12 : 0)
                             .allowsHitTesting(false)
                     }
-                    .animation(.easeOut(duration: 0.22), value: session.showingCrash)
+                    .animation(.easeInOut(duration: reducedMotion ? 0.2 : 0.65), value: session.showingCrash)
                     .ignoresSafeArea().accessibilityHidden(true)
                 if session.phase == .home {
                     home(wide: wide, height: geometry.size.height)

@@ -1,5 +1,14 @@
 # Validation record
 
+## Shoulder/hip overlap and crash atmosphere — September 16, 2026
+
+- **Build 10** moves the upper-arm and thigh pivots inside their painted volumes, raises the shoulder attachment, and raises/backs up the hip attachment. The fuller upper arm overlaps the shoulder; the thigh overlaps the buttock. The far arm is tucked inside the silhouette. No core simulation or driving setting changes in this pass.
+- The crash scene filter now fades in/out over **0.65 seconds** (0.2 with Reduce Motion). The existing impact texture gains a descending low tone and three fading, darker echoes in a **1.7-second** pre-rendered cue. Half-speed fall timing is retained.
+- Asset checks pass for **11 parts and 525 nominal postures**; the native renderer passes **180 sequential motion checks** and renders seven poses. Neutral and compressed-landing captures were inspected. Existing audio settings/playlist checks pass **22 checks**. Offline checks of the actual crash sampler cover 74,970 finite samples, peak 0.61834 (no clipping), quiet boundaries and nonzero echo-tail energy; `crash-echo.wav` is retained for listening. These numeric checks do not establish subjective sound quality on the phone.
+- Final iPhone simulator tests pass **2 tests, zero failures, 55.129 seconds**, covering pedals/pause and crash/results/retry. The inspected riding capture includes intentional foreground-building occlusion; character overlap was reviewed in the native offscreen renders. This test does not measure intermediate filter colors or subjective fade smoothness.
+- Signed Release **1.0.0 (10)** builds, installs and launches successfully on David’s physical iPhone 17 at **16:30:18 PDT**. The bundled manifest matches the final source, and project regeneration is stable. No new physical gameplay/listening session, iPad run, core-suite rerun or Game Center validation is claimed. The unchanged core retains the preceding 59-test evidence.
+- The [character creation guide](CHARACTER-CREATION.md) records the owner's anatomical overlap rules, calibration workflow and future-rider validation. Evidence is local under `artifacts/qa/2026-09-16-character-overlap/`.
+
 ## Rider posture, hard landings and slow-motion crashes — September 16, 2026
 
 - Build 9 preserves engine, suspension and pedal tuning. The physical hip limit is reduced to ±0.35 radians; attached artwork has a connected waist, bounded and smoothed relative motion, a higher thigh root and thicker biceps. Upright chassis contact during a hard landing no longer triggers a life loss. Falls play at 0.5× with a warm desaturated scene filter.

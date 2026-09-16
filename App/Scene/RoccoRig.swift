@@ -159,7 +159,7 @@ final class RoccoRig: SKNode {
         for (far, offset) in [(true, CGPoint(x: -0.035, y: 0.025)), (false, CGPoint.zero)] {
             if let upper = makePiece(.upperArm, depth: far ? 0.8 : 1.7),
                let lower = makePiece(.forearm, depth: far ? 0.81 : 1.71) {
-                arms.append(Chain(upper: upper, lower: lower, foot: nil, bend: -1, depthOffset: offset))
+                arms.append(Chain(upper: upper, lower: lower, foot: nil, bend: -1, depthOffset: far ? CGPoint(x: 0.045, y: -0.015) : .zero))
             }
             if let upper = makePiece(.thigh, depth: far ? 0.2 : 1.5),
                let lower = makePiece(.calf, depth: far ? 0.21 : 1.51),
@@ -207,7 +207,7 @@ final class RoccoRig: SKNode {
         piece.node.zRotation = angle
         piece.node.setScale(ppm * piece.artwork.metresPerPixel)
         // Increase muscle thickness without moving shoulder/elbow joint centres.
-        if piece.artwork.entry.part == .upperArm { piece.node.yScale *= 1.65 }
+        if piece.artwork.entry.part == .upperArm { piece.node.yScale *= 1.8 }
     }
 
     private func landmark(_ name: RoccoArtwork.Anchor, on piece: Piece, position: CGPoint,

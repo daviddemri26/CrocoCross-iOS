@@ -4,6 +4,9 @@
 
 Current native iOS development candidate:
 
+- Integrate the upper arm into the shoulder and the upper thigh into the buttock, with internal pivots and fuller muscle volume; document the rules for future riders.
+- Fade the crash filter over 0.65 seconds and add a deeper impact with fading echoes.
+
 - Stabilize Rocco’s attached posture with a connected waist, bounded torso lean and smooth movement; move the thigh joint into the hip, refine limb proportions and enlarge the biceps.
 - Preserve lives on upright hard landings when the skid plate grazes the ground; confirm crashes from tilted rider or overturned chassis contact.
 - Play physical falls at half speed with a subtle warm grayscale scene effect.

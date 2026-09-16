@@ -11,3 +11,5 @@ Each sprite has its own normalized pivots, limb endpoints and physical scale in 
 The original generated `rocco-shin.png` (combined lower leg and boot) is retained as a source reference but is not used by the final rig. Two imagegen derivatives separate the ankle, so the knee can bend forward while the boot sole rests on the footpeg. This adds a visual joint, not another physical body.
 
 Build 9 moves the thigh root into the upper hip, recalibrates the limb lengths and footpeg/shoulder positions, and widens the upper arms by 65% without moving joint endpoints. A native SpriteKit crop hides the pelvis layer’s redundant painted thigh extension. The waist anchors stay joined through bounded torso lean. These are manifest/renderer changes; all selected PNGs and their recorded hashes remain unchanged.
+
+Build 10 moves the proximal pivots inside the shoulder and upper-thigh artwork, raises the torso shoulder attachment, and raises/backs up the hip attachment. Limb lengths are recalibrated around those joint centres; the far arm is tucked inside the silhouette. See the [character creation guide](../CHARACTER-CREATION.md) for the shared anatomical and validation rules.
