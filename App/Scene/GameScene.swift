@@ -90,7 +90,10 @@ final class GameScene: SKScene {
         } else if startsNewRun {
             restoreBikeAfterRespawn()
         }
+        let finalExplosion = !isPreview && state.mode == .endless && state.status == .crashed
         presentingCrash = !isPreview && (state.status == .recovering || state.status == .crashed)
+        bike.isHidden = finalExplosion
+        effects.zPosition = finalExplosion ? 12 : 8
         let world = GameCatalog.world(worldID)
         if self.worldID != world.id { configureWorld(world) }
         let landscape = size.width > size.height
@@ -99,7 +102,7 @@ final class GameScene: SKScene {
         // Faster travel needs more reaction distance, especially in portrait.
         let speedFraction = min(1, max(0, CGFloat(abs(state.bike.velocity.x)) / 22))
         let visibleMetres: CGFloat = landscape ? 19 + speedFraction * 9 : 10 + speedFraction * 5
-        let playScale = min(64, max(23, min(size.width / visibleMetres, size.height / 13)))
+        let playScale = min(64, max(23, min(size.width / visibleMetres, size.height / 13))) * 1.18
         // Match the SwiftUI home's 440-point menu column, including narrow regular windows.
         let previewContentWidth = max(1, size.width - Self.homePanelWidth)
         let previewVerticalFraction: CGFloat = widePreview ? 0.38 : 0.55
@@ -198,12 +201,15 @@ final class GameScene: SKScene {
     }
 
     /// Intensity is normalized to 0...1. The session owns the matching audio event.
-    func playCrash(at position: Vector2, impact: Double = 1) {
+    func playCrash(at position: Vector2, impact: Double = 1, finalExplosion: Bool = false) {
         presentingCrash = true
         dust.particleBirthRate = 0
         dust.resetSimulation()
-        // A small dust impact leaves the physical fall visible.
-        effects.play(at: position, intensity: min(0.55, impact * 0.3), landing: true, time: scenicTime)
+        // Effects use scenic time at real speed, independently of slow-motion bodies.
+        bike.isHidden = finalExplosion
+        effects.zPosition = finalExplosion ? 12 : 8
+        effects.play(at: position, intensity: finalExplosion ? 1 : min(0.55, impact * 0.3),
+                     landing: !finalExplosion, time: scenicTime)
     }
 
     func playLanding(at position: Vector2, intensity: Double) {

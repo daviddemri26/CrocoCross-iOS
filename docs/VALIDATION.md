@@ -1,5 +1,23 @@
 # Validation record
 
+## Palm-to-handlebar contact — September 16, 2026
+
+- Build 12 recalibrates the forearm's distal/contact point to the palm grip center and targets the visible handlebar grip. Elbow-to-palm reach is 0.28 m; together with the upper arm this retains contact through the bounded attached posture. All source PNGs remain unchanged.
+- The production native renderer checks **both palm positions against their handlebar targets** to within 0.001 point over 180 moving frames and six attached static poses, including impact and wheelie snapshots. Waist and torso-motion checks remain active. Asset checks pass for 11 parts and 525 nominal postures; the final neutral render was visually inspected.
+- The rest of the app retains the build-11 three-test UI result below. This resource-only follow-up does not change physics or crash logic and does not rerun the UI suite. Signed Release 1.0.0 (12) builds successfully, contains the final manifest, and installs/launches on David’s physical iPhone 17 at 16:52:06 PDT. Subjective hand placement remains available for owner playtesting.
+
+Local evidence: `artifacts/qa/2026-09-16-hands/`.
+
+## Fine placement, closer camera and final Endless explosion — September 16, 2026
+
+- Build 11 lowers/backs up the hip attachment and moves the shoulder backward according to the owner's annotated reference. The in-game camera scale increases by 18% while retaining speed-dependent zoom-out and headroom correction. Home scale, physical dimensions and driving tuning are unchanged.
+- On the third lost Endless life, the complete rider/bike rig is hidden and the existing explosion plays at real scenic speed, in color above foreground objects. Terminal physical stepping stops; results normally wait 1.8 seconds. Weekly retains its half-speed physical fall/filter and 3.6-second delay; recoverable Endless falls also keep slow motion. Reduce Motion retains its shorter result delay.
+- The death cue is a simpler descending boom with stronger echoes at 0.24/0.48/0.78 seconds. Offline checks of 92,610 actual samples pass: finite/no clipping (peak 0.58545), quiet boundaries and retained tail energy. The 2.1-second WAV is saved for listening; no subjective speaker-quality test is claimed.
+- Renderer checks pass for 180 sequential poses; asset checks cover 11 parts and 525 nominal postures. The neutral render was visually inspected. Final iPhone simulator tests pass **3 tests, zero failures, 83.916 seconds**: Weekly crash/results/retry, three real Endless life losses with stable results and restored rider after retry, and image controls/pause. The captured final explosion is visibly colored with no rig, and the retry capture restores the rider and three hearts.
+- Signed Release **1.0.0 (11)** builds and installs on the physical iPhone 17. Project generation is stable and the bundled manifest matches final source. Normal launch also succeeds at 16:45:16 PDT. No core source changed, so the preceding 59-test core result remains applicable; no new core suite or iPad run was performed.
+
+Local evidence: `artifacts/qa/2026-09-16-final-explosion/` (renderer, audio, UI captures, build/install/launch logs).
+
 ## Shoulder/hip overlap and crash atmosphere — September 16, 2026
 
 - **Build 10** moves the upper-arm and thigh pivots inside their painted volumes, raises the shoulder attachment, and raises/backs up the hip attachment. The fuller upper arm overlaps the shoulder; the thigh overlaps the buttock. The far arm is tucked inside the silhouette. No core simulation or driving setting changes in this pass.

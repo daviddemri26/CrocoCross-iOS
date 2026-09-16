@@ -238,6 +238,30 @@ final class CrocoCrossUITests: XCTestCase {
         capture("image-buttons-resumed")
     }
 
+    @MainActor func testEndlessFinalLifeAndRetry() throws {
+        let app = launch(extraArguments: ["-world", "mine"])
+        app.buttons["startEndless"].tap()
+        waitForPlaying(app)
+        let lives = app.descendants(matching: .any).matching(identifier: "lives").firstMatch
+        XCTAssertEqual(lives.value as? String, "3 of 3 remaining")
+        for _ in 0..<32 {
+            if lives.value as? String == "0 of 3 remaining" || app.buttons["rideAgain"].exists { break }
+            let lastLife = lives.value as? String == "1 of 3 remaining"
+            app.buttons["throttle"].press(forDuration: lastLife ? 0.5 : 3)
+        }
+        capture("endless-final-explosion")
+        XCTAssertTrue(app.buttons["rideAgain"].waitForExistence(timeout: 4))
+        XCTAssertEqual(lives.value as? String, "0 of 3 remaining")
+        let finalScore = app.staticTexts["finalScore"].label
+        Thread.sleep(forTimeInterval: 0.3)
+        XCTAssertEqual(app.staticTexts["finalScore"].label, finalScore)
+        capture("endless-final-results")
+        app.buttons["rideAgain"].tap()
+        waitForPlaying(app)
+        XCTAssertEqual(lives.value as? String, "3 of 3 remaining")
+        capture("endless-restored-rider")
+    }
+
     @MainActor func testCrashResultsAndRetry() throws {
         let app = launch()
         app.buttons["startWeekly"].tap()

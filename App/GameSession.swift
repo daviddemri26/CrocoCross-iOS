@@ -16,7 +16,8 @@ final class GameSession {
     var flips = 0
     var finished = false
     var recovering = false
-    var showingCrash: Bool { (phase == .playing && recovering) || (phase == .results && !finished) }
+    var showingFinalExplosion: Bool { phase == .results && !finished && mode == .endless }
+    var showingCrash: Bool { (phase == .playing && recovering) || (phase == .results && !finished && !showingFinalExplosion) }
     var ranked = false
     var pedalReset = 0
     var eventText: String?
@@ -214,7 +215,7 @@ final class GameSession {
                 }
                 audio.update(bike: simulation.state.bike)
             }
-        } else if phase == .results && !finished && !interrupted &&
+        } else if phase == .results && !finished && !showingFinalExplosion && !interrupted &&
                     crashPresentationSteps < Self.crashPresentationStepLimit {
             // The result is already final. Only detached-body presentation advances.
             if rawDelta <= 0.25 {
@@ -249,7 +250,7 @@ final class GameSession {
 
     /// Blend only presentation coordinates; scoring and contact always use fixed-step state.
     private func renderedState() -> SimulationState {
-        let physicsIsAdvancing = phase == .playing || (phase == .results && !finished &&
+        let physicsIsAdvancing = phase == .playing || (phase == .results && !finished && !showingFinalExplosion &&
             crashPresentationSteps < Self.crashPresentationStepLimit)
         guard physicsIsAdvancing, !interrupted, previousState.status == simulation.state.status,
             abs(previousState.bike.position.x - simulation.state.bike.position.x) < 2
@@ -283,7 +284,8 @@ final class GameSession {
             eventPoints = GameSimulation.flipBonus(for: count)
             eventUntil = frameTime + 1.8
         case .crashed:
-            scene.playCrash(at: simulation.state.bike.position, impact: min(2, max(0.6, speed / 35)))
+            scene.playCrash(at: simulation.state.bike.position, impact: min(2, max(0.6, speed / 35)),
+                            finalExplosion: simulation.state.mode == .endless && simulation.state.status == .crashed)
             eventText = nil
             eventPoints = 0
             clearPedals()
@@ -326,7 +328,7 @@ final class GameSession {
         resultsVisible = false
         crashPresentationSteps = 0
         // Let the physical fall play before showing the score card.
-        resultsAt = frameTime + (finished || reducedMotion ? 0.3 : 3.6)
+        resultsAt = frameTime + (finished || reducedMotion ? 0.3 : showingFinalExplosion ? 1.8 : 3.6)
         audio.setPaused(true)
         submitProgress()
     }

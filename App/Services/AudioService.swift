@@ -81,14 +81,14 @@ enum AudioPreferenceStorage {
 /// A pre-rendered impact with softer, progressively darker echoes.
 /// Kept independent of AVAudioEngine so the cue can be checked offline.
 enum CrashSound {
-    static let duration = 1.7
+    static let duration = 2.1
 
     static func sample(at time: Double) -> Float {
         guard time >= 0, time < duration else { return 0 }
         var value = impact(at: time, brightness: 1)
-        value += 0.30 * impact(at: time - 0.19, brightness: 0.60)
-        value += 0.17 * impact(at: time - 0.38, brightness: 0.35)
-        value += 0.08 * impact(at: time - 0.61, brightness: 0.18)
+        value += 0.50 * impact(at: time - 0.24, brightness: 0.55)
+        value += 0.30 * impact(at: time - 0.48, brightness: 0.30)
+        value += 0.17 * impact(at: time - 0.78, brightness: 0.15)
         let release = min(1, (duration - time) / 0.08)
         return Float(tanh(value * 0.85) * release)
     }
@@ -97,9 +97,10 @@ enum CrashSound {
         guard time >= 0 else { return 0 }
         let texture = sin(time * 13_731) * sin(time * 6_043) + sin(time * 2_749) * 0.3
         // Descending low tone adds weight; the echoes lose their sharp edge.
-        let low = sin(2 * Double.pi * (62 * time - 9 * time * time))
+        let phase = 2 * Double.pi * (42 * time + 6.25 * (1 - exp(-time * 8)))
+        let low = sin(phase) + 0.22 * sin(phase * 1.5)
         let attack = min(1, time / 0.003)
-        return attack * (texture * 0.24 * brightness * exp(-time * 11) + low * 0.62 * exp(-time * 5.5))
+        return attack * (texture * 0.10 * brightness * exp(-time * 15) + low * 0.68 * exp(-time * 7))
     }
 }
 

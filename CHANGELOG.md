@@ -4,6 +4,12 @@
 
 Current native iOS development candidate:
 
+- Anchor both palms on the visible handlebar grips and recalibrate forearm reach to retain contact through rider movement.
+
+- Fine-tune the hip/shoulder placement and zoom gameplay in by 18% for clearer rider detail.
+- Restore a real-time, full-color explosion replacing the rig on the third Endless life; retain physical slow-motion falls in Weekly and on recoverable Endless crashes.
+- Give the death cue a simpler descending boom and more pronounced echoes.
+
 - Integrate the upper arm into the shoulder and the upper thigh into the buttock, with internal pivots and fuller muscle volume; document the rules for future riders.
 - Fade the crash filter over 0.65 seconds and add a deeper impact with fading echoes.
 
