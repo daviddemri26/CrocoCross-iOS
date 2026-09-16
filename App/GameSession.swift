@@ -16,6 +16,7 @@ final class GameSession {
     var flips = 0
     var finished = false
     var recovering = false
+    var showingCrash: Bool { (phase == .playing && recovering) || (phase == .results && !finished) }
     var ranked = false
     var pedalReset = 0
     var eventText: String?
@@ -196,7 +197,7 @@ final class GameSession {
             else if rawDelta > 0.25 {
                 if !awaitingFirstSimulationStep { pause() }
             } else {
-                accumulator += dt
+                accumulator += dt * (simulation.state.status == .recovering ? 0.5 : 1)
                 var steps = 0
                 while accumulator >= 1.0 / 120 && steps < 12 && phase == .playing {
                     previousState = simulation.state
@@ -217,7 +218,7 @@ final class GameSession {
                     crashPresentationSteps < Self.crashPresentationStepLimit {
             // The result is already final. Only detached-body presentation advances.
             if rawDelta <= 0.25 {
-                accumulator += dt
+                accumulator += dt * 0.5
                 var steps = 0
                 while accumulator >= GameSimulation.timeStep && steps < 12 &&
                         crashPresentationSteps < Self.crashPresentationStepLimit {
@@ -325,7 +326,7 @@ final class GameSession {
         resultsVisible = false
         crashPresentationSteps = 0
         // Let the physical fall play before showing the score card.
-        resultsAt = frameTime + (finished || reducedMotion ? 0.3 : 1.8)
+        resultsAt = frameTime + (finished || reducedMotion ? 0.3 : 3.6)
         audio.setPaused(true)
         submitProgress()
     }

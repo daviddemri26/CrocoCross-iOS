@@ -31,6 +31,13 @@ struct GameRootView: View {
             )
             ZStack {
                 SpriteView(scene: session.scene, preferredFramesPerSecond: 60)
+                    .saturation(session.showingCrash ? 0.12 : 1)
+                    .overlay {
+                        Color(red: 0.40, green: 0.30, blue: 0.18)
+                            .opacity(session.showingCrash ? 0.12 : 0)
+                            .allowsHitTesting(false)
+                    }
+                    .animation(.easeOut(duration: 0.22), value: session.showingCrash)
                     .ignoresSafeArea().accessibilityHidden(true)
                 if session.phase == .home {
                     home(wide: wide, height: geometry.size.height)

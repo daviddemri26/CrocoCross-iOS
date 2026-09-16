@@ -1,5 +1,15 @@
 # Validation record
 
+## Rider posture, hard landings and slow-motion crashes — September 16, 2026
+
+- Build 9 preserves engine, suspension and pedal tuning. The physical hip limit is reduced to ±0.35 radians; attached artwork has a connected waist, bounded and smoothed relative motion, a higher thigh root and thicker biceps. Upright chassis contact during a hard landing no longer triggers a life loss. Falls play at 0.5× with a warm desaturated scene filter.
+- **59 core tests pass, zero failures, 48.898 seconds** (`core-final.log`), including the existing driving, flip, weekly-course and one-hour endurance regressions. Nine additional drop fixtures cover forward speeds of 12/20/28 m/s and initial descent of 8/16/24 m/s. All 8/16 m/s cases remain active; the extreme 24 m/s cases may crash only after actual tipping, not while upright. The fixture confirms real skid-plate contact and checks the physical hip limits.
+- Native SpriteKit/Metal rendering passes **180 sequential posture checks** with abrupt raw rider motion and angle wraparound: displayed torso angle/speed remain bounded and both waist anchors coincide. Seven static captures include actual airborne, compressed-impact and settled simulation poses; representative captures were visually inspected. Asset checks pass for **11 parts and 525 nominal postures**. Evidence: `renderer-preview.log`, `renderer/` and `asset-check.json`.
+- Final iPhone simulator UI checks pass: **2 tests, zero failures, 53.284 seconds**, covering pedals/pause and crash/results/retry (`ui.log`). Riding and game-over captures were inspected, including the desaturated scene behind the colored interface. These are simulator checks, not subjective phone playtesting.
+- Signed **Release 1.0.0, build 9** compiles successfully (`device-build.log`). Installation on David’s physical iPhone 17 succeeds after reconnection (`device-install.json`). Automatic launch is blocked by the phone being locked (`device-launch.json`); opening and subjective playtesting remain with the owner. No new solver benchmark or live Game Center validation was performed in this pass.
+
+Evidence is local under `artifacts/qa/2026-09-16-rider-fix/`. Earlier benchmark figures below belong to build 8.
+
 ## Box2D and articulated Rocco — September 16, 2026
 
 - `box2d-1` replaces the custom solver with pinned Box2D 3.1.1: five dynamic bodies, 120 Hz and four substeps. Rocco is the only enabled rider in this preview; all nine worlds remain available. Records start fresh in the new rules namespace.

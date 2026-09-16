@@ -4,6 +4,10 @@
 
 Current native iOS development candidate:
 
+- Stabilize Rocco’s attached posture with a connected waist, bounded torso lean and smooth movement; move the thigh joint into the hip, refine limb proportions and enlarge the biceps.
+- Preserve lives on upright hard landings when the skid plate grazes the ground; confirm crashes from tilted rider or overturned chassis contact.
+- Play physical falls at half speed with a subtle warm grayscale scene effect.
+
 - Replace the custom contact engine with pinned Box2D 3.1.1: independent chassis, wheels, pelvis and torso, damped wheel joints, and physical rider detachment on a confirmed crash (`box2d-1`).
 - Introduce articulated Rocco artwork with independent suspension, hands and feet; keep the eight other riders in source for a later rig adaptation. All nine worlds remain selectable.
 - Isolate new records, pending submissions and Game Center v2 boards from legacy physics; keep offline play available.

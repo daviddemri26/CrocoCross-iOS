@@ -26,6 +26,12 @@ final class RoccoRig: SKNode {
     private var legs: [Chain] = []
     private var wheelPieces: [Piece] = []
     private var configured = false
+    private var shownLean: CGFloat = 0
+    private var shownShift: CGFloat = 0
+    private var previousSeconds: Double?
+    private var previousSeed: UInt32?
+    private var previousTick = 0
+    private var wasAttached = true
 
     override init() {
         super.init()
@@ -39,11 +45,39 @@ final class RoccoRig: SKNode {
         if !configured { configure() }
         guard let bike = pieces[.bike], let pelvis = pieces[.pelvis], let torso = pieces[.torso] else { return }
         let chassisPosition = project(state.bike.position)
-        let pelvisPosition = project(state.rider.pelvis.position)
-        let torsoPosition = project(state.rider.torso.position)
         let chassisAngle = CGFloat(state.bike.angle)
-        let pelvisAngle = CGFloat(state.rider.pelvis.angle)
-        let torsoAngle = CGFloat(state.rider.torso.angle)
+        var pelvisPosition = project(state.rider.pelvis.position)
+        var torsoPosition = project(state.rider.torso.position)
+        var pelvisAngle = CGFloat(state.rider.pelvis.angle)
+        var torsoAngle = CGFloat(state.rider.torso.angle)
+        if state.rider.isAttached {
+            // Filter only posture relative to the motorcycle, never the bike's
+            // rotation. Rebuild the shared waist anchor so interpolation cannot
+            // pull the two painted halves apart or swing through +/-pi.
+            let relative = torsoAngle - chassisAngle
+            let targetLean = min(CGFloat(0.35), max(-0.35, atan2(sin(relative), cos(relative))))
+            let delta = Vector2(x: state.rider.pelvis.position.x - state.bike.position.x,
+                                y: state.rider.pelvis.position.y - state.bike.position.y)
+            let targetShift = min(CGFloat(0.14), max(-0.14,
+                CGFloat(delta.x * cos(state.bike.angle) + delta.y * sin(state.bike.angle))))
+            let elapsed = seconds - (previousSeconds ?? seconds)
+            let reset = previousSeconds == nil || previousSeed != state.seed || state.tick < previousTick ||
+                !wasAttached || elapsed < 0 || elapsed > 0.25
+            if reset { shownLean = targetLean; shownShift = targetShift }
+            else if elapsed > 0 {
+                let dt = CGFloat(elapsed), blend = 1 - exp(-dt / 0.065)
+                shownLean += min(2.5 * dt, max(-2.5 * dt, (targetLean - shownLean) * blend))
+                shownShift += min(0.8 * dt, max(-0.8 * dt, (targetShift - shownShift) * blend))
+            }
+            pelvisAngle = chassisAngle
+            torsoAngle = chassisAngle + shownLean
+            pelvisPosition = offset(chassisPosition, CGPoint(x: shownShift, y: 0.10), angle: chassisAngle, ppm: ppm)
+            let waist = landmark(.spine, on: pelvis, position: pelvisPosition, angle: pelvisAngle, ppm: ppm)
+            let torsoWaist = torso.artwork.local(.spine)
+            torsoPosition = offset(waist, CGPoint(x: -torsoWaist.x, y: -torsoWaist.y), angle: torsoAngle, ppm: ppm)
+        }
+        previousSeconds = seconds; previousSeed = state.seed; previousTick = state.tick
+        wasAttached = state.rider.isAttached
         place(bike, at: chassisPosition, angle: chassisAngle, ppm: ppm)
         place(pelvis, at: pelvisPosition, angle: pelvisAngle, ppm: ppm)
         place(torso, at: torsoPosition, angle: torsoAngle, ppm: ppm)
@@ -148,7 +182,20 @@ final class RoccoRig: SKNode {
         sprite.zRotation = art.neutralRotation
         let node = SKNode()
         node.zPosition = depth
-        node.addChild(sprite)
+        if part == .pelvis {
+            let crop = SKCropNode()
+            let painted = SKNode()
+            painted.addChild(sprite)
+            let edge: CGFloat = 0.82
+            let mask = SKSpriteNode(color: .white, size: CGSize(width: art.sourceSize.width * edge,
+                                                                height: art.sourceSize.height))
+            mask.anchorPoint = CGPoint(x: 0, y: 0)
+            mask.position = CGPoint(x: -pivot.x * art.sourceSize.width,
+                                    y: -(1 - pivot.y) * art.sourceSize.height)
+            crop.maskNode = mask
+            crop.addChild(painted)
+            node.addChild(crop)
+        } else { node.addChild(sprite) }
         artworkRoot.addChild(node)
         let piece = Piece(node: node, artwork: art)
         renderPieces.append(piece)
@@ -159,6 +206,8 @@ final class RoccoRig: SKNode {
         piece.node.position = point
         piece.node.zRotation = angle
         piece.node.setScale(ppm * piece.artwork.metresPerPixel)
+        // Increase muscle thickness without moving shoulder/elbow joint centres.
+        if piece.artwork.entry.part == .upperArm { piece.node.yScale *= 1.65 }
     }
 
     private func landmark(_ name: RoccoArtwork.Anchor, on piece: Piece, position: CGPoint,

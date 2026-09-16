@@ -114,7 +114,7 @@ final class Box2DBikeWorld {
         hinge.bodyIdA = pelvis; hinge.bodyIdB = torso
         hinge.localAnchorA = b2Vec2(x: 0, y: 0.06)
         hinge.localAnchorB = b2Vec2(x: 0, y: -0.20)
-        hinge.enableLimit = true; hinge.lowerAngle = -0.65; hinge.upperAngle = 0.65
+        hinge.enableLimit = true; hinge.lowerAngle = -0.35; hinge.upperAngle = 0.35
         hinge.enableMotor = true; hinge.maxMotorTorque = 220 * Float(fraction)
         // Muscle effort is capped by the motor. A parallel unbounded spring is deliberately absent.
         hinge.enableSpring = false

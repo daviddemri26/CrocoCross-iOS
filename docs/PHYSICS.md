@@ -6,9 +6,15 @@ CrocoCross now uses **Box2D 3.1.1** for all integration, collisions and joints. 
 
 The 150 kg total is divided between chassis (84 kg), two wheels (8 kg each), pelvis (15 kg) and torso/head (35 kg). The chassis mass centre compensates for the other bodies so neutral balance stays near the original motorcycle's centre. Wheel radius remains 0.32 m, wheelbase 1.58 m, travel 0.38 m, and target static sag 30%.
 
-Wheel joints provide suspension, finite travel limits and motor/brake torque. The pelvis follows a bike-relative posture using a force-limited motor joint. A limited hip hinge joins pelvis to torso. Neither joint targets the world vertical. The soft posture correction lets the pilot absorb an impact instead of instantly springing back against the frame.
+Wheel joints provide suspension, finite travel limits and motor/brake torque. The pelvis follows a bike-relative posture using a force-limited motor joint. A hip hinge limited to ±0.35 radians (about ±20°) joins pelvis to torso. Neither joint targets the world vertical. The soft posture correction lets the pilot absorb an impact instead of instantly springing back against the frame.
 
-The head and torso have real terrain collisions. After three consecutive ticks of body contact, the run loses one life and the pelvis-to-bike attachment is removed. Linear and angular velocities are preserved; there is no ejection impulse. The hip remains connected, with passive motion. Arms and legs use visual two-segment joints; they are not additional collision bodies.
+The head and torso have real terrain collisions. A crash requires three consecutive ticks of rider contact while tilted more than 45° from the local terrain, or chassis contact while tilted more than 75°. An upright skid-plate contact during suspension compression does not cost a life, regardless of impact speed. A confirmed crash loses one life and removes the pelvis-to-bike attachment. Linear and angular velocities are preserved; there is no ejection impulse. The hip remains connected, with passive motion. Arms and legs use visual two-segment joints; they are not additional collision bodies.
+
+## Rider presentation
+
+While attached, Rocco’s displayed pelvis follows the motorcycle with at most 0.14 m of fore/aft shift. Displayed torso lean is bounded to ±0.35 radians relative to the bike, filtered over 65 ms and limited to 2.5 rad/s. Pelvis shift is limited to 0.8 m/s. The two painted waist anchors stay coincident, including when angles wrap through ±π. These presentation limits do not rotate the motorcycle or feed forces back into Box2D. Detached bodies continue using their physical poses.
+
+The thigh starts high in the hip, with shorter calibrated leg segments, forward footpegs and thicker upper arms. A SpriteKit crop hides the old painted thigh extension on the pelvis layer; original PNGs remain intact.
 
 ## Inputs and speed
 
@@ -31,7 +37,7 @@ Game positions remain Double values. Box2D's local Float origin shifts on either
 
 ## Crash and competition lifecycle
 
-During terminal crash presentation, up to 216 additional physics steps show the fall without changing score, clock or lives. Endless recovery advances its timer and then constructs a fresh rig at the last stable checkpoint. Normal results, leaving the run and restarting release the old world.
+During terminal crash presentation, up to 216 additional physics steps show the fall without changing score, clock or lives. Both terminal falls and Endless recovery play at half speed (0.5×); the terminal score card normally waits 3.6 seconds, or 0.3 seconds with Reduce Motion. A warm, desaturated scene filter accompanies the fall. Endless recovery advances its timer and then constructs a fresh rig at the last stable checkpoint. Normal results, leaving the run and restarting release the old world.
 
 The engine/course identifier is `box2d-1`. New records and pending-score storage have their own namespace, and Game Center uses `.v2` board IDs. Old records, rider preferences and pending submissions are retained separately and never retagged. New rankings require matching configured boards; offline play remains available.
 

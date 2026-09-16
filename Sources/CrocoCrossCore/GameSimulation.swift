@@ -73,7 +73,14 @@ public final class GameSimulation {
             events.append(.landed(impact: diagnostics.peakImpactSpeed))
         }
         if shieldTicks > 0 { shieldTicks -= 1 }
-        let hit = diagnostics.bodyContact
+        // A compressed suspension can let the skid plate graze the ground.
+        // Impact force alone is never a crash: require an overturned chassis or
+        // actual rider-ground contact. Judge orientation against the local slope.
+        let groundAngle = atan(terrain.slope(at: state.bike.position.x))
+        let tippedOver = abs(wrapped(state.bike.angle - groundAngle)) > .pi * 75 / 180
+        let riderDown = diagnostics.riderContact &&
+            abs(wrapped(state.bike.angle - groundAngle)) > .pi / 4
+        let hit = riderDown || (diagnostics.chassisContact && tippedOver)
         crashContactTicks = hit ? crashContactTicks + 1 : 0
         let traveled = max(0, state.bike.position.x - PhysicsConfiguration.courseStartX)
         state.distance = max(state.distance, state.mode == .weekly ? min(Self.weeklyDistance, traveled) : traveled)
