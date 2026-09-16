@@ -96,11 +96,12 @@ final class GameSession {
         refreshHUD()
     }
 
-    func setPedal(right: Bool, value: Double) {
+    func setPedal(right: Bool, pressed: Bool) {
         guard phase == .playing, simulation.state.status == .active else {
             input = .neutral
             return
         }
+        let value = pressed ? 1.0 : 0.0
         if right { input.throttle = value } else { input.brake = value }
         input.lean = input.throttle - input.brake
     }

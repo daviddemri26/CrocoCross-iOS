@@ -70,17 +70,19 @@ final class StuntTests: XCTestCase {
     }
 
     func testSeededRampsAllowARealFlipAndSafeReceptionWithTheTwoAppPedals() {
-        for (seed, chosenFlight): (UInt32, Int) in [(3, 3), (8, 5), (11, 3)] {
+        for seed: UInt32 in [3, 8, 11] {
             var sim = GameSimulation(mode: .weekly, seed: seed)
-            var wasGrounded = true, flight = 0, attempting = false
+            var wasGrounded = true, attempted = false, attempting = false
             var unwrappedAngle = 0.0, priorAngle = 0.0, maxClearance = 0.0
             var airTicks = 0, awarded = 0, awardTick: Int?, landingDistance = 0.0
             for _ in 0 ..< 120 * 45 {
                 let bike = sim.state.bike
                 if wasGrounded && !bike.grounded {
-                    flight += 1
-                    if flight == chosenFlight {
-                        attempting = true; unwrappedAngle = bike.angle; priorAngle = bike.angle
+                    // Choose a jump with enough ballistic airtime, not a fixed flight
+                    // number: small rollers deliberately alternate with tall takeoffs.
+                    if !attempted && predictedFlightDuration(sim) >= 2.1 {
+                        attempted = true; attempting = true
+                        unwrappedAngle = bike.angle; priorAngle = bike.angle
                     }
                 }
                 var input = TestRider.controls(sim, speed: 16)
@@ -106,6 +108,7 @@ final class StuntTests: XCTestCase {
                 if sim.state.status != .active { break }
                 if let awardTick, sim.state.tick >= awardTick + 120 * 3 { break }
             }
+            XCTAssertTrue(attempted, "seed=\(seed) needs a jump with room for a flip.")
             XCTAssertEqual(awarded, 1, "seed=\(seed)")
             XCTAssertEqual(sim.state.flips, 1)
             XCTAssertEqual(sim.state.status, .active, "The rider must keep riding for three seconds after reception.")
@@ -115,4 +118,15 @@ final class StuntTests: XCTestCase {
             XCTAssertEqual(sim.state.score, Int(floor(sim.state.distance * 10)) + GameSimulation.flipBonus(for: 1))
         }
     }
+
+    private func predictedFlightDuration(_ sim: GameSimulation) -> Double {
+        let bike = sim.state.bike
+        for time in stride(from: 0.1, through: 4.0, by: 0.025) {
+            let x = bike.position.x + bike.velocity.x * time
+            let y = bike.position.y + bike.velocity.y * time - sim.configuration.gravity * time * time / 2
+            if y <= sim.terrainHeight(at: x) + sim.configuration.restingRideHeight { return time }
+        }
+        return 4
+    }
+
 }

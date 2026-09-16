@@ -18,7 +18,7 @@ final class PhysicsTests: XCTestCase {
             XCTAssertGreaterThan(Double(descending) / 16_001, 0.60, "Most of seed \(seed) must descend.")
             XCTAssertGreaterThan(climbing, 800, "The descent still needs ramps, not just a tilted road.")
             XCTAssertLessThan(steepest, 1.15, "Ramps may be steep but must remain climbable, without vertical walls.")
-            XCTAssertGreaterThan(crests, 150, "The weekly course needs two distinct hills per 48m section.")
+            XCTAssertGreaterThan(crests, 115, "The weekly course needs varied bumps with room for descending receptions.")
             for boundary in [12.0] + (0...30).map({ TerrainGenerator.entryLength + Double($0) * TerrainGenerator.sectionLength }) {
                 XCTAssertEqual(terrain.height(at: boundary - 0.0001), terrain.height(at: boundary + 0.0001), accuracy: 0.0001)
                 XCTAssertEqual(terrain.slope(at: boundary - 0.001), terrain.slope(at: boundary + 0.001), accuracy: 0.001)
@@ -46,8 +46,8 @@ final class PhysicsTests: XCTestCase {
         universalBrake.step(input: .init(brake: 1, lean: -1))
         XCTAssertLessThan(braking.state.bike.angularVelocity, coasting.state.bike.angularVelocity - 0.025,
                           "The rear contact lever must reduce nose-up angular velocity immediately.")
-        XCTAssertEqual(braking.state.bike.angle, universalBrake.state.bike.angle)
-        XCTAssertEqual(braking.state.bike.velocity, universalBrake.state.bike.velocity)
+        XCTAssertLessThan(universalBrake.state.bike.angularVelocity, braking.state.bike.angularVelocity - 0.01,
+                          "Forward rider effort must supplement the rear brake while the front is clear.")
         var brakedLanding: Int?, coastingLanding: Int?
         for tick in 1 ... 240 {
             braking.step(input: .init(brake: 1))
@@ -88,8 +88,10 @@ final class PhysicsTests: XCTestCase {
                 XCTAssertLessThan(braking.state.bike.angularVelocity, gasOnly.state.bike.angularVelocity - 0.04)
             }
             XCTAssertTrue(braking.state.bike.grounded, "The recovery must use actual tire contact.")
-            XCTAssertEqual(braking.state.bike.angle, brakingWithoutLean.state.bike.angle)
-            XCTAssertEqual(braking.state.bike.position, brakingWithoutLean.state.bike.position)
+            if tick == 1 {
+                XCTAssertLessThan(braking.state.bike.angularVelocity, brakingWithoutLean.state.bike.angularVelocity,
+                                  "The net forward balance input also acts during rear-wheel support.")
+            }
         }
         XCTAssertEqual(braking.state.status, .active)
         XCTAssertLessThan(peakAngle, 0.51, "Braking must catch the rising wheelie despite sustained gas.")
@@ -231,6 +233,28 @@ final class PhysicsTests: XCTestCase {
         XCTAssertGreaterThan(totalJumps, 100)
         XCTAssertGreaterThan(totalPlayableJumps, 60, "Contact chatter cannot satisfy the jump acceptance test.")
     }
+    func testDownhillRoutesFlowWithBinaryPedalHolds() {
+        for targetSpeed in [12.0, 16] {
+            for seed: UInt32 in 1 ... 12 {
+                var sim = GameSimulation(mode: .endless, seed: seed)
+                var rider = PulsedTestRider()
+                var crashes = 0
+                for _ in 0 ..< 120 * 60 {
+                    let input = rider.controls(sim, speed: targetSpeed)
+                    for event in sim.step(input: input) {
+                        if case .crashed = event { crashes += 1 }
+                    }
+                    if sim.state.status == .crashed { break }
+                }
+                XCTAssertEqual(crashes, 0, "seed=\(seed), target=\(targetSpeed)m/s")
+                XCTAssertEqual(sim.state.status, .active)
+                XCTAssertEqual(sim.state.lives, 3)
+                XCTAssertGreaterThan(sim.state.distance, targetSpeed == 12 ? 650 : 730,
+                                     "100 ms on/off holds must carry speed through repeated jumps and receptions.")
+            }
+        }
+    }
+
     private var flat: PhysicsConfiguration {
         var c = PhysicsConfiguration(); c.terrainStyle = .flat; return c
     }
@@ -448,8 +472,8 @@ final class PhysicsTests: XCTestCase {
         let sim = GameSimulation(mode: .weekly, seed: 1)
         let encoded = try JSONEncoder().encode(sim)
         var object = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
-        XCTAssertEqual(PhysicsConfiguration.engineVersion, "native-3")
-        for priorVersion in ["native-1", "native-2"] {
+        XCTAssertEqual(PhysicsConfiguration.engineVersion, "native-5")
+        for priorVersion in ["native-1", "native-2", "native-3", "native-4"] {
             object["saveVersion"] = priorVersion
             XCTAssertThrowsError(try JSONDecoder().decode(GameSimulation.self, from: JSONSerialization.data(withJSONObject: object)))
         }

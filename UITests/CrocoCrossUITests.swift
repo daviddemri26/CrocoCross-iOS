@@ -114,8 +114,8 @@ final class CrocoCrossUITests: XCTestCase {
         app.buttons["resume"].tap()
         waitForPlaying(app)
         XCTAssertGreaterThanOrEqual(try displayedDistance(app), pausedDistance, "Keep riding must resume the same ride")
-        XCTAssertEqual(app.buttons["throttle"].value as? String, "0%")
-        XCTAssertEqual(app.buttons["brake"].value as? String, "0%")
+        XCTAssertEqual(app.buttons["throttle"].value as? String, "Released")
+        XCTAssertEqual(app.buttons["brake"].value as? String, "Released")
         app.buttons["pause"].tap()
         waitForPaused(app)
         app.buttons["home"].tap()
@@ -196,37 +196,45 @@ final class CrocoCrossUITests: XCTestCase {
         waitForPaused(app)
     }
 
-    @MainActor func testFloatingControlsAndBottomPause() throws {
-        let app = launch()
-        app.buttons["startWeekly"].tap()
-        assertNoSavedRunPrompt(app)
+    @MainActor func testImageButtonsAndBottomPause() throws {
+        let app = launch(extraArguments: ["-audio.muted", "YES", "-world", "paris"])
+        defer { app.terminate() }
+        app.buttons["startEndless"].tap()
         waitForPlaying(app)
         let throttle = app.buttons["throttle"]
         let brake = app.buttons["brake"]
-        let window = app.windows.firstMatch.frame
-        XCTAssertGreaterThan(throttle.frame.width, window.width * 0.40)
-        XCTAssertGreaterThan(throttle.frame.height, window.height * 0.35)
-        XCTAssertGreaterThan(brake.frame.width, window.width * 0.40)
         let pause = app.buttons["pause"]
+        let window = app.windows.firstMatch.frame
+        let original = throttle.frame
+        for button in [throttle, brake] {
+            XCTAssertTrue(button.isHittable)
+            XCTAssertGreaterThanOrEqual(button.frame.width, 100)
+            XCTAssertLessThanOrEqual(button.frame.width, 130)
+            XCTAssertEqual(button.frame.width, button.frame.height, accuracy: 1)
+            XCTAssertGreaterThan(button.frame.minY, window.height * 0.65)
+            XCTAssertEqual(button.value as? String, "Released")
+        }
+        XCTAssertLessThan(brake.frame.maxX, pause.frame.minX)
+        XCTAssertGreaterThan(throttle.frame.minX, pause.frame.maxX)
         XCTAssertLessThan(abs(pause.frame.midX - window.midX), 5)
-        XCTAssertGreaterThan(pause.frame.midY, window.height * 0.75)
+        capture("image-buttons-idle")
         let before = try displayedDistance(app)
-        // Far from the resting grip: the whole lower corner must accept the touch.
-        let start = throttle.coordinate(withNormalizedOffset: CGVector(dx: 0.30, dy: 0.25))
-        let end = throttle.coordinate(withNormalizedOffset: CGVector(dx: 0.35, dy: 0.65))
-        start.press(forDuration: 0.35, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.15)
-        XCTAssertEqual(throttle.value as? String, "0%", "Lifting after a slide must release the throttle")
+        let start = throttle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.35))
+        let end = throttle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.85))
+        start.press(forDuration: 0.25, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
+        XCTAssertEqual(throttle.value as? String, "Released", "A moving thumb must still release on lift")
+        XCTAssertEqual(throttle.frame, original, "The image button must remain fixed")
         waitForDistance(app, greaterThan: before)
-        brake.coordinate(withNormalizedOffset: CGVector(dx: 0.65, dy: 0.30)).press(forDuration: 0.2)
-        XCTAssertEqual(brake.value as? String, "0%")
+        brake.press(forDuration: 0.2)
+        XCTAssertEqual(brake.value as? String, "Released")
+        capture("image-buttons-riding")
         pause.tap()
         waitForPaused(app)
         app.buttons["resume"].tap()
         waitForPlaying(app)
-        XCTAssertEqual(throttle.value as? String, "0%", "Resuming must not reuse a held control")
-        capture("floating-controls-hud")
-        pause.tap()
-        waitForPaused(app)
+        XCTAssertEqual(throttle.value as? String, "Released", "Resume must not reuse held input")
+        XCTAssertEqual(brake.value as? String, "Released")
+        capture("image-buttons-resumed")
     }
 
     @MainActor func testCrashResultsAndRetry() throws {
@@ -487,8 +495,8 @@ final class CrocoCrossUITests: XCTestCase {
     ) throws {
         waitForPlaying(app, file: file, line: line)
         XCTAssertEqual(try displayedDistance(app), 0, "A new ride must start at zero metres", file: file, line: line)
-        XCTAssertEqual(app.buttons["throttle"].value as? String, "0%", file: file, line: line)
-        XCTAssertEqual(app.buttons["brake"].value as? String, "0%", file: file, line: line)
+        XCTAssertEqual(app.buttons["throttle"].value as? String, "Released", file: file, line: line)
+        XCTAssertEqual(app.buttons["brake"].value as? String, "Released", file: file, line: line)
         XCTAssertTrue(app.staticTexts[mode].exists, "The requested ride mode must be active", file: file, line: line)
         let score = Int(app.staticTexts["score"].label.filter(\.isNumber))
         XCTAssertEqual(score, 0, "A new ride must not inherit points", file: file, line: line)

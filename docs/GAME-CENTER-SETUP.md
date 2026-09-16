@@ -41,7 +41,7 @@ The duration controls how long an occurrence accepts scores; the restart interva
 
 For configuration on September 12, 2026, use `2026-09-14T00:00:00Z`. Recalculate if preparation happens later. Check the UTC instant even if Xcode's date control displays a local time zone. Apple requires the first remote start to be in the future. [Apple's first-start-date explanation](https://developer.apple.com/videos/play/wwdc2021/10067/).
 
-CrocoCross validates Monday midnight UTC, the seven-day duration, and `nextStartDate - startDate == 604800` for both returned leaderboards. Their occurrences must match and be active. The server occurrence start determines the stable `native-2` course seed. A mismatched, inactive or unavailable configuration leaves weekly play in practice mode. [`GKLeaderboard.nextStartDate`](https://developer.apple.com/documentation/gamekit/gkleaderboard/nextstartdate).
+CrocoCross validates Monday midnight UTC, the seven-day duration, and `nextStartDate - startDate == 604800` for both returned leaderboards. Their occurrences must match and be active. The server occurrence start determines the stable `native-5` course seed. A mismatched, inactive or unavailable configuration leaves weekly play in practice mode. [`GKLeaderboard.nextStartDate`](https://developer.apple.com/documentation/gamekit/gkleaderboard/nextstartdate).
 
 ## Preserve Xcode's generated configuration
 

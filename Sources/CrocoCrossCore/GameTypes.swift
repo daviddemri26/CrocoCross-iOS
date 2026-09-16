@@ -13,7 +13,8 @@ public struct Vector2: Codable, Equatable, Sendable {
 public struct ControlInput: Codable, Sendable {
     public var throttle: Double
     public var brake: Double
-    /// Positive raises the front wheel in flight; steering is a bounded rider input.
+    /// Positive shifts the rider backward (nose up), negative forward (nose down).
+    /// Balance authority grows as either tire leaves the surface.
     public var lean: Double
     public init(throttle: Double = 0, brake: Double = 0, lean: Double = 0) {
         self.throttle = throttle; self.brake = brake; self.lean = lean

@@ -8,7 +8,7 @@ Native SwiftUI / SpriteKit motorcycle game. Independent from the continuing Chat
 - Endless: three lives, procedural hills, stable-ground recovery and local records.
 - Rear-wheel drive, chassis inertia, damped suspension, traction-limited acceleration, natural wheelies and gravity-driven jumps. No owner workshop or automatic upright assist.
 - Nine cosmetic riders and nine animated worlds, textured terrain, below-ground details, native audio and haptics.
-- iPhone portrait, iPad landscape, adaptive scene bounds for wide/foldable displays. Floating controls follow each thumb in the lower left/right touch zones; Pause stays at bottom centre.
+- iPhone portrait, iPad landscape, adaptive scene bounds for wide/foldable displays. Fixed illustrated buttons sit in the lower left/right corners; Pause stays at bottom centre.
 - Game Center only: weekly points, weekly completion time, endless points. Both modes remain playable offline; connection status appears only in Rankings.
 - Free; no ads, purchases, custom backend or third-party analytics.
 
@@ -40,7 +40,9 @@ Painted scenery, its independent random placement, asset provenance and isolated
 
 Physics constants live in `PhysicsConfiguration`. Score/terrain changes that make records incomparable require a new engine/course version and new Game Center leaderboard identifiers. Existing App Store clients retain their own rule/board versions. Do not port the historical web verification engines or connect the original Sites database.
 
-The current development engine is `native-3`. Hills follow a 10% downhill baseline with two distinct rises per 48-metre section, including seeded main ramps around 5.4–6.2 metres above the baseline before introduction/variation scaling. Full braking requests 2,800 N, split 65% rear / 35% front: 1,820 N rear and 980 N front before contact, traction and stopping-force limits. A wheel without ground contact cannot brake. Ground rotation comes from tire forces and weight transfer; no jump impulse or automatic angle correction is applied.
+The current development engine is `native-5`. [Physics tuning and validation](PHYSICS.md) describe the current landing correction and earlier power/terrain pass. The 120 Hz simulation uses three 360 Hz contact substeps, 0.38 m suspension travel, 16,000 N/m springs and 5,000 N·s/m rebound damping. Both suspension stops are solved together to avoid a sequential pitch kick. Rider balance blends with tire clearance, with 80% stronger forward effort while the rear supports a raised front wheel; the right input and fully airborne strengths are unchanged. Tire traction and braking still act only at real contacts. There is no target angle, automatic recovery, landing speed boost or launch impulse.
+
+Motor force ramps up over 0.18 seconds and tapers toward 24 m/s; gravity can carry the bike faster downhill. Full braking remains 2,800 N, split 65% rear / 35% front before traction and stopping-force limits. This preserves strong rear-wheel braking while adding the rider's forward effort during a wheelie. Holding both buttons cancels the lean command while both tire drive and braking remain requested.
 
 Rides are no longer saved or restored. The legacy `active-run-v1.json` file is removed on launch; records, preferences and the pending Game Center score queue remain. The three unpublished Game Center IDs retain their `.v1` suffix for the first release; this is a development transition, not a migration of live scores. After publication, an incompatible physics, terrain or scoring change must advance the engine/course version and use new leaderboard IDs.
 
@@ -52,9 +54,9 @@ Settings uses fixed bottom tabs: General (haptics), Audio (music and volumes), a
 
 ## Controls
 
-The lower 49% of the play area (minimum height 180 points) is split into equal left and right touch zones. Place a thumb anywhere in either zone: the grip follows the touch instead of requiring a small fixed target. Both controls can be held at once. Pause remains a separate button at bottom centre.
+Two [fixed image buttons](CONTROLS.md) sit at the lower corners: 112 pt square on iPhone portrait and 124 pt on iPad landscape. Their original transparent handlebar PNGs are bundled without visible text or arrows. Procedural rims provide press/release springs, a touch ripple and a held pulse; Reduce Motion uses immediate color feedback. Pause remains a separate button at bottom centre. Both controls can be held independently at once.
 
-Right / GAS: throttle on the ground, backward rotation in flight; a new touch starts at 90%. Left / BRAKE: braking on the ground, forward rotation in flight; a new touch starts at 100%. Slide down to reduce strength to zero or up to increase it to 100%. The vertical indicator remains visible at zero while the touch is held. Release or cancellation returns the input to zero. This is touch position, not unsupported force-pressure detection. Ground inputs do not directly apply rotation torque.
+Right grip: throttle and backward balance. Left grip and brake lever: braking and forward balance. Rider balance fades in as either wheel clears the ground, alongside any remaining tire contact forces. App input is binary: a Boolean hold maps to 1, release maps to 0. Finger movement never changes power or the button position; the owning touch remains active until lifted or cancelled. There is no slider, power gauge, adjustable accessibility trait or percentage. VoiceOver double-tap toggles a full hold/release. Release, cancellation, teardown, pause and recovery clear held controls. With both tires loaded, inputs rotate the chassis through tire forces and weight transfer alone.
 
 Returning Home or backgrounding the app abandons the ride and resets the controls; relaunch always opens Home. Starting and restarting begin immediately, without a Continue button or confirmation. Manual pause, a transient system interruption, a large layout change or a long frame stall pauses the ride in memory; Keep riding resumes it. Personal records and eligible pending Game Center scores survive leaving the ride. Progress is submitted every 1,200 simulation ticks and when pausing; weekly scores still require finishing. An expired weekly ride can continue locally after a temporary pause, without a status label.
 

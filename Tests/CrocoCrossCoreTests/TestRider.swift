@@ -38,3 +38,26 @@ enum TestRider {
         return .init(throttle: throttle, brake: brake, lean: throttle - brake)
     }
 }
+
+/// Coarse app-style holds: each pedal stays fully pressed or released for 100 ms.
+/// The fractional remainder distributes requested effort over successive holds;
+/// neither the rider nor its controller can alter simulation state.
+struct PulsedTestRider {
+    private var throttleRemainder = 0.0
+    private var brakeRemainder = 0.0
+    private var held = ControlInput.neutral
+
+    mutating func controls(_ sim: GameSimulation, speed: Double) -> ControlInput {
+        if sim.state.tick % 12 == 0 {
+            let desired = TestRider.controls(sim, speed: speed)
+            throttleRemainder += desired.throttle
+            brakeRemainder += desired.brake
+            let throttle = throttleRemainder >= 1 ? 1.0 : 0
+            let brake = brakeRemainder >= 1 ? 1.0 : 0
+            throttleRemainder -= throttle
+            brakeRemainder -= brake
+            held = .init(throttle: throttle, brake: brake, lean: throttle - brake)
+        }
+        return held
+    }
+}

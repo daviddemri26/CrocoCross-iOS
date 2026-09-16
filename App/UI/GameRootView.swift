@@ -214,17 +214,21 @@ struct GameRootView: View {
     }
 
     private func playOverlay(wide: Bool, height: CGFloat) -> some View {
-        ZStack(alignment: .bottom) {
+        let pedalSize: CGFloat = wide ? 124 : 112
+        return ZStack(alignment: .bottom) {
             HStack(spacing: 0) {
                 PedalControl(
                     right: false, enabled: session.phase == .playing && !session.recovering,
                     resetToken: session.pedalReset
-                ) { session.setPedal(right: false, value: $0) }
+                ) { session.setPedal(right: false, pressed: $0) }
+                    .frame(width: pedalSize, height: pedalSize)
+                Spacer(minLength: 64)
                 PedalControl(
                     right: true, enabled: session.phase == .playing && !session.recovering,
                     resetToken: session.pedalReset
-                ) { session.setPedal(right: true, value: $0) }
-            }.frame(height: max(180, height * 0.49))
+                ) { session.setPedal(right: true, pressed: $0) }
+                    .frame(width: pedalSize, height: pedalSize)
+            }.padding(.horizontal, wide ? 28 : 16).padding(.bottom, 16)
                 .opacity(session.phase == .playing ? 1 : 0)
                 .allowsHitTesting(session.phase == .playing)
             VStack(spacing: 12) {
@@ -454,14 +458,14 @@ struct GameRootView: View {
                 VStack(alignment: .leading, spacing: 26) {
                     helpRow(
                         "arrow.right", "Right thumb",
-                        "Accelerate on the ground. Lean back in the air. Feed the throttle in short bursts: too much torque can lift the front wheel."
+                        "Accelerate and lean back as a wheel lifts. Use short bursts to control wheelies and backward rotation in the air."
                     )
                     helpRow(
                         "arrow.left", "Left thumb",
-                        "Brake on the ground. Lean forward in the air. Release the controls to let momentum carry you.")
+                        "Brake and lean forward as a wheel lifts. Catch a wheelie or control forward rotation in the air. Release to coast.")
                     helpRow(
-                        "hand.draw.fill", "Touch controls",
-                        "Place your thumbs anywhere in the lower left and right corners. The controls follow your thumbs. Slide down to reduce power, up to increase it. Lift to release."
+                        "hand.tap.fill", "Touch controls",
+                        "Hold the right grip to accelerate or the left brake lever to slow down. Each button applies full power while held; lift your thumb to release. Use short presses for finer control. Both buttons can be held together."
                     )
                     helpRow(
                         "arrow.down.right", "Land with the slope",

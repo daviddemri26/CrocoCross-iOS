@@ -10,7 +10,7 @@ CrocoCross is about finding your rhythm: accelerate into a hill, balance in the 
 
 **Free by design. No ads. No in-app purchases. No separate game account.**
 
-## The latest mobile version
+## Explore the nine worlds
 
 <table>
   <tr><th>Paris</th><th>San Francisco</th><th>Old Gold Mine</th></tr>
@@ -33,7 +33,7 @@ CrocoCross is about finding your rhythm: accelerate into a hill, balance in the 
   </tr>
 </table>
 
-*Screenshots captured from the current native app on an iPhone 17 simulator, September 13, 2026. See [capture details](docs/images/mobile/README.md).*
+*Scenery screenshots from native build `e843dc5`, captured on an iPhone 17 simulator on September 13, 2026, before the illustrated-button refresh. See [capture details](docs/images/mobile/README.md).*
 
 Every world has its own riding surface and scenery: mine rails, Parisian paving, a vermilion bridge over the bay, ice and bamboo. Pigeons cross Paris, boats populate San Francisco, and larger foreground objects can briefly pass in front of the rider. Backdrops, objects and the camera create depth as you ride.
 
@@ -58,9 +58,16 @@ Rocco, Kenji, Duke, Axel, Bjorn, Pinky, Rio, Bandit and Bubbles each bring a dif
 
 ## Simple controls, satisfying landings
 
-- **Right pedal:** accelerate on the ground and rotate backward in the air.
-- **Left pedal:** brake on the ground and rotate forward in the air.
-- **Ease off:** keep holding a pedal and slide downward to reduce its strength. Release to stop the input.
+<p align="center">
+  <img src="App/Resources/GameAssets/control-brake.png" alt="Illustrated brake button" width="112">
+  <img src="App/Resources/GameAssets/control-throttle.png" alt="Illustrated accelerator button" width="112">
+</p>
+
+- **Right pedal:** accelerate, lean backward on one wheel and rotate backward in the air.
+- **Left pedal:** brake, lean forward on one wheel and rotate forward in the air.
+- **Hold and release:** each illustrated button applies full power while held. Lift to stop; use short presses for finer control.
+
+[See the current buttons in-game](docs/images/controls-iphone.png). Their rims respond to each press; the handlebar images stay free of text and arrows.
 
 Traction, suspension, slope and momentum shape each jump. A flip earns points after a safe landing. Tap Pause to take a break and Keep riding to continue; returning Home or leaving the app ends the current run.
 
@@ -89,7 +96,7 @@ xcodebuild -project CrocoCross.xcodeproj -scheme CrocoCross \
 | `docs/` | Development, artwork, validation and release documentation |
 | `scripts/` | Project generation and focused checks |
 
-**Development status:** the latest signed build has been installed and launched on a physical iPhone. The current core suite passes 34 tests. Native visual checks cover the revised scenery, rider proportions, zoom and foreground occlusion. [Validation details](docs/VALIDATION.md) distinguish these checks from live Game Center and release validation. This repository does not currently provide an App Store or TestFlight download.
+**Development status:** the current `native-5` suspension and wheelie-control candidate passes 52 core tests and a Release iOS simulator build. The signed Release build of `native-5` has been installed and launched on David’s iPhone 17. The previous `native-4` candidate also passed the iPhone simulator control test. Native visual checks also cover the scenery, rider proportions, zoom and foreground occlusion. [Validation details](docs/VALIDATION.md) distinguish these checks from live Game Center and release validation. This repository does not currently provide an App Store or TestFlight download.
 
 GitHub Actions runs core tests, persistence and audio checks, project consistency, and a simulator build. It does not publish the app. Live leaderboard submission/read-back, remaining device checks and distribution are tracked in the [release checklist](docs/RELEASE.md).
 

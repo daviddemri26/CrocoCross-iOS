@@ -1,5 +1,30 @@
 # Validation record
 
+## Softer receptions and stronger left-wheelie control — September 15, 2026
+
+- `native-5`: suspension travel 0.38 m, spring rate 16,000 N/m and rebound damping 5,000 N·s/m. Coupled unilateral tire constraints replace the sequential rear/front bottom-stop response. Forward balance is 80% stronger only while a loaded rear tire supports a raised front; its extra force fades smoothly. Acceleration, braking-force, right-button and fully airborne tuning and terrain profiles are retained.
+- All **52 core tests pass** (24.535 seconds), including 27 nearly level hard landings, symmetric two-tire stops, a 75-case passive-energy sweep, selective forward effort, rear-support transition continuity and all previous route/stunt/binary-input checks.
+- Same flat drop fixtures as native-4: moderate/hard level rebound reduces by 33–41% in the recorded examples. The transient pitch spike for 0.02 rad initial tilt and −16 m/s descent drops from 7.492 to 0.206 rad/s, while final forward speed remains within 0.02 m/s. This reproduces a numerical pitch kick, not the user's complete reported crash sequence.
+- Release build for iOS Simulator succeeds. The signed native-5 Release build was subsequently installed and launched successfully on David’s iPhone 17; device-install.json and device-launch.json record success. No new interface or physical-device gameplay test was performed. [Current tuning](PHYSICS.md), local evidence `artifacts/qa/2026-09-15-soft-landings/`.
+
+
+## Physics and flowing downhill terrain — September 15, 2026
+
+- `native-4` adds longer/softer suspension, stronger rebound damping, inelastic bottom stops and three contact substeps within each 120 Hz tick. Rider effort blends in as either tire lifts; full braking still acts through actual contacts. Power rises over 0.18 seconds and motor force tapers toward 24 m/s.
+- Six stateless terrain profiles alternate low/medium/tall hills on a 16% downhill baseline, with 64 m sections. Six-seed geometry measurements show about 74.7% descending ground and at least 15.6 m descending reception between measured crests and subsequent climbs. Height, slope and curvature remain continuous.
+- All **47 core tests pass** (25.888 seconds): angled fast landings, both single-wheel balance directions, contact continuity, binary controls, six complete weekly courses, physical flips, bounded one-hour simulation and deterministic saves. The new 100 ms binary-pedal corpus completes all 24 one-minute rides without crashes (12 seeds × two speeds), retaining all three lives.
+- An isolated 27-drop before/after audit keeps the original terrain in both builds: moderate/hard aligned rebound falls by 51%/26%, with about 94–96% forward speed retained after one second coasting. A 75-case passive energy sweep shows no per-tick gain at its recorded precision. These are bounded measurements, not guarantees for all landings.
+- The final iOS simulator build and `testImageButtonsAndBottomPause` pass on iPhone 17 / iOS 26.5 (1 test, 18.633 seconds). Three screenshots were exported; the riding capture was visually inspected. Project regeneration produces no Xcode-project changes; `git diff --check` passes.
+- Evidence: local `artifacts/qa/2026-09-15-physics/`, including reproducible isolated audit sources/results, core and iOS logs, and screenshots. [Physics details and tuning](PHYSICS.md). The signed Release candidate was subsequently installed and launched successfully on David’s physical iPhone 17; device-install.json and device-launch.json record success. An initial connection reset was resolved by rechecking availability and retrying. Device feel and frame pacing remain separate from install/launch validation.
+
+
+## Handlebar buttons and binary input — September 13, 2026
+
+- Two original transparent PNGs depict the right throttle grip and left grip with brake lever, with correct outward end caps and no text or arrows. The programmatic frames animate press, release and hold, respecting Reduce Motion.
+- Final native iPhone control and real-life-loss/recovery tests pass (2 tests, 29.462 seconds); the iPad landscape control test passes. A separate unchanged-component UIKit/SwiftUI harness passes 25 checks, including independent touch ownership, cancellation, teardown, VoiceOver, animation lifecycle and Reduce Motion.
+- Final PNGs match their generated originals and the compiled app. Source alpha and proportions were verified; the native iPhone/iPad views were inspected. No engine physics changes. [Control design and prompts](CONTROLS.md), [current iPhone screenshot](images/controls-iphone.png).
+- All tests used muted audio. Detailed final evidence is local under `artifacts/image-buttons/final/`. This is simulator validation, not a new physical-device installation.
+
 ## Mobile README and publication — September 13, 2026
 
 - Captured 51 full native iPhone simulator screenshots using real UI navigation and pedal input; selected and visually inspected ten for the public README (nine worlds and Home). App/core code was copied intact into an isolated capture workspace. Only that workspace's UI test target received a temporary capture routine. No shipping screenshot hooks or modified simulation states were added.

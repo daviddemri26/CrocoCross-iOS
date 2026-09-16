@@ -106,75 +106,21 @@ public struct GameSimulation: Codable, Sendable {
             return []
         }
 
-        let c = configuration, dt = Self.timeStep
+        let dt = Self.timeStep
         let throttle = bounded(input.throttle, 0, 1), brake = bounded(input.brake, 0, 1)
         let lean = bounded(input.lean, -1, 1)
         let beforeIntegration = state.bike
         var bike = beforeIntegration
         let wasGrounded = bike.grounded
         let previousAngle = bike.angle
-        let response = throttle > bike.throttle ? 0.16 : 0.065
+        let response = throttle > bike.throttle ? 0.18 : 0.065
         bike.throttle += (throttle - bike.throttle) * (1 - exp(-dt / response))
 
-        var force = Vector2(x: -0.38 * bike.velocity.x * abs(bike.velocity.x), y: -c.mass * c.gravity)
-        var torque = -bike.angularVelocity * (wasGrounded ? 9 : 5)
+        // Resolve fast tire impacts at 360 Hz while inputs, scoring and replay stay at 120 Hz.
+        // Smaller steps keep a landing from skipping most of the suspension travel.
         var greatestImpact = 0.0
-        for rear in [true, false] {
-            let contact = contactFor(bike: bike, rear: rear)
-            guard contact.compression > 0 else { continue }
-            let lever = contact.patch - bike.position
-            let patchVelocity = bike.velocity + Vector2(x: -bike.angularVelocity * lever.y, y: bike.angularVelocity * lever.x)
-            let normalVelocity = patchVelocity.dot(contact.normal)
-            greatestImpact = max(greatestImpact, -normalVelocity)
-            let normalForce = bounded(c.springRate * contact.compression - c.damping * normalVelocity, 0, c.mass * c.gravity * 8)
-            let tangentVelocity = patchVelocity.dot(contact.tangent)
-            let driveRatio = max(0, tangentVelocity) / c.motorTopSpeed
-            let drive = rear ? bike.throttle * c.maximumDriveForce * max(0, 1 - driveRatio * driveRatio) : 0
-            let inverseMass = 1 / c.mass + pow(lever.cross(contact.tangent), 2) / c.inertia
-            let brakeShare = rear ? c.rearBrakeShare : 1 - c.rearBrakeShare
-            let braking = min(brake * c.brakeForce * brakeShare, abs(tangentVelocity) / (dt * inverseMass)) * sign(tangentVelocity)
-            let rolling = normalForce * 0.012 * tanh(tangentVelocity * 2)
-            let traction = bounded(drive - braking - rolling, -c.tireGrip * normalForce, c.tireGrip * normalForce)
-            let tireForce = contact.normal * normalForce + contact.tangent * traction
-            force = force + tireForce
-            torque += lever.cross(tireForce)
-        }
-
-        if !wasGrounded {
-            // The same two pedals control attitude only in flight. On the ground,
-            // wheelies come entirely from the rear contact force and weight transfer.
-            let sameDirection = lean * bike.angularVelocity > 0
-            let authority = sameDirection ? max(0, 1 - abs(bike.angularVelocity) / c.maximumAirSpin) : 1
-            torque += lean * c.airControlTorque * authority
-        }
-        bike.velocity = bike.velocity + force * (dt / c.mass)
-        bike.angularVelocity += torque / c.inertia * dt
-        // Finite caps protect restoration/numerical failures, not normal rider balance.
-        bike.angularVelocity = bounded(bike.angularVelocity, -14, 14)
-        bike.velocity.x = bounded(bike.velocity.x, -70, 90)
-        bike.velocity.y = bounded(bike.velocity.y, -70, 70)
-        bike.position = bike.position + bike.velocity * dt
-        bike.angle = wrapped(bike.angle + bike.angularVelocity * dt)
-
-        // A suspension bottom-out is a contact impulse, not an upright correction.
-        for _ in 0 ..< 2 {
-            for rear in [true, false] {
-                let contact = contactFor(bike: bike, rear: rear)
-                let excess = contact.compression - c.suspensionTravel
-                guard excess > 0 else { continue }
-                let lever = contact.patch - bike.position
-                let cross = lever.cross(contact.normal)
-                let effectiveMass = 1 / (1 / c.mass + cross * cross / c.inertia)
-                let normalVelocity = (bike.velocity + Vector2(x: -bike.angularVelocity * lever.y, y: bike.angularVelocity * lever.x)).dot(contact.normal)
-                if normalVelocity < 0 {
-                    let impulse = -normalVelocity * effectiveMass * 1.035
-                    bike.velocity = bike.velocity + contact.normal * (impulse / c.mass)
-                    bike.angularVelocity += cross * impulse / c.inertia
-                }
-                let correction = excess * 0.65 * effectiveMass
-                bike.position = bike.position + contact.normal * (correction / c.mass)
-                bike.angle = wrapped(bike.angle + cross * correction / c.inertia)
-            }
+        for _ in 0 ..< 3 {
+            greatestImpact = max(greatestImpact, integrate(bike: &bike, brake: brake, lean: lean, dt: dt / 3))
         }
         state.bike = bike
         refreshWheels()
@@ -224,6 +170,114 @@ public struct GameSimulation: Codable, Sendable {
         }
         state.score = Int(floor(state.distance * 10)) + stuntScore + (state.status == .finished ? 1_000 : 0)
         return events
+    }
+
+    private func integrate(bike: inout BikeState, brake: Double, lean: Double, dt: Double) -> Double {
+        let c = configuration
+        var force = Vector2(x: -0.38 * bike.velocity.x * abs(bike.velocity.x), y: -c.mass * c.gravity)
+        var torque = -bike.angularVelocity * (bike.grounded ? 9 : 5)
+        var greatestImpact = 0.0
+        let contacts = [contactFor(bike: bike, rear: true), contactFor(bike: bike, rear: false)]
+        for (index, contact) in contacts.enumerated() {
+            let rear = index == 0
+            guard contact.compression > 0 else { continue }
+            let lever = contact.patch - bike.position
+            let patchVelocity = bike.velocity + Vector2(x: -bike.angularVelocity * lever.y, y: bike.angularVelocity * lever.x)
+            let normalVelocity = patchVelocity.dot(contact.normal)
+            greatestImpact = max(greatestImpact, -normalVelocity)
+            // Rebound damping dissipates stored spring energy instead of kicking the
+            // chassis off the ground again. Damping acts only along the surface normal.
+            let damping = normalVelocity < 0 ? c.damping : c.reboundDamping
+            let normalForce = bounded(c.springRate * contact.compression - damping * normalVelocity,
+                                      0, c.mass * c.gravity * 8)
+            let tangentVelocity = patchVelocity.dot(contact.tangent)
+            let driveRatio = max(0, tangentVelocity) / c.motorTopSpeed
+            let drive = rear ? bike.throttle * c.maximumDriveForce * max(0, 1 - driveRatio * driveRatio) : 0
+            let inverseMass = 1 / c.mass + pow(lever.cross(contact.tangent), 2) / c.inertia
+            let brakeShare = rear ? c.rearBrakeShare : 1 - c.rearBrakeShare
+            let braking = min(brake * c.brakeForce * brakeShare, abs(tangentVelocity) / (dt * inverseMass)) * sign(tangentVelocity)
+            let rolling = normalForce * 0.012 * tanh(tangentVelocity * 2)
+            let traction = bounded(drive - braking - rolling, -c.tireGrip * normalForce, c.tireGrip * normalForce)
+            let tireForce = contact.normal * normalForce + contact.tangent * traction
+            force = force + tireForce
+            torque += lever.cross(tireForce)
+        }
+
+        // Rider effort blends continuously as the tires unload. With one wheel clear
+        // it retains half of its airborne authority, alongside the real brake/drive
+        // moment at the supporting tire. No desired angle or automatic recovery.
+        let clearance = contacts.map { contact in
+            let fraction = bounded(-contact.compression / c.leanClearance, 0, 1)
+            return fraction * fraction * (3 - 2 * fraction)
+        }
+        let freedom = (clearance[0] + clearance[1]) * 0.5
+        let sameDirection = lean * bike.angularVelocity > 0
+        let authority = sameDirection ? max(0, 1 - abs(bike.angularVelocity) / c.maximumAirSpin) : 1
+        var riderTorque = lean * c.airControlTorque * freedom
+        if lean < 0 {
+            // Extra forward effort only with the rear supporting a raised front.
+            // The loaded suspension supplies a smooth support weight, avoiding a
+            // switch at first contact. Right input and fully airborne torque are unchanged.
+            let rearLoad = bounded(contacts[0].compression / (c.mass * c.gravity / (2 * c.springRate)), 0, 1)
+            let rearSupport = rearLoad * rearLoad * (3 - 2 * rearLoad)
+            riderTorque += lean * c.airControlTorque * 0.5 * (c.forwardWheelieBalance - 1) * clearance[1] * rearSupport
+        }
+        torque += riderTorque * authority
+        bike.velocity = bike.velocity + force * (dt / c.mass)
+        bike.angularVelocity += torque / c.inertia * dt
+        // Finite caps protect restoration/numerical failures, not normal rider balance.
+        bike.angularVelocity = bounded(bike.angularVelocity, -14, 14)
+        bike.velocity.x = bounded(bike.velocity.x, -70, 90)
+        bike.velocity.y = bounded(bike.velocity.y, -70, 70)
+        bike.position = bike.position + bike.velocity * dt
+        bike.angle = wrapped(bike.angle + bike.angularVelocity * dt)
+
+        // Solve both bump stops from the same pose. Sequentially stopping the rear
+        // then the front can create a large pitch kick in an almost level reception.
+        // The second tire may keep closing only as far as its remaining travel allows.
+        for _ in 0 ..< 2 {
+            let rear = contactFor(bike: bike, rear: true)
+            let front = contactFor(bike: bike, rear: false)
+            let excessRear = rear.compression - c.suspensionTravel
+            let excessFront = front.compression - c.suspensionTravel
+            guard max(excessRear, excessFront) > 0 else { break }
+            let leverRear = rear.patch - bike.position, leverFront = front.patch - bike.position
+            let crossRear = leverRear.cross(rear.normal), crossFront = leverFront.cross(front.normal)
+            let a11 = 1 / c.mass + crossRear * crossRear / c.inertia
+            let a22 = 1 / c.mass + crossFront * crossFront / c.inertia
+            let a12 = rear.normal.dot(front.normal) / c.mass + crossRear * crossFront / c.inertia
+            let velocityRear = bike.velocity.dot(rear.normal) + bike.angularVelocity * crossRear
+            let velocityFront = bike.velocity.dot(front.normal) + bike.angularVelocity * crossFront
+            let impulses = normalPair(a11: a11, a12: a12, a22: a22,
+                                      b1: min(0, excessRear) / dt - velocityRear,
+                                      b2: min(0, excessFront) / dt - velocityFront)
+            bike.velocity = bike.velocity + (rear.normal * impulses.0 + front.normal * impulses.1) * (1 / c.mass)
+            bike.angularVelocity += (crossRear * impulses.0 + crossFront * impulses.1) / c.inertia
+            // Position projection shares the constraints and does not add velocity.
+            let correction = normalPair(a11: a11, a12: a12, a22: a22,
+                                        b1: excessRear * 0.65, b2: excessFront * 0.65)
+            bike.position = bike.position + (rear.normal * correction.0 + front.normal * correction.1) * (1 / c.mass)
+            bike.angle = wrapped(bike.angle + (crossRear * correction.0 + crossFront * correction.1) / c.inertia)
+        }
+        return greatestImpact
+    }
+
+    /// Two unilateral constraints: tires may push but never pull the chassis.
+    /// Enumerating the two-contact, one-contact and no-contact cases gives the
+    /// inelastic solution without depending on which tire is visited first.
+    private func normalPair(a11: Double, a12: Double, a22: Double,
+                            b1: Double, b2: Double) -> (Double, Double) {
+        let determinant = a11 * a22 - a12 * a12
+        if determinant > 1e-12 {
+            let rear = (a22 * b1 - a12 * b2) / determinant
+            let front = (a11 * b2 - a12 * b1) / determinant
+            if rear >= 0 && front >= 0 { return (rear, front) }
+        }
+        let rear = max(0, b1 / a11)
+        if a12 * rear >= b2 { return (rear, 0) }
+        let front = max(0, b2 / a22)
+        if a12 * front >= b1 { return (0, front) }
+        return (0, 0)
     }
 
     private struct Contact {
