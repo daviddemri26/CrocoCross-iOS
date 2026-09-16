@@ -1,4 +1,62 @@
-# Physics and terrain — native-5
+# Physics — Box2D / box2d-1
+
+CrocoCross now uses **Box2D 3.1.1** for all integration, collisions and joints. There is no parallel custom contact solver. SpriteKit only draws snapshots. See the [accepted migration plan](BOX2D-MIGRATION.md) and [validation record](VALIDATION.md).
+
+## Five physical bodies
+
+The 150 kg total is divided between chassis (84 kg), two wheels (8 kg each), pelvis (15 kg) and torso/head (35 kg). The chassis mass centre compensates for the other bodies so neutral balance stays near the original motorcycle's centre. Wheel radius remains 0.32 m, wheelbase 1.58 m, travel 0.38 m, and target static sag 30%.
+
+Wheel joints provide suspension, finite travel limits and motor/brake torque. The pelvis follows a bike-relative posture using a force-limited motor joint. A limited hip hinge joins pelvis to torso. Neither joint targets the world vertical. The soft posture correction lets the pilot absorb an impact instead of instantly springing back against the frame.
+
+The head and torso have real terrain collisions. After three consecutive ticks of body contact, the run loses one life and the pelvis-to-bike attachment is removed. Linear and angular velocities are preserved; there is no ejection impulse. The hip remains connected, with passive motion. Arms and legs use visual two-segment joints; they are not additional collision bodies.
+
+## Inputs and speed
+
+- Right button: rear-wheel drive and backward rider effort.
+- Left button: wheel braking and forward rider effort.
+- Both held: zero net lean while motor and brake efforts remain requested.
+- Rider effort increases continuously as either wheel clears the ground. Forward effort gains extra authority only when the rear supports a raised front wheel.
+- Rear drive requests up to 1,450 N equivalent wheel force, with a 0.18 s rise and 0.065 s release. Effort tapers toward 24 m/s; speed is not clamped on descents.
+- Brake effort is 2,800 N equivalent wheel force, 65% rear and 35% front. Real joint torque and contact friction determine stopping and pitch response.
+
+Input-driven air torque remains deliberate arcade assistance. It never corrects orientation without player input. There is no upright target, landing speed injection, wheel teleportation or automatic launch.
+
+## Time, terrain and coordinates
+
+Gameplay runs at 120 Hz with four Box2D substeps per tick. The current descending terrain generator is retained to keep the engine comparison meaningful. Its collision surface is sampled every 0.25 m into continuous 64 m chains with shared ghost vertices. A bounded window covers approximately 128 m behind and 256 m ahead.
+
+Game positions remain Double values. Box2D's local Float origin shifts on either axis when the chassis is over 512 m from the current origin. All active dynamic and terrain bodies translate together by multiples of 256 m between steps. Velocities and global snapshots stay unchanged. Contacts are sampled before translation; regression checks cover the next steps as well as the immediate snapshots.
+
+`GameSimulation` owns one world and is neither Codable nor Sendable. Snapshots remain Codable/Sendable. Reproducibility means identical inputs in independently created worlds on the same build; encoding a snapshot does not restore Box2D's private solver state.
+
+## Crash and competition lifecycle
+
+During terminal crash presentation, up to 216 additional physics steps show the fall without changing score, clock or lives. Endless recovery advances its timer and then constructs a fresh rig at the last stable checkpoint. Normal results, leaving the run and restarting release the old world.
+
+The engine/course identifier is `box2d-1`. New records and pending-score storage have their own namespace, and Game Center uses `.v2` board IDs. Old records, rider preferences and pending submissions are retained separately and never retagged. New rankings require matching configured boards; offline play remains available.
+
+## Calibration evidence
+
+The complete rig settles at **0.8134 m** chassis height and **0.11393 m** wheel compression (29.98% sag). Suspension frequency is **4.57 Hz**, damping ratio **5.0**. These values were measured with the rider attached; they are not conversions of the old spring constants.
+
+The pelvis attachment allows up to 8,829 N and 300 N·m, with a 0.05 positional correction factor. The hip motor is limited to 220 N·m and 3 rad/s. The force limits keep the rider supported during hard landings while the soft correction avoids a sharp return kick. The motor-joint translation target is rotated from chassis coordinates into the world coordinates required by Box2D 3.1.1.
+
+Flat drops start at 1.5 m chassis height, with forward speed 12/16/20 m/s and initial vertical speed −2/−4/−8 m/s, followed by three seconds of neutral input:
+
+| Matrix | Minimum forward speed retained | Highest upward rebound | Outcome |
+|---|---:|---:|---|
+| 9 aligned drops | 97.69% | 0.604 m/s | All remain active |
+| 18 drops at ±20° | 97.69% | 0.493 m/s | All remain active |
+
+Maximum compression is 0.383 m, including about 3 mm of solver tolerance at the nominal 0.38 m limit. Extreme falls down to −35 m/s stay finite; a crash is an acceptable outcome. On flat ground, holding the right pedal reaches 14.17 m/s at two seconds and stays active for the ten-second fixture. The 1,450 N drive setting is 6.5% below the initial prototype, putting ordinary flat acceleration below its rear-wheel tipping threshold.
+
+The binary-input corpus completes 24 one-minute rides (12 seeds at two speeds) without losing a life. Three full 4 km weekly courses and three real terrain flips also complete. These controlled tests establish recoverable behavior, not a guarantee for every landing or subjective proof that the tuning is final.
+
+Full measurements and validation are recorded in [VALIDATION.md](VALIDATION.md); local per-case data and runners are under `artifacts/qa/2026-09-16-box2d/core/`. Numbers from the historical section below refer only to the previous custom engine.
+
+---
+
+## Historical native-5 checkpoint
 
 ## Current correction
 

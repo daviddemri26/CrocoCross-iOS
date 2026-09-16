@@ -1,8 +1,10 @@
 # Rider proportions and camera framing
 
-Updated September 13, 2026.
+Historical silhouette measurements: September 13, 2026. Preview status updated September 16, 2026.
 
-The nine riders are cosmetic choices using the same 1.58 m physical wheelbase and 0.32 m collision-wheel radius. Artwork scales uniformly from its measured axle centres; the canvas width is not a size reference. This preserves source aspect ratios, shared collision behaviour and natural silhouette differences such as Rocco's tail or Pinky's neck. No rider PNG was resized or replaced in this pass.
+The Box2D preview enables only Rocco, using independent chassis, wheel, pelvis and torso artwork plus articulated visual limbs. Its wheelbase remains 1.58 m and collision-wheel radius 0.32 m. The eight other riders and original images are preserved but disabled until adapted. Current rig geometry and selected pose evidence are described in [BOX2D-MIGRATION.md](BOX2D-MIGRATION.md).
+
+The table below records the former nine combined silhouettes. It is historical reference, not a measurement of the current articulated Rocco. That earlier pass scaled artwork uniformly from measured axle centres rather than canvas width, preserving original aspect ratios and natural silhouette differences; it did not resize or replace rider PNGs.
 
 ## Visible sizes
 
@@ -27,7 +29,7 @@ Kenji's painted rear tyre extends about 0.54 pt below the nominal line at this f
 - Gameplay zoom depends on viewport and speed, identically for all riders. At 402 × 874 pt, the camera moves smoothly from 40.2 pt/m stopped to 26.8 pt/m at 22 m/s. Landscape height limits can hold the scale steady when the view already provides sufficient distance ahead.
 - Preview scale also respects available height: the wheelbase is capped by the space above the road, allowing 1.2 wheelbases for the tallest silhouette and 24 pt of headroom. The 667 × 375 preview now uses a 120.625 pt wheelbase; the 568 × 320 preview uses 100 pt. Ordinary portrait and large tablet previews retain their prior scale.
 - Preview sky actors are hidden because their passage through the enlarged hero can look like extra vehicle parts. The painted sky remains visible; gameplay sky actors retain their depth and motion.
-- Camera position and scale hold through a crash. The first respawn frame resets following to the new checkpoint immediately, without resetting the background's course origin.
+- During the current physical crash presentation, the camera follows the bike/rider midpoint and may zoom out to keep them visible; it does not zoom in as they slow down. The first respawn frame resets following to the new checkpoint immediately, without resetting the background's course origin.
 - During high jumps, the complete rig stays below a reserved top margin (20% of view height, capped at 80 pt landscape / 120 pt portrait). The final camera projection is shared with terrain, decorations, effects and both wheels. No zoom or simulation parameters change for this guard.
 
 ## Evidence

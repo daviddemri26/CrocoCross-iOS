@@ -3,138 +3,127 @@ import XCTest
 @testable import CrocoCrossCore
 
 final class LandingStabilityTests: XCTestCase {
-    private var flat: PhysicsConfiguration {
-        var c = PhysicsConfiguration(); c.terrainStyle = .flat; return c
-    }
-
-    private func initial(speed: Double = 16, height: Double = 2, descent: Double = -8,
-                         angle: Double = 0, spin: Double = 0) -> SimulationState {
-        var state = SimulationState(mode: .weekly, seed: 3)
-        state.bike.position = .init(x: 3, y: height)
-        state.bike.velocity = .init(x: speed, y: descent)
-        state.bike.angle = angle; state.bike.angularVelocity = spin
-        return state
-    }
-
-    func testAlmostLevelHardLandingsDoNotKickTheRearUp() {
+    func testAlignedDropMatrixRetainsSpeedAndAbsorbsImpact() {
         for speed in [12.0, 16, 20] {
-            for angle in [-0.02, 0, 0.02] {
-                for descent in [-8.0, -12, -16] {
-                    var sim = GameSimulation(state: initial(speed: speed, descent: descent, angle: angle), configuration: flat)
-                    var touched = false, peakSpin = 0.0, rebound = 0.0, peakPitch = 0.0, rearAirTicks = 0
-                    var compression = 0.0
-                    for _ in 0 ..< 180 {
-                        let beforeSpeed = sim.state.bike.velocity.x
-                        sim.step(input: .neutral)
-                        let bike = sim.state.bike
-                        touched = touched || bike.grounded
-                        if touched {
-                            peakSpin = max(peakSpin, abs(bike.angularVelocity))
-                            rebound = max(rebound, bike.velocity.y)
-                            peakPitch = max(peakPitch, abs(bike.angle))
-                            compression = max(compression, bike.rear.compression, bike.front.compression)
-                            if bike.front.contact && !bike.rear.contact { rearAirTicks += 1 }
-                        }
-                        XCTAssertLessThanOrEqual(bike.velocity.x, beforeSpeed + 0.000001)
+            for descent in [-2.0, -4, -8] {
+                let sim = flatFixture(speed: speed, descent: descent)
+                var touched = false, rebound = 0.0, peakPitch = 0.0
+                for _ in 0..<360 {
+                    sim.step(input: .neutral)
+                    touched = touched || sim.state.bike.grounded
+                    if touched {
+                        rebound = max(rebound, sim.state.bike.velocity.y)
+                        peakPitch = max(peakPitch, abs(sim.state.bike.angle))
                     }
-                    let context = "speed=\(speed), angle=\(angle), descent=\(descent)"
-                    XCTAssertTrue(touched, context)
+                }
+                let context = "vx=\(speed), vy=\(descent)"
+                XCTAssertTrue(touched, context); XCTAssertEqual(sim.state.status, .active, context)
+                XCTAssertGreaterThan(sim.state.bike.velocity.x, speed * 0.90, context)
+                XCTAssertLessThan(rebound, 1.2, context); XCTAssertLessThan(peakPitch, 0.08, context)
+                XCTAssertTrue(sim.state.bike.rear.contact && sim.state.bike.front.contact, context)
+            }
+        }
+    }
+
+    func testAngledDropMatrixIsRecoverableWithoutVelocityCorrection() {
+        for speed in [12.0, 16, 20] {
+            for descent in [-2.0, -4, -8] {
+                for angle in [-20.0, 20].map({ $0 * .pi / 180 }) {
+                    let sim = flatFixture(speed: speed, descent: descent, angle: angle)
+                    var rebound = 0.0, touched = false
+                    for _ in 0..<360 {
+                        sim.step(input: .neutral); touched = touched || sim.state.bike.grounded
+                        if touched { rebound = max(rebound, sim.state.bike.velocity.y) }
+                    }
+                    let context = "vx=\(speed), vy=\(descent), angle=\(angle)"
                     XCTAssertEqual(sim.state.status, .active, context)
-                    XCTAssertLessThan(peakSpin, 1.2, "Nearly simultaneous tire impacts must not create a pitch impulse: \(context)")
-                    XCTAssertLessThan(peakPitch, 0.05, context)
+                    XCTAssertGreaterThan(sim.state.bike.velocity.x, speed * 0.80, context)
                     XCTAssertLessThan(rebound, 1.2, context)
-                    XCTAssertLessThanOrEqual(rearAirTicks, 2, context)
-                    XCTAssertGreaterThan(sim.state.bike.velocity.x, speed * 0.90, context)
-                    XCTAssertTrue(sim.state.bike.front.contact && sim.state.bike.rear.contact, context)
-                    if descent <= -12 {
-                        XCTAssertGreaterThan(compression, 0.37, "The regression must exercise the suspension stops.")
-                    }
+                    XCTAssertLessThan(abs(sim.state.bike.angle), 0.08, context)
+                    XCTAssertTrue(sim.state.bike.rear.contact && sim.state.bike.front.contact, context)
                 }
             }
         }
     }
 
-    func testLevelBottomStopsDoNotPickADirectionAtZeroForwardSpeed() {
-        for descent in [-12.0, -16, -20] {
-            var sim = GameSimulation(state: initial(speed: 0, height: 0.55, descent: descent), configuration: flat)
-            for _ in 0 ..< 180 {
+    func testNearlySimultaneousContactsDoNotKickRearOverHead() {
+        for angle in [-0.02, 0.02] {
+            let sim = flatFixture(speed: 20, descent: -8, angle: angle)
+            var spin = 0.0
+            for _ in 0..<360 {
                 sim.step(input: .neutral)
-                XCTAssertEqual(sim.state.bike.angle, 0, accuracy: 0.0000001)
-                XCTAssertEqual(sim.state.bike.angularVelocity, 0, accuracy: 0.0000001)
-                XCTAssertEqual(sim.state.bike.velocity.x, 0, accuracy: 0.0000001)
+                if sim.state.bike.grounded { spin = max(spin, abs(sim.state.bike.angularVelocity)) }
             }
+            XCTAssertLessThan(spin, 1.2); XCTAssertEqual(sim.state.status, .active)
+            XCTAssertLessThan(abs(sim.state.bike.angle), 0.05)
+        }
+    }
+
+    func testExtremeFallsStayFiniteAndCrashInsteadOfExploding() {
+        for angle in [-0.7, 0, 0.7, .pi] {
+            for descent in [-12.0, -20, -35] {
+                let sim = flatFixture(speed: 20, height: 3, descent: descent, angle: angle, spin: 2)
+                for _ in 0..<360 {
+                    sim.step(input: .neutral); sim.stepPresentation(); assertFinite(sim)
+                    XCTAssertLessThan(sim.diagnostics.kineticEnergy, 250_000)
+                }
+                XCTAssertTrue(sim.state.status == .active || sim.state.status == .crashed)
+            }
+        }
+    }
+
+    func testOriginTranslationPreservesAllVelocitiesImmediately() {
+        let sim = flatFixture(height: 20, descent: 3, angle: 0.5, spin: 2)
+        for _ in 0..<12 { sim.step(input: .neutral) }
+        let before = sim.state
+        sim.rebaseForTesting(by: .init(x: 256, y: -256))
+        XCTAssertEqual(sim.state.bike.position, before.bike.position)
+        XCTAssertEqual(sim.state.bike.velocity, before.bike.velocity)
+        XCTAssertEqual(sim.state.bike.angularVelocity, before.bike.angularVelocity)
+        XCTAssertEqual(sim.state.rider, before.rider)
+        XCTAssertEqual(sim.diagnostics.rebaseCount, 1)
+    }
+
+    func testAirborneRebaseMatchesUnshiftedWorldWithinFloatTolerance() {
+        let a = flatFixture(height: 20, descent: 3, angle: 0.5, spin: 2)
+        let b = flatFixture(height: 20, descent: 3, angle: 0.5, spin: 2)
+        for _ in 0..<12 { a.step(input: .neutral); b.step(input: .neutral) }
+        b.rebaseForTesting(by: .init(x: 256, y: -256))
+        for _ in 0..<60 { a.step(input: .neutral); b.step(input: .neutral) }
+        XCTAssertEqual(a.state.bike.position.x, b.state.bike.position.x, accuracy: 0.003)
+        XCTAssertEqual(a.state.bike.position.y, b.state.bike.position.y, accuracy: 0.003)
+        XCTAssertEqual(a.state.bike.velocity.y, b.state.bike.velocity.y, accuracy: 0.01)
+        XCTAssertEqual(a.state.bike.angle, b.state.bike.angle, accuracy: 0.003)
+    }
+
+    func testGroundedRebaseDoesNotCreateJumpOrLoseJointConstraints() {
+        let sim = flatFixture(speed: 12, height: flatConfiguration.restingRideHeight, descent: 0)
+        let reference = flatFixture(speed: 12, height: flatConfiguration.restingRideHeight, descent: 0)
+        for _ in 0..<120 { sim.step(input: .neutral); reference.step(input: .neutral) }
+        sim.rebaseForTesting(by: .init(x: 256, y: -256))
+        var peakBounce = 0.0
+        for _ in 0..<120 {
+            sim.step(input: .neutral); reference.step(input: .neutral); peakBounce = max(peakBounce, sim.state.bike.velocity.y)
+        }
+        XCTAssertLessThan(peakBounce, 0.1)
+        XCTAssertTrue(sim.state.bike.rear.contact && sim.state.bike.front.contact)
+        XCTAssertEqual(sim.state.bike.position.y, reference.state.bike.position.y, accuracy: 0.003)
+        XCTAssertLessThan(abs(sim.state.bike.angle), 0.005)
+    }
+
+    func testTerrainChunkSeamsAndNaturalRebaseRemainSmooth() {
+        for x in [50.0, 114, 242, 498] {
+            let sim = flatFixture(speed: 20, height: flatConfiguration.restingRideHeight, descent: 0, x: x)
+            var peakBounce = 0.0, peakSpin = 0.0
+            for tick in 0..<180 {
+                sim.step(input: .neutral)
+                if tick < 60 { continue } // Exclude the fixture's initial suspension relaxation before the seam.
+                peakBounce = max(peakBounce, abs(sim.state.bike.velocity.y))
+                peakSpin = max(peakSpin, abs(sim.state.bike.angularVelocity))
+            }
+            XCTAssertLessThan(peakBounce, 0.04, "x=\(x)"); XCTAssertLessThan(peakSpin, 0.04, "x=\(x)")
+            XCTAssertGreaterThan(sim.state.bike.velocity.x, 19)
             XCTAssertEqual(sim.state.status, .active)
-            XCTAssertTrue(sim.state.bike.front.contact && sim.state.bike.rear.contact)
         }
-    }
-
-    func testPassiveSuspensionAndPairedStopsDoNotAddEnergy() {
-        func energy(_ sim: GameSimulation) -> Double {
-            let b = sim.state.bike, c = sim.configuration
-            return 0.5 * c.mass * (b.velocity.x * b.velocity.x + b.velocity.y * b.velocity.y)
-                + 0.5 * c.inertia * b.angularVelocity * b.angularVelocity
-                + c.mass * c.gravity * b.position.y
-                + 0.5 * c.springRate * (b.rear.compression * b.rear.compression + b.front.compression * b.front.compression)
-        }
-        for angle in [-0.7, -0.35, 0, 0.35, 0.7] {
-            for descent in [-15.0, -10, -5, 0, 5] {
-                for spin in [-5.0, 0, 5] {
-                    var sim = GameSimulation(state: initial(height: 3, descent: descent, angle: angle, spin: spin), configuration: flat)
-                    var previous = energy(sim)
-                    for _ in 0 ..< 600 {
-                        sim.step(input: .neutral)
-                        let current = energy(sim)
-                        XCTAssertLessThanOrEqual(current, previous + 0.00001)
-                        previous = current
-                        if sim.state.status != .active { break }
-                    }
-                }
-            }
-        }
-    }
-
-    func testExtraForwardEffortIsLimitedToRearSupportedWheelies() {
-        let current = flat
-        var originalEffort = current; originalEffort.forwardWheelieBalance = 1
-        for stance in ["rear", "front", "both", "air"] {
-            let angle = stance == "rear" ? 0.45 : stance == "front" ? -0.45 : 0
-            let height = stance == "air" ? 10 : current.wheelRadius + current.unloadedAxleOffset * cos(angle)
-                + current.wheelbase * 0.5 * abs(sin(angle)) - 0.06
-            let state = initial(height: height, descent: 0, angle: angle)
-            for lean in [-1.0, 0, 1] {
-                var boosted = GameSimulation(state: state, configuration: current)
-                var reference = GameSimulation(state: state, configuration: originalEffort)
-                boosted.step(input: .init(lean: lean))
-                reference.step(input: .init(lean: lean))
-                if stance == "rear" && lean < 0 {
-                    var coasting = GameSimulation(state: state, configuration: current)
-                    coasting.step(input: .neutral)
-                    let originalResponse = coasting.state.bike.angularVelocity - reference.state.bike.angularVelocity
-                    let boostedResponse = coasting.state.bike.angularVelocity - boosted.state.bike.angularVelocity
-                    XCTAssertGreaterThan(boostedResponse, originalResponse * 1.7)
-                    XCTAssertLessThan(boostedResponse, originalResponse * 1.9)
-                } else {
-                    XCTAssertEqual(boosted.state.bike.angle, reference.state.bike.angle, stance)
-                    XCTAssertEqual(boosted.state.bike.velocity, reference.state.bike.velocity, stance)
-                }
-            }
-        }
-    }
-
-    func testForwardWheelieEffortFadesSmoothlyAsRearSupportDisappears() {
-        var referenceConfig = flat; referenceConfig.forwardWheelieBalance = 1
-        let angle = 0.45
-        var extras: [Double] = []
-        for compression in [-0.002, 0, 0.002] {
-            let height = flat.wheelRadius + flat.unloadedAxleOffset * cos(angle)
-                + flat.wheelbase * 0.5 * sin(angle) - compression
-            let state = initial(height: height, descent: 0, angle: angle)
-            var boosted = GameSimulation(state: state, configuration: flat)
-            var reference = GameSimulation(state: state, configuration: referenceConfig)
-            boosted.step(input: .init(lean: -1)); reference.step(input: .init(lean: -1))
-            extras.append(reference.state.bike.angularVelocity - boosted.state.bike.angularVelocity)
-        }
-        XCTAssertEqual(extras[0], 0, accuracy: 0.00001)
-        XCTAssertLessThan(abs(extras[2] - extras[0]), 0.0003, "No torque jump at first rear-wheel contact.")
     }
 }

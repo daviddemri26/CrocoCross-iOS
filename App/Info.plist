@@ -15,7 +15,7 @@
 <key>UISupportedInterfaceOrientations</key><array><string>UIInterfaceOrientationPortrait</string></array>
 <key>UISupportedInterfaceOrientations~ipad</key><array><string>UIInterfaceOrientationLandscapeLeft</string><string>UIInterfaceOrientationLandscapeRight</string><string>UIInterfaceOrientationPortrait</string><string>UIInterfaceOrientationPortraitUpsideDown</string></array>
 <key>ITSAppUsesNonExemptEncryption</key><false/>
-<key>CrocoWeeklyScoreLeaderboardID</key><string>com.daviddemri.crococross.weekly.score.v1</string>
-<key>CrocoWeeklyTimeLeaderboardID</key><string>com.daviddemri.crococross.weekly.time.v1</string>
-<key>CrocoEndlessScoreLeaderboardID</key><string>com.daviddemri.crococross.endless.score.v1</string>
+<key>CrocoWeeklyScoreLeaderboardID</key><string>com.daviddemri.crococross.weekly.score.v2</string>
+<key>CrocoWeeklyTimeLeaderboardID</key><string>com.daviddemri.crococross.weekly.time.v2</string>
+<key>CrocoEndlessScoreLeaderboardID</key><string>com.daviddemri.crococross.endless.score.v2</string>
 </dict></plist>

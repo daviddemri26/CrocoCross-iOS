@@ -1,0 +1,80 @@
+{
+  "rocco-bike": {
+    "generator": "built-in image_gen",
+    "date": "2026-09-16",
+    "generatedFile": "exec-8c054769-cb5b-4bc4-b53f-c55d6ba4e3bd.png",
+    "prompt": "rocco-bike.txt"
+  },
+  "rocco-torso": {
+    "generator": "built-in image_gen",
+    "date": "2026-09-16",
+    "generatedFile": "exec-3c0e658a-8a10-4187-9ab7-59daa2f3bceb.png",
+    "prompt": "rocco-torso.txt"
+  },
+  "rocco-pelvis": {
+    "generator": "built-in image_gen",
+    "date": "2026-09-16",
+    "generatedFile": "exec-955961b8-af06-45d0-b5e0-e43dca486cf8.png",
+    "prompt": "rocco-pelvis.txt"
+  },
+  "rocco-upper-arm": {
+    "generator": "built-in image_gen",
+    "date": "2026-09-16",
+    "generatedFile": "exec-b37ad68e-0bee-4da3-b3e8-90fade6f6ad5.png",
+    "prompt": "rocco-upper-arm.txt"
+  },
+  "rocco-forearm": {
+    "generator": "built-in image_gen",
+    "date": "2026-09-16",
+    "generatedFile": "exec-ed6d991b-7a9e-4109-b705-05b9239a3031.png",
+    "prompt": "rocco-forearm.txt"
+  },
+  "rocco-thigh": {
+    "generator": "built-in image_gen",
+    "date": "2026-09-16",
+    "generatedFile": "exec-f66a53c5-ae78-4a26-9475-f00a35926b0d.png",
+    "prompt": "rocco-thigh.txt"
+  },
+  "rocco-bike-v2": {
+    "generator": "built-in image_gen",
+    "date": "2026-09-16",
+    "generatedFile": "exec-c0fb7178-afeb-40f2-9db2-1565e2bd0e31.png",
+    "prompt": "rocco-bike-v2.txt"
+  },
+  "rocco-fork": {
+    "generator": "built-in image_gen",
+    "date": "2026-09-16",
+    "generatedFile": "exec-d2397bce-c3a7-4ef1-84c6-55c03d0285b7.png",
+    "prompt": "rocco-fork.txt"
+  },
+  "rocco-swingarm": {
+    "generator": "built-in image_gen",
+    "date": "2026-09-16",
+    "generatedFile": "exec-88ab8c2a-bec7-4e89-afb2-e78f9137ae66.png",
+    "prompt": "rocco-swingarm.txt"
+  },
+  "rocco-shin": {
+    "generator": "built-in image_gen",
+    "date": "2026-09-16",
+    "generatedFile": "exec-35d40cf0-b887-41eb-acc6-ada92cc919ff.png",
+    "prompt": "rocco-shin.txt"
+  },
+  "rocco-wheel": {
+    "generator": "built-in image_gen",
+    "date": "2026-09-16",
+    "generatedFile": "exec-ad2ed951-9dc7-4997-ab29-77acaaf1fd91.png",
+    "prompt": "rocco-wheel.txt"
+  },
+  "rocco-calf": {
+    "generator": "built-in image_gen",
+    "date": "2026-09-16",
+    "generatedFile": "exec-a1cc7d2d-6458-4aec-9e92-7b001a7673d5.png",
+    "prompt": "rocco-calf.txt"
+  },
+  "rocco-boot": {
+    "generator": "built-in image_gen",
+    "date": "2026-09-16",
+    "generatedFile": "exec-8e84dc9d-7190-4db7-8514-281b4e49fc3f.png",
+    "prompt": "rocco-boot.txt"
+  }
+}

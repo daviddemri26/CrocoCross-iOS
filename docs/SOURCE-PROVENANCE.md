@@ -27,6 +27,10 @@ This records the owner's confirmation. It replaces the earlier pending-rights st
 
 ## Existing third-party credit
 
+Box2D 3.1.1 is vendored from the official Erin Catto repository under its MIT License. The exact release commit, archive checksum and compilation choices are recorded in [ThirdParty/Box2D/PROVENANCE.md](../ThirdParty/Box2D/PROVENANCE.md). CrocoCross's own source and media retain their separate rights.
+
+The articulated Rocco artwork was generated with the built-in imagegen tool from the owner's original crocodile artwork on September 16, 2026, with permission to improve its style and details. Original assets are preserved. The selected transparent PNGs, prompts and provenance are recorded in [Rocco rig artwork](rocco-rig-prompts/README.md).
+
 The explosion effect retains its existing attribution: Mixkit Fuel Explosion, item 1705, under the [Mixkit Sound Effects Free License](https://mixkit.co/license/#sfxFree). This sound-effect credit is separate from David Demri's authorship of the three music tracks.
 
 Publication of this repository does not apply an open-source license or grant downstream rights to its media; see [RIGHTS.md](../RIGHTS.md).

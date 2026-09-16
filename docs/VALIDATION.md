@@ -1,5 +1,24 @@
 # Validation record
 
+## Box2D and articulated Rocco — September 16, 2026
+
+- `box2d-1` replaces the custom solver with pinned Box2D 3.1.1: five dynamic bodies, 120 Hz and four substeps. Rocco is the only enabled rider in this preview; all nine worlds remain available. Records start fresh in the new rules namespace.
+- The final core suite passes **57 tests, zero failures, in 52.534 seconds** (`artifacts/qa/2026-09-16-box2d/core/swift-test-final.log`). This includes four origin/lifecycle regressions: either single-wheel support, full suspension compression, reverse crossings of terrain seams/origin boundaries, and crash/respawn at a distant checkpoint.
+- All **27 measured flat-ground drops** remain active. At horizontal speeds of 12/16/20 m/s and initial descent speeds of 2/4/8 m/s, minimum final forward-speed retention is 97.691% aligned and 97.686% at ±20°; maximum upward chassis rebound is 0.6042 and 0.4926 m/s respectively. These bounded fixtures do not guarantee recovery from every impact.
+- The suite covers 24 seeded one-minute rides using binary pedal inputs held for 100 ms, three complete weekly courses, and one simulated hour of Endless: **82,006.213 m, 160 rebases, three lives retained**, at most 13 bodies/eight terrain chunks. The isolated Box2D allocation counter remains **1,933,736 bytes** from the first-minute sample to the end; this measures engine allocation, not whole-app memory or device heat.
+- Renderer checks pass for **11 active PNG assets and 525 nominal attached postures**. Four native SpriteKit/Metal captures (neutral, wheelie, landing, detached) were inspected with independent body poses and connected visual limbs. This is an offscreen macOS renderer check, not an iPhone UI or temporal-motion test. Evidence: local `artifacts/qa/2026-09-16-box2d/renderer/` and `rocco-assets-final.json`.
+- Earlier app integration checks passed: Debug iOS Simulator build, competition-versioning harness, 22 audio checks, exact embedded MIT license, and benchmark JSON export. The benchmark smoke run was on an earlier Debug simulator build and is not final physics performance evidence.
+
+### Final app and device checks
+
+- The signed **Release 1.0.0, build 8** compiles successfully (`device-build.log`) and installs successfully on the physical **iPhone 17 / iPhone18,3, iOS 27.0** (`device-install.json`). The explicit offline benchmark launch completed and produced its report. The subsequent normal launch also succeeded at 15:50:42 PDT (`device-launch.json`); the phone was then left ready for the owner to play.
+- The final focused iPhone simulator tests pass: **2 tests, zero failures, 60.340 seconds**, covering image pedals/bottom pause and crash/results/retry (`ui-final.log`). The iPad landscape lives/readability test also passes: **1 test, zero failures, 13.933 seconds** (`ipad-final.log`). Final iPhone riding and iPad captures were visually inspected; Rocco is visible and the checked layouts are correct. The complete nine-world UI suite was not rerun in this expedited phone-delivery pass.
+- Physical-device Release benchmark (`device-physics-benchmark.json`): **1,000 warmup ticks, 10,000 measured production steps; median 0.003791 ms, p95 0.004625 ms, maximum 0.093666 ms**. The solver p95 target below 1 ms passes for this workload. The scripted stress input resets after crashes (17 measured resets); world creation, rendering and file IO are excluded. Thermal state is nominal at both samples (0 → 0), with Low Power Mode off. This is a solver-only result, not GPU/frame-time or sustained heat validation.
+
+Subjective handling, temporal visual quality and sustained frame pacing still require playtesting. No live Game Center write/readback or complete UI-suite pass is claimed. All evidence above is under local `artifacts/qa/2026-09-16-box2d/`.
+
+[Implementation and remaining gates](BOX2D-MIGRATION.md), [current tuning](PHYSICS.md). Detailed generated QA artifacts are local and excluded from Git.
+
 ## Softer receptions and stronger left-wheelie control — September 15, 2026
 
 - `native-5`: suspension travel 0.38 m, spring rate 16,000 N/m and rebound damping 5,000 N·s/m. Coupled unilateral tire constraints replace the sequential rear/front bottom-stop response. Forward balance is 80% stronger only while a loaded rear tire supports a raised front; its extra force fades smoothly. Acceleration, braking-force, right-button and fully airborne tuning and terrain profiles are retained.
@@ -221,7 +240,7 @@ The app uses scene bounds and independent safe-area insets, but adaptive iPad sc
 
 ## Remaining release gates
 
-1. Owner playtest of build 3 handling and difficulty, especially simultaneous throttle/brake and jump timing. Installation and startup are verified; automated test riders do not establish human control feel.
+1. Owner playtest of the Box2D preview (1.0.0, build 8), especially simultaneous throttle/brake and jump timing. Earlier native-engine installation results do not validate this candidate; automated test riders do not establish human control feel.
 2. Physical play sessions: handling and difficulty, multitouch cancellation, headphones/Bluetooth, silent switch, background/lock interruptions, sustained frame rate, memory and heat.
 3. Configure the independent App Store Connect app and the three Game Center boards documented in `GAME-CENTER-SETUP.md`. Prove real score write/readback for the correct player and weekly occurrence; repeat with another player and account/network transitions.
 4. Test actual iPad window resizing and dedicated Duo opening, closing, rotation and safe areas using the supported SDK and hardware when available.

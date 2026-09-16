@@ -128,7 +128,6 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
             guard normalized != storedEffectsVolume else { return }
             storedEffectsVolume = normalized
             defaults.set(normalized, forKey: "audio.effectsVolume")
-            explosionPlayer?.volume = isMuted ? 0 : Float(normalized)
             effectMixer.outputVolume = isMuted ? 0 : Float(normalized)
         }
     }
@@ -143,7 +142,6 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
             storedMuted = newValue
             defaults.set(newValue, forKey: "audio.muted")
             effectMixer.outputVolume = newValue ? 0 : Float(effectsVolume)
-            explosionPlayer?.volume = newValue ? 0 : Float(effectsVolume)
             if newValue {
                 motor.volume = 0; lastMotorVolume = 0
                 pauseMusicPlayer()
@@ -188,7 +186,6 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
     @ObservationIgnored private var landingBuffer: AVAudioPCMBuffer?
     @ObservationIgnored private var successBuffer: AVAudioPCMBuffer?
     @ObservationIgnored private var musicPlayer: AVAudioPlayer?
-    @ObservationIgnored private var explosionPlayer: AVAudioPlayer?
     @ObservationIgnored private var configured = false
     @ObservationIgnored private var motorScheduled = false
     @ObservationIgnored private var gamePaused = true
@@ -327,11 +324,8 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
             motor.volume = 0
             lastMotorVolume = 0
             if !isMuted, effectsVolume > 0 {
-                if let explosionPlayer {
-                    explosionPlayer.currentTime = 0
-                    explosionPlayer.volume = Float(effectsVolume)
-                    explosionPlayer.play()
-                } else { playEffect(crashBuffer) }
+                // The rider and bike fall physically; use the short impact cue.
+                playEffect(crashBuffer, volume: 0.75)
             }
             if hapticsEnabled { UINotificationFeedbackGenerator().notificationOccurred(.error) }
             lastHapticTime = now
@@ -361,7 +355,6 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
     func shutdown() {
         suspended = true
         pauseMusicPlayer()
-        explosionPlayer?.stop()
         motor.volume = 0
         motor.stop()
         effectPlayer.stop()
@@ -414,10 +407,6 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
             let frequency = t < 0.12 ? 660.0 : 880.0
             return Float(sin(t * 2 * Double.pi * frequency) * min(1, t * 150) * exp(-t * 8) * 0.35)
         }
-        if let url = assetURL("fuel-explosion", extension: "mp3") {
-            explosionPlayer = try? AVAudioPlayer(contentsOf: url)
-            explosionPlayer?.prepareToPlay()
-        }
         configured = true
         engine.prepare()
     }
@@ -466,7 +455,6 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
                 if type == .began {
                     self.interrupted = true
                     self.pauseMusicPlayer()
-                    self.explosionPlayer?.stop()
                     self.effectPlayer.stop()
                     self.motor.volume = 0
                     self.engine.pause()
@@ -493,7 +481,6 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
                     self.routeNeedsUserResume = true
                     self.musicNeedsUserResume = true
                     self.pauseMusicPlayer()
-                    self.explosionPlayer?.stop()
                     self.effectPlayer.stop()
                     self.motor.volume = 0
                     self.engine.pause()
@@ -549,9 +536,7 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
         playback.save(to: defaults)
         engine.stop()
         musicPlayer?.stop()
-        explosionPlayer?.stop()
         musicPlayer = nil
-        explosionPlayer = nil
         musicPlaying = false
         engine = AVAudioEngine()
         motor = AVAudioPlayerNode()

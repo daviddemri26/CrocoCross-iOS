@@ -5,9 +5,9 @@
 - Display name: CrocoCross
 - Bundle ID: `com.daviddemri.crococross`
 - Development team: `57XAAX65VC` (public certificate metadata verified locally)
-- Initial version/build:1.0.0/1
+- Current preview version/build: 1.0.0/8
 - Target families: iPhone+iPad; iOS18+
-- No third-party runtime packages, advertisements, purchases or background audio entitlement.
+- Box2D 3.1.1 is compiled into the native app; its MIT license is bundled and accessible in About. No advertisements, purchases or background audio entitlement.
 
 Create/verify the independent App ID and App Store Connect record under the owner's account; do not reuse another project's identity. The checked-in identifiers are configuration, not proof of remote creation.
 
@@ -17,9 +17,11 @@ Configure **Best Score** and submit these with the first app version:
 
 | ID | Type | Format | Sort |
 |---|---|---|---|
-| com.daviddemri.crococross.weekly.score.v1 | Recurring7days | Integer points | High to low |
-| com.daviddemri.crococross.weekly.time.v1 | Recurring7days | Elapsed time in centiseconds | Low to high |
-| com.daviddemri.crococross.endless.score.v1 | Classic | Integer points | High to low |
+| com.daviddemri.crococross.weekly.score.v2 | Recurring7days | Integer points | High to low |
+| com.daviddemri.crococross.weekly.time.v2 | Recurring7days | Elapsed time in centiseconds | Low to high |
+| com.daviddemri.crococross.endless.score.v2 | Classic | Integer points | High to low |
+
+These boards belong to the fresh `box2d-1` rules. Until their configuration is confirmed, play stays local; a configured identifier alone does not authorize a ranked start.
 
 Both weekly boards must start on the same Monday at 00:00 UTC, with a duration and restart interval of 604,800 seconds. The native service validates each board's start, duration, and `nextStartDate - startDate`, and requires matching occurrences before permitting a ranked weekly start. A seven-day duration with a longer restart interval is rejected. Apple exposes the next occurrence's beginning through [`GKLeaderboard.nextStartDate`](https://developer.apple.com/documentation/gamekit/gkleaderboard/nextstartdate).
 
@@ -31,7 +33,7 @@ Required live proof: sign in, load matching week, finish a real run, submit poin
 
 -1024px opaque icon included.
 -Capture actual iPhone and iPad screens from the validated release build.
--Create a concise description covering weekly4000m challenge, Endless,9riders/9worlds and touch controls.
+-Create a concise description covering the weekly 4,000 m challenge, Endless, Rocco, nine worlds and touch controls. The eight other riders are disabled during this preview and will return progressively; do not advertise them as playable.
 -Publish independent support/privacy URLs; owner support contact must be confirmed.
 -Complete age rating, encryption/export questions, EU trader information where applicable, and privacy disclosures based on actual Game Center data flows. The privacy manifest is not a substitute for the App Store privacy questionnaire.
 - Asset publication authorized by David Demri on September 12, 2026; original artwork/music authorship and rights confirmation are recorded in [SOURCE-PROVENANCE.md](SOURCE-PROVENANCE.md).

@@ -65,6 +65,7 @@ struct GameRootView: View {
         .onChange(of: reducedMotion) { _, value in session.setReducedMotion(value) }
         .task {
             session.setReducedMotion(reducedMotion)
+            if PhysicsBenchmark.runIfRequested() { return }
             if !ProcessInfo.processInfo.arguments.contains("-ui-testing") { session.gameCenter.authenticate() }
             await session.gameCenter.refresh()
         }
@@ -141,7 +142,9 @@ struct GameRootView: View {
             } else {
                 Text("CROCO\nCROSS").font(.system(size: 53, weight: .black, design: .rounded)).italic().lineSpacing(-8)
             }
-
+            Text("ROCCO PREVIEW")
+                .font(.system(size: 10, weight: .bold, design: .rounded)).tracking(1.4)
+                .foregroundStyle(CrocoTheme.lime).accessibilityIdentifier("previewStatus")
         }.accessibilityElement(children: .ignore).accessibilityLabel("CrocoCross")
     }
 
@@ -425,14 +428,20 @@ struct GameRootView: View {
         switch item {
         case .riders:
             ScrollView {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 145), spacing: 14)], spacing: 14) {
-                    ForEach(GameCatalog.riders) { rider in
-                        catalogCard(
-                            id: rider.id, name: rider.name, asset: rider.assetName,
-                            selected: session.characterID == rider.id, rider: true
-                        ) {
-                            session.characterID = rider.id
-                            panel = nil
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("Ride with Rocco")
+                        .font(.title2.bold()).foregroundStyle(.white)
+                    Text("This preview introduces Rocco's new movement and falls. The other riders will return after their animations are adapted. All nine worlds are available.")
+                        .font(.subheadline).foregroundStyle(CrocoTheme.muted)
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 145), spacing: 14)], spacing: 14) {
+                        ForEach(GameCatalog.playableRiders) { rider in
+                            catalogCard(
+                                id: rider.id, name: rider.name, asset: rider.assetName,
+                                selected: session.characterID == rider.id, rider: true
+                            ) {
+                                session.characterID = rider.id
+                                panel = nil
+                            }
                         }
                     }
                 }.padding(18)

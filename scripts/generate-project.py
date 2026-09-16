@@ -40,7 +40,7 @@ for path in sorted((ROOT / 'App').rglob('*.swift')):
     ident = ref(rel, 'sourcecode.swift'); source_refs.append(ident); source_builds.append(built(rel, ident))
 
 resource_refs, resource_builds = [], []
-for path, kind in [('App/Resources/GameAssets', 'folder'), ('App/Resources/Assets.xcassets', 'folder.assetcatalog'), ('App/PrivacyInfo.xcprivacy', 'text.xml')]:
+for path, kind in [('App/Resources/GameAssets', 'folder'), ('App/Resources/Assets.xcassets', 'folder.assetcatalog'), ('App/Resources/box2d-license.txt', 'text'), ('App/PrivacyInfo.xcprivacy', 'text.xml')]:
     ident = ref(path, kind); resource_refs.append(ident); resource_builds.append(built(path, ident))
 
 core_ref = add('core:package', 'XCLocalSwiftPackageReference', relativePath='.')
@@ -63,7 +63,7 @@ app_settings = {
     'CODE_SIGN_ENTITLEMENTS': 'App/CrocoCross.entitlements', 'INFOPLIST_FILE': 'App/Info.plist',
     'TARGETED_DEVICE_FAMILY': '1,2', 'SUPPORTED_PLATFORMS': 'iphoneos iphonesimulator',
     'ASSETCATALOG_COMPILER_APPICON_NAME': 'AppIcon', 'MARKETING_VERSION': '1.0.0',
-    'CURRENT_PROJECT_VERSION': '7', 'LD_RUNPATH_SEARCH_PATHS': '$(inherited) @executable_path/Frameworks',
+    'CURRENT_PROJECT_VERSION': '8', 'LD_RUNPATH_SEARCH_PATHS': '$(inherited) @executable_path/Frameworks',
     'SUPPORTS_MACCATALYST': 'NO', 'SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD': 'NO',
     'SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD': 'NO', 'GENERATE_INFOPLIST_FILE': 'NO',
 }

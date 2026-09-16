@@ -1,0 +1,62 @@
+{
+  "rocco-bike.png": {
+    "sha256": "0f484a91e2540f325129e8f2b0905514e2190f60508898944945e4b6576c1253",
+    "bytes": 892759,
+    "generation": "rocco-bike-v2"
+  },
+  "rocco-boot.png": {
+    "sha256": "6349d9382bd88b16b1233e64e7c232c19dec76220afaae47eca4164c821e4139",
+    "bytes": 994220,
+    "generation": "rocco-boot"
+  },
+  "rocco-calf.png": {
+    "sha256": "dbb17be1fec50a59a2661297c58a18a1b06df19773d38b193bb16a32c7f45582",
+    "bytes": 1292579,
+    "generation": "rocco-calf"
+  },
+  "rocco-forearm.png": {
+    "sha256": "76fce3746fdf0dc39bc1d83225b137b7d55cb40baf9bda59d6e5dbbc405173ad",
+    "bytes": 1625640,
+    "generation": "rocco-forearm"
+  },
+  "rocco-fork.png": {
+    "sha256": "ed10fa00a1a76ab289c3cc2f8b5d4a1f83f9c87a5d8feb7dffa3f1efa5efe996",
+    "bytes": 184590,
+    "generation": "rocco-fork"
+  },
+  "rocco-pelvis.png": {
+    "sha256": "bf24c08254901778658f64059fc071110afa4149e0ef6e0b6f4cc1a4ddc6e0b2",
+    "bytes": 990886,
+    "generation": "rocco-pelvis"
+  },
+  "rocco-shin.png": {
+    "sha256": "9ebe11c13018c538196669ebf70d9e7fc1054bc87a373d91d2f76621d3cfce02",
+    "bytes": 1579930,
+    "generation": "rocco-shin"
+  },
+  "rocco-swingarm.png": {
+    "sha256": "0697c4af31790c1e26c6ca6970e5b5020115fd0ee24456698fd794aae53c6a8e",
+    "bytes": 215335,
+    "generation": "rocco-swingarm"
+  },
+  "rocco-thigh.png": {
+    "sha256": "aef1b3ea47855382856740769057d640a678048dd03c1dcbac355d9da11d6ec6",
+    "bytes": 1642444,
+    "generation": "rocco-thigh"
+  },
+  "rocco-torso.png": {
+    "sha256": "468c03951c72c589903bfcb5fafbb8aecccfb688b32ad06ac143a056e0f16e10",
+    "bytes": 1025547,
+    "generation": "rocco-torso"
+  },
+  "rocco-upper-arm.png": {
+    "sha256": "e66bea4a4052b62eef68af888c48e077ed2e7f0b02f489731a1e9019da3936d9",
+    "bytes": 1011671,
+    "generation": "rocco-upper-arm"
+  },
+  "rocco-wheel.png": {
+    "sha256": "50ddc3f95cc6eb8de19552c1ac6b49f04a73ce433b8041cdd26da7be0aaea68b",
+    "bytes": 1722892,
+    "generation": "rocco-wheel"
+  }
+}

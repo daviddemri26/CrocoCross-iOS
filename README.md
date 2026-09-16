@@ -4,9 +4,9 @@
 
 <h1 align="center">Two pedals. Nine worlds. One more ride.</h1>
 
-<p align="center"><strong>A colorful motorcycle adventure for iPhone and iPad.</strong><br>Animal riders · Illustrated landscapes · Weekly challenges · Endless rides</p>
+<p align="center"><strong>A colorful motorcycle adventure for iPhone and iPad.</strong><br>An articulated crocodile rider · Illustrated landscapes · Weekly challenges · Endless rides</p>
 
-CrocoCross is about finding your rhythm: accelerate into a hill, balance in the air, and land ready for the next jump. Choose your rider, explore a new landscape, and turn a short break into one more attempt at your personal best.
+CrocoCross is about finding your rhythm: accelerate into a hill, balance in the air, and land ready for the next jump. Ride with Rocco, explore a new landscape, and turn a short break into one more attempt at your personal best.
 
 **Free by design. No ads. No in-app purchases. No separate game account.**
 
@@ -48,9 +48,9 @@ Every world has its own riding surface and scenery: mine rails, Parisian paving,
 
 There is no time limit on the weekly trail. Both Endless and weekly practice work offline. Apple Game Center supplies optional online competition; a ranked weekly attempt requires a confirmed active event before starting.
 
-## Find your favorite rider
+## Ride with Rocco
 
-Rocco, Kenji, Duke, Axel, Bjorn, Pinky, Rio, Bandit and Bubbles each bring a different look and motorcycle to the ride. **All nine share the same physics**, so choose by personality.
+Rocco is the first rider with an articulated body and a motorcycle simulated separately. The other eight characters are temporarily disabled while their artwork and movement are adapted. All nine worlds remain available.
 
 <p align="center">
   <img src="docs/images/mobile/home.png" alt="CrocoCross mobile home screen with rider and world selection, Weekly and Endless modes" width="280">
@@ -75,7 +75,7 @@ Choose music and sound levels in Settings, adjust haptics, and keep your persona
 
 ## Build and development
 
-The project is a native **Swift 6 / SwiftUI / SpriteKit** app for **iOS and iPadOS 18+**. A local Swift package owns the deterministic 120 Hz simulation, terrain, suspension, traction and scoring. SpriteKit draws the game; SwiftUI supplies its menus and controls. There are no remote Swift package dependencies or third-party analytics SDKs.
+The project is a native **Swift 6 / SwiftUI / SpriteKit** app for **iOS and iPadOS 18+**. A local Swift package owns the deterministic 120 Hz simulation, terrain, suspension, traction and scoring. SpriteKit draws the game; SwiftUI supplies its menus and controls. Box2D 3.1.1 is vendored under its MIT License in the local Swift package. There are no remote Swift package dependencies or third-party analytics SDKs.
 
 Use macOS and **Xcode 26.6**, the validated toolchain. Open `CrocoCross.xcodeproj`, select the **CrocoCross** scheme and choose a simulator. Physical-device builds require an Apple signing team; the project currently contains the owner's team setting.
 
@@ -91,14 +91,15 @@ xcodebuild -project CrocoCross.xcodeproj -scheme CrocoCross \
 | Directory | Contents |
 | --- | --- |
 | `App/` | Native interface, rendering, services and bundled art/audio |
-| `Sources/CrocoCrossCore/` | Simulation and game rules |
+| `Sources/CrocoCrossCore/` | Box2D integration, snapshots and game rules |
+| `ThirdParty/Box2D/` | Pinned engine source, MIT license and provenance |
 | `Tests/` / `UITests/` | Core and native interface checks |
 | `docs/` | Development, artwork, validation and release documentation |
 | `scripts/` | Project generation and focused checks |
 
-**Development status:** the current `native-5` suspension and wheelie-control candidate passes 52 core tests and a Release iOS simulator build. The signed Release build of `native-5` has been installed and launched on David’s iPhone 17. The previous `native-4` candidate also passed the iPhone simulator control test. Native visual checks also cover the scenery, rider proportions, zoom and foreground occlusion. [Validation details](docs/VALIDATION.md) distinguish these checks from live Game Center and release validation. This repository does not currently provide an App Store or TestFlight download.
+**Development status:** the `box2d-1` migration replaces the custom physics engine with vendored Box2D 3.1.1 and separates Rocco from the motorcycle. Rocco is the first playable articulated rider; the other eight characters remain in source for later adaptation. All nine worlds remain available. See the [migration plan](docs/BOX2D-MIGRATION.md) and [validation record](docs/VALIDATION.md) for measured checks and device status. This repository does not currently provide an App Store or TestFlight download.
 
-GitHub Actions runs core tests, persistence and audio checks, project consistency, and a simulator build. It does not publish the app. Live leaderboard submission/read-back, remaining device checks and distribution are tracked in the [release checklist](docs/RELEASE.md).
+GitHub Actions runs core tests, persistence, competition-version isolation and audio checks, project consistency, and a simulator build. It does not publish the app. Live leaderboard submission/read-back, remaining device checks and distribution are tracked in the [release checklist](docs/RELEASE.md).
 
 ## Project information
 

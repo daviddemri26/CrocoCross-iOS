@@ -15,7 +15,8 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
         static func configured(in bundle: Bundle = .main) -> Self {
             func identifier(_ key: String, _ suffix: String) -> String {
                 let value = bundle.object(forInfoDictionaryKey: key) as? String
-                return value?.isEmpty == false ? value! : "com.daviddemri.crococross.\(suffix).v1"
+                return value.flatMap { CompetitionRules.isCurrentLeaderboard($0) ? $0 : nil }
+                    ?? CompetitionRules.leaderboardID(suffix)
             }
             return Self(
                 weeklyScore: identifier("CrocoWeeklyScoreLeaderboardID", "weekly.score"),
@@ -23,9 +24,14 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
                 endlessScore: identifier("CrocoEndlessScoreLeaderboardID", "endless.score")
             )
         }
+
+        var isCurrentVersion: Bool {
+            [weeklyScore, weeklyTime, endlessScore].allSatisfy(CompetitionRules.isCurrentLeaderboard)
+        }
     }
 
     private struct PendingScore: Codable, Equatable {
+        var rulesVersion = CompetitionRules.version
         var playerID: String
         var leaderboardID: String
         var score: Int
@@ -38,10 +44,12 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
     private(set) var currentPlayerID: String?
     private(set) var statusMessage: String?
     private(set) var weeklyChallenge: WeeklyChallenge?
+    private(set) var endlessLeaderboardConfirmed = false
 
     @ObservationIgnored private let ids: LeaderboardIDs
     @ObservationIgnored private let store: LocalStore
     @ObservationIgnored private let now: () -> Date
+    @ObservationIgnored private let onlineEnabled: Bool
     @ObservationIgnored private let monitor = NWPathMonitor()
     @ObservationIgnored private var pending: [PendingScore] = []
     @ObservationIgnored private var queueCanBeSaved = true
@@ -55,12 +63,14 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
     @ObservationIgnored private var retryTask: Task<Void, Never>?
     @ObservationIgnored private var retryAttempt = 0
     @ObservationIgnored private var pendingAuthenticationController: UIViewController?
-    @ObservationIgnored private static let queueFilename = "game-center-pending.json"
+    @ObservationIgnored private static let queueFilename = CompetitionRules.queueFilename
 
-    init(ids: LeaderboardIDs = .configured(), store: LocalStore = LocalStore(), now: @escaping () -> Date = Date.init) {
+    init(ids: LeaderboardIDs = .configured(), store: LocalStore = LocalStore(), now: @escaping () -> Date = Date.init,
+         onlineEnabled: Bool = !ProcessInfo.processInfo.arguments.contains("-ui-testing")) {
         self.ids = ids
         self.store = store
         self.now = now
+        self.onlineEnabled = onlineEnabled
         super.init()
         do { pending = try store.load([PendingScore].self, from: Self.queueFilename) ?? [] }
         catch {
@@ -68,6 +78,7 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
             queueCanBeSaved = false
             statusMessage = "Saved Game Center submissions could not be restored. New scores will stay in memory."
         }
+        guard onlineEnabled else { return }
         monitor.pathUpdateHandler = { [weak self] path in
             guard path.status == .satisfied else { return }
             Task { @MainActor [weak self] in await self?.refresh() }
@@ -80,6 +91,7 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
 
     /// Call once at launch. GameKit owns sign-in; gameplay remains available if the player declines.
     func authenticate() {
+        guard onlineEnabled else { return }
         if authenticationStarted {
             if let controller = pendingAuthenticationController, let presenter = Self.presenter(),
                presenter.presentedViewController == nil {
@@ -116,6 +128,7 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
     }
 
     func refresh() async {
+        guard onlineEnabled, ids.isCurrentVersion else { return }
         synchronizePlayer()
         guard isAuthenticated, let playerID = currentPlayerID else { return }
         if isRefreshing { refreshAgain = true; return }
@@ -129,8 +142,11 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
         }
         pruneExpiredScores()
         do {
-            let loaded = try await GKLeaderboard.loadLeaderboards(IDs: [ids.weeklyScore, ids.weeklyTime])
+            let loaded = try await GKLeaderboard.loadLeaderboards(IDs: [ids.weeklyScore, ids.weeklyTime, ids.endlessScore])
             guard currentPlayerID == playerID, GKLocalPlayer.local.gamePlayerID == playerID else { return }
+            endlessLeaderboardConfirmed = loaded.contains {
+                $0.baseLeaderboardID == ids.endlessScore && $0.type == .classic
+            }
             guard let score = loaded.first(where: { $0.baseLeaderboardID == ids.weeklyScore }),
                   let time = loaded.first(where: { $0.baseLeaderboardID == ids.weeklyTime }),
                   score.type == .recurring, time.type == .recurring,
@@ -158,12 +174,14 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
             guard currentPlayerID == playerID else { return }
             // No newly ranked start while the active period cannot be confirmed.
             weeklyChallenge = nil
+            endlessLeaderboardConfirmed = false
             statusMessage = "Game Center could not be reached. Scores are kept locally; weekly practice is available."
             await flushPending()
         }
     }
 
     func showLeaderboards() {
+        guard onlineEnabled else { return }
         guard isAuthenticated else {
             if let controller = pendingAuthenticationController, let presenter = Self.presenter(),
                presenter.presentedViewController == nil {
@@ -187,6 +205,7 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
     /// Call only for a run that began ranked, with the playerID and confirmed challenge captured at start.
     /// Queue under that original owner even after sign-out. Uploads wait for the same account to return.
     func record(state: SimulationState, challenge: WeeklyChallenge?, playerID: String?) {
+        guard onlineEnabled, ids.isCurrentVersion else { return }
         synchronizePlayer()
         guard let playerID, !playerID.isEmpty,
               state.score >= 0, state.tick > 0, state.elapsed.isFinite else { return }
@@ -215,7 +234,9 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
     }
 
     private func enqueue(_ candidate: PendingScore) {
+        guard accepts(candidate) else { return }
         if let index = pending.firstIndex(where: {
+            $0.rulesVersion == candidate.rulesVersion &&
             $0.playerID == candidate.playerID && $0.leaderboardID == candidate.leaderboardID &&
             $0.challenge?.identifier == candidate.challenge?.identifier
         }) {
@@ -230,6 +251,7 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
         let identifier = player.isAuthenticated ? player.gamePlayerID : nil
         if identifier != currentPlayerID {
             weeklyChallenge = nil
+            endlessLeaderboardConfirmed = false
             weeklyBoards.removeAll()
             retryTask?.cancel()
             retryTask = nil
@@ -241,7 +263,7 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
     }
 
     private func flushPending() async {
-        guard isAuthenticated, let playerID = currentPlayerID else { return }
+        guard onlineEnabled, ids.isCurrentVersion, isAuthenticated, let playerID = currentPlayerID else { return }
         if isFlushing { flushAgain = true; return }
         isFlushing = true
         defer {
@@ -253,12 +275,14 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
         }
         pruneExpiredScores()
         // Snapshot prevents a concurrent better local result from being removed after this await.
-        for submission in pending where submission.playerID == playerID {
+        for submission in pending where submission.playerID == playerID && accepts(submission) {
             guard GKLocalPlayer.local.isAuthenticated,
                   GKLocalPlayer.local.gamePlayerID == playerID, currentPlayerID == playerID else { return }
             do {
                 if let challenge = submission.challenge {
-                    guard challenge.contains(now()), let leaderboard = weeklyBoards[submission.leaderboardID],
+                    guard challenge == WeeklyChallenge.fromSchedule(start: challenge.start,
+                              duration: challenge.end.timeIntervalSince(challenge.start), nextStart: challenge.end),
+                          challenge.contains(now()), let leaderboard = weeklyBoards[submission.leaderboardID],
                           let start = leaderboard.startDate,
                           abs(start.timeIntervalSince(challenge.start)) < 0.5,
                           abs(leaderboard.duration - challenge.end.timeIntervalSince(challenge.start)) < 0.5 else {
@@ -267,7 +291,7 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
                     // Instance submission binds this score to the original occurrence even across midnight.
                     try await leaderboard.submitScore(submission.score, context: submission.context, player: GKLocalPlayer.local)
                 } else {
-                    guard submission.leaderboardID == ids.endlessScore else { continue }
+                    guard endlessLeaderboardConfirmed, submission.leaderboardID == ids.endlessScore else { continue }
                     try await GKLeaderboard.submitScore(submission.score, context: submission.context,
                                                         player: GKLocalPlayer.local, leaderboardIDs: [submission.leaderboardID])
                 }
@@ -286,8 +310,15 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
 
     private func pruneExpiredScores() {
         let previousCount = pending.count
-        pending.removeAll { $0.challenge.map { !$0.contains(now()) } ?? false }
+        pending.removeAll { accepts($0) && ($0.challenge.map { !$0.contains(now()) } ?? false) }
         if pending.count != previousCount { persistQueue() }
+    }
+
+    private func accepts(_ submission: PendingScore) -> Bool {
+        CompetitionRules.acceptsSubmission(
+            rulesVersion: submission.rulesVersion, leaderboardID: submission.leaderboardID,
+            weeklyBoardIDs: [ids.weeklyScore, ids.weeklyTime], endlessBoardID: ids.endlessScore,
+            challengeIdentifier: submission.challenge?.identifier)
     }
 
     private func persistQueue() {

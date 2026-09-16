@@ -4,6 +4,10 @@
 
 Current native iOS development candidate:
 
+- Replace the custom contact engine with pinned Box2D 3.1.1: independent chassis, wheels, pelvis and torso, damped wheel joints, and physical rider detachment on a confirmed crash (`box2d-1`).
+- Introduce articulated Rocco artwork with independent suspension, hands and feet; keep the eight other riders in source for a later rig adaptation. All nine worlds remain selectable.
+- Isolate new records, pending submissions and Game Center v2 boards from legacy physics; keep offline play available.
+
 - Softer landing suspension, simultaneous two-tire bottom-stop response and stronger left-button balance during rear-wheel support (`native-5`); acceleration and right-button tuning retained.
 
 - Revised landing suspension, progressive rider balance on either wheel, smoother power delivery and varied downhill terrain (`native-4`).

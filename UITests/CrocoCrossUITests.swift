@@ -7,7 +7,7 @@ final class CrocoCrossUITests: XCTestCase {
     @MainActor private func launch(extraArguments: [String] = []) -> XCUIApplication {
         if UIDevice.current.userInterfaceIdiom == .pad { XCUIDevice.shared.orientation = .landscapeLeft }
         let app = XCUIApplication()
-        app.launchArguments = ["-ui-testing"] + extraArguments
+        app.launchArguments = ["-ui-testing", "-audio.muted", "YES"] + extraArguments
         app.launch()
         let ready = app.buttons["startWeekly"].waitForExistence(timeout: 15)
         if !ready {
@@ -163,11 +163,12 @@ final class CrocoCrossUITests: XCTestCase {
         capture("world-selection")
         app.buttons["closePanel"].tap()
         app.buttons["riders"].tap()
-        XCTAssertTrue(app.buttons["select-shiba"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["select-croco"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["select-shiba"].exists, "Deferred riders must not use the unfinished articulated rig")
         assertBottomClose(app)
-        app.buttons["select-shiba"].tap()
+        app.buttons["select-croco"].tap()
         waitForHome(app)
-        XCTAssertEqual(app.buttons["riders"].label, "Rider: Kenji")
+        XCTAssertEqual(app.buttons["riders"].label, "Rider: Rocco")
         capture("home-japan")
     }
 
@@ -400,7 +401,7 @@ final class CrocoCrossUITests: XCTestCase {
     @MainActor func testSelectedRiderWheelsVisible() throws {
         let app = launch()
         app.buttons["riders"].tap()
-        for rider in ["croco", "shiba", "eagle", "tiger", "polar", "flamingo", "toucan", "raccoon", "axolotl"] {
+        for rider in ["croco"] {
             let choice = app.buttons["select-\(rider)"]
             reveal(choice, in: app)
             XCTAssertTrue(choice.isHittable)
@@ -427,7 +428,6 @@ final class CrocoCrossUITests: XCTestCase {
         }
         for (panel, selection, label) in [
             ("riders", "croco", "Rider: Rocco"),
-            ("riders", "axolotl", "Rider: Bubbles"),
             ("worlds", "canyon", "World: Canyon"),
             ("worlds", "clouds", "World: Cloud Nine"),
         ] {
@@ -442,7 +442,7 @@ final class CrocoCrossUITests: XCTestCase {
         app.terminate()
         app.launch()
         waitForHome(app)
-        XCTAssertEqual(app.buttons["riders"].label, "Rider: Bubbles")
+        XCTAssertEqual(app.buttons["riders"].label, "Rider: Rocco")
         XCTAssertEqual(app.buttons["worlds"].label, "World: Cloud Nine")
         capture("immediate-selection-persisted")
     }
@@ -655,12 +655,12 @@ final class CrocoCrossUITests: XCTestCase {
         }
     }
 
-    @MainActor func testAllRidersAndWorldsRenderAndPlay() throws {
+    @MainActor func testRoccoAndAllWorldsRenderAndPlay() throws {
         let app = launch()
         let pairs = [
-            ("croco", "canyon"), ("shiba", "japan"), ("eagle", "highway"),
-            ("tiger", "jungle"), ("polar", "arctic"), ("flamingo", "mine"),
-            ("toucan", "sanfrancisco"), ("raccoon", "paris"), ("axolotl", "clouds"),
+            ("croco", "canyon"), ("croco", "japan"), ("croco", "highway"),
+            ("croco", "jungle"), ("croco", "arctic"), ("croco", "mine"),
+            ("croco", "sanfrancisco"), ("croco", "paris"), ("croco", "clouds"),
         ]
         for (rider, world) in pairs {
             for (panel, selection) in [("worlds", world), ("riders", rider)] {

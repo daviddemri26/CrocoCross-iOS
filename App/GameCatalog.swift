@@ -47,6 +47,10 @@ enum GameCatalog {
         Rider(id: "axolotl", name: "Bubbles", subtitle: "Axolotl · Mini dirtbike", assetName: "axolotl-mini", geometry: .init(rearX: 330 / 1536, frontX: 1257 / 1536, rearY: 788 / 1024, frontY: 789 / 1024, radius: 203 / 1536))
     ]
 
+    /// This preview validates Rocco's separated rider rig before adapting the other artwork.
+    /// Keep the full catalog and its original assets available for that later work.
+    static var playableRiders: [Rider] { riders.filter { $0.id == "croco" } }
+
     static let worlds: [World] = [
         .init(id: "canyon", name: "Canyon", subtitle: "Red rock & desert dust", assetName: "canyon-backdrop", sky: .hex(0x99D9EF), earth: .hex(0xD77740), deepEarth: .hex(0x703D2E), edge: .hex(0xFBD190), accent: .hex(0xFFB369)),
         .init(id: "japan", name: "Japan Mountains", subtitle: "Pines, peaks & falling petals", assetName: "japan-mountains", sky: .hex(0xC4E9EE), earth: .hex(0x638767), deepEarth: .hex(0x263E4B), edge: .hex(0xC4E8A9), accent: .hex(0xF9B7D7)),

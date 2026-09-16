@@ -53,9 +53,14 @@ final class StuntTests: XCTestCase {
         state.bike.position = .init(x: 3, y: 16)
         state.bike.velocity.x = 8; state.bike.angularVelocity = 6
         var sim = GameSimulation(state: state, configuration: c)
-        var awards = 0
+        var awards = 0, unwrapped = 0.0, previous = sim.state.bike.angle
         for _ in 0 ..< 120 * 5 {
-            let lean = sim.state.elapsed > 0.4 && sim.state.bike.angularVelocity > 0.05 ? -1.0 : 0
+            let b = sim.state.bike
+            unwrapped += atan2(sin(b.angle - previous), cos(b.angle - previous)); previous = b.angle
+            let error = Double.pi * 2 - unwrapped
+            let stopping = b.angularVelocity * abs(b.angularVelocity) / (2 * 4.1)
+            let lean = b.grounded ? 0 : error > 1.2 ? (error > stopping + 0.06 ? 1.0 : -1.0)
+                : min(1, max(-1, error * 6 - b.angularVelocity * 2.2))
             for event in sim.step(input: .init(lean: lean)) {
                 if case let .flip(count) = event {
                     XCTAssertTrue(sim.state.bike.grounded)
@@ -72,12 +77,13 @@ final class StuntTests: XCTestCase {
     func testSeededRampsAllowARealFlipAndSafeReceptionWithTheTwoAppPedals() {
         for seed: UInt32 in [3, 8, 11] {
             var sim = GameSimulation(mode: .weekly, seed: seed)
-            var wasGrounded = true, attempted = false, attempting = false
+            var attempted = false, attempting = false, takeoffTicks = 0
             var unwrappedAngle = 0.0, priorAngle = 0.0, maxClearance = 0.0
             var airTicks = 0, awarded = 0, awardTick: Int?, landingDistance = 0.0
             for _ in 0 ..< 120 * 45 {
                 let bike = sim.state.bike
-                if wasGrounded && !bike.grounded {
+                takeoffTicks = bike.grounded ? 0 : takeoffTicks + 1
+                if !bike.grounded && takeoffTicks >= 8 {
                     // Choose a jump with enough ballistic airtime, not a fixed flight
                     // number: small rollers deliberately alternate with tall takeoffs.
                     if !attempted && predictedFlightDuration(sim) >= 2.1 {
@@ -97,7 +103,6 @@ final class StuntTests: XCTestCase {
                     input = .init(throttle: max(0, lean), brake: max(0, -lean), lean: lean)
                 }
                 XCTAssertEqual(input.lean, input.throttle - input.brake)
-                wasGrounded = bike.grounded
                 for event in sim.step(input: input) {
                     if case let .flip(count) = event {
                         XCTAssertTrue(sim.state.bike.grounded, "A flight alone must never award the combo.")

@@ -22,10 +22,10 @@ final class GameSession {
     var eventPoints = 0
     var resultsVisible = false
     var newRecord = false
-    var characterID: String { didSet { defaults.set(characterID, forKey: "rider") } }
+    var characterID: String { didSet { defaults.set(characterID, forKey: CompetitionRules.riderPreferenceKey) } }
     var worldID: String { didSet { defaults.set(worldID, forKey: "world") } }
-    var bestWeekly: Int { didSet { defaults.set(bestWeekly, forKey: "bestWeekly") } }
-    var bestEndless: Int { didSet { defaults.set(bestEndless, forKey: "bestEndless") } }
+    var bestWeekly: Int { didSet { defaults.set(bestWeekly, forKey: CompetitionRules.weeklyRecordKey) } }
+    var bestEndless: Int { didSet { defaults.set(bestEndless, forKey: CompetitionRules.endlessRecordKey) } }
     let scene = GameScene(size: CGSize(width: 390, height: 844))
     let gameCenter = GameCenterService()
     let audio = AudioService()
@@ -48,26 +48,25 @@ final class GameSession {
     @ObservationIgnored private var interrupted = false
     @ObservationIgnored private var discardNextPlayingDelta = false
     @ObservationIgnored private var awaitingFirstSimulationStep = true
+    @ObservationIgnored private var crashPresentationSteps = 0
+    private static let crashPresentationStepLimit = 216
 
     init() {
         let prefs = UserDefaults.standard
-        characterID = prefs.string(forKey: "rider") ?? "croco"
+        precondition(CompetitionRules.version == GameSimulation.engineVersion)
+        let preferredRider = prefs.string(forKey: CompetitionRules.riderPreferenceKey) ?? "croco"
+        characterID = GameCatalog.playableRiders.contains(where: { $0.id == preferredRider }) ? preferredRider : "croco"
         worldID = prefs.string(forKey: "world") ?? "canyon"
-        bestWeekly = prefs.integer(forKey: "bestWeekly")
-        bestEndless = prefs.integer(forKey: "bestEndless")
-        if let directory = try? FileManager.default.url(
-            for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
-        {
-            // Retire only the old resumable ride; records, preferences and queued scores remain.
-            try? FileManager.default.removeItem(at: directory.appendingPathComponent("active-run-v1.json"))
-        }
+        bestWeekly = prefs.integer(forKey: CompetitionRules.weeklyRecordKey)
+        bestEndless = prefs.integer(forKey: CompetitionRules.endlessRecordKey)
+        // Legacy rider selection, records and pending scores remain untouched.
         scene.scaleMode = .resizeFill
         scene.onFrame = { [weak self] dt in self?.frame(dt) }
-        if !GameCatalog.riders.contains(where: { $0.id == characterID }) { characterID = "croco" }
         if !GameCatalog.worlds.contains(where: { $0.id == worldID }) { worldID = "canyon" }
     }
 
     func start(_ mode: RunMode) {
+        if !GameCatalog.playableRiders.contains(where: { $0.id == characterID }) { characterID = "croco" }
         self.mode = mode
         recordToBeat = mode == .weekly ? bestWeekly : bestEndless
         newRecord = false
@@ -76,12 +75,13 @@ final class GameSession {
         let confirmedWeek = gameCenter.weeklyChallenge.flatMap { $0.contains(Date()) ? $0 : nil }
         challenge = mode == .weekly ? (confirmedWeek ?? .practice(now: Date())) : nil
         playerID = gameCenter.currentPlayerID
-        wasRankedAtStart = playerID != nil && (mode == .endless || confirmedWeek != nil)
+        wasRankedAtStart = playerID != nil && (mode == .endless ? gameCenter.endlessLeaderboardConfirmed : confirmedWeek != nil)
         ranked = wasRankedAtStart
         let seed = challenge?.seed ?? UInt32.random(in: 1...UInt32.max)
         simulation = GameSimulation(mode: mode, seed: seed)
         previousState = simulation.state
         accumulator = 0
+        crashPresentationSteps = 0
         lastSubmissionTick = 0
         clearPedals()
         discardNextPlayingDelta = true
@@ -133,6 +133,7 @@ final class GameSession {
         if phase == .playing || phase == .paused { submitProgress() }
         phase = .home
         accumulator = 0
+        crashPresentationSteps = 0
         discardNextPlayingDelta = true
         awaitingFirstSimulationStep = true
         resultsVisible = false
@@ -167,6 +168,8 @@ final class GameSession {
             audio.shutdown()
         } else {
             interrupted = false
+            // Do not integrate an inactive interval into the crash presentation.
+            accumulator = 0
             audio.startMusic()
             Task { await gameCenter.refresh() }
         }
@@ -181,7 +184,7 @@ final class GameSession {
 
     private func frame(_ rawDelta: Double) {
         let dt = rawDelta.isFinite ? max(0, min(rawDelta, 0.1)) : 0
-        frameTime += dt
+        if !interrupted { frameTime += dt }
         if phase == .playing && !interrupted {
             // GameScene has established a fresh timestamp for this frame. Its interval
             // may include menu, pause or setup work, so gameplay begins on the next one.
@@ -210,12 +213,27 @@ final class GameSession {
                 }
                 audio.update(bike: simulation.state.bike)
             }
+        } else if phase == .results && !finished && !interrupted &&
+                    crashPresentationSteps < Self.crashPresentationStepLimit {
+            // The result is already final. Only detached-body presentation advances.
+            if rawDelta <= 0.25 {
+                accumulator += dt
+                var steps = 0
+                while accumulator >= GameSimulation.timeStep && steps < 12 &&
+                        crashPresentationSteps < Self.crashPresentationStepLimit {
+                    previousState = simulation.state
+                    simulation.stepPresentation()
+                    crashPresentationSteps += 1
+                    accumulator -= GameSimulation.timeStep
+                    steps += 1
+                }
+            } else { accumulator = 0 }
         }
         if eventText != nil && frameTime > eventUntil {
             eventText = nil
             eventPoints = 0
         }
-        if phase == .results && !resultsVisible && frameTime >= resultsAt { resultsVisible = true }
+        if phase == .results && !interrupted && !resultsVisible && frameTime >= resultsAt { resultsVisible = true }
         scene.isPreview = phase == .home
         if phase == .home {
             scene.display(
@@ -230,7 +248,9 @@ final class GameSession {
 
     /// Blend only presentation coordinates; scoring and contact always use fixed-step state.
     private func renderedState() -> SimulationState {
-        guard phase == .playing, previousState.status == simulation.state.status,
+        let physicsIsAdvancing = phase == .playing || (phase == .results && !finished &&
+            crashPresentationSteps < Self.crashPresentationStepLimit)
+        guard physicsIsAdvancing, !interrupted, previousState.status == simulation.state.status,
             abs(previousState.bike.position.x - simulation.state.bike.position.x) < 2
         else { return simulation.state }
         let alpha = max(0, min(1, accumulator * 120))
@@ -246,6 +266,10 @@ final class GameSession {
         shown.bike.front.position = point(old.front.position, shown.bike.front.position)
         shown.bike.rear.angle = angle(old.rear.angle, shown.bike.rear.angle)
         shown.bike.front.angle = angle(old.front.angle, shown.bike.front.angle)
+        shown.rider.pelvis.position = point(previousState.rider.pelvis.position, shown.rider.pelvis.position)
+        shown.rider.pelvis.angle = angle(previousState.rider.pelvis.angle, shown.rider.pelvis.angle)
+        shown.rider.torso.position = point(previousState.rider.torso.position, shown.rider.torso.position)
+        shown.rider.torso.angle = angle(previousState.rider.torso.angle, shown.rider.torso.angle)
         return shown
     }
 
@@ -299,7 +323,8 @@ final class GameSession {
         phase = .results
         newRecord = score > recordToBeat && (mode == .endless || finished)
         resultsVisible = false
-        // Let the explosion complete before covering the crash with the score card.
+        crashPresentationSteps = 0
+        // Let the physical fall play before showing the score card.
         resultsAt = frameTime + (finished || reducedMotion ? 0.3 : 1.8)
         audio.setPaused(true)
         submitProgress()

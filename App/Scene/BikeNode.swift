@@ -6,6 +6,7 @@ import simd
 /// The render rig follows the simulated wheel centres. It never changes collisions.
 @MainActor
 final class BikeNode: SKNode {
+    private let rocco = RoccoRig()
     private let chassis = SKNode()
     private let body = SKSpriteNode()
     private let wheels = [SKNode(), SKNode()]
@@ -31,6 +32,7 @@ final class BikeNode: SKNode {
         addChild(chassis)
         chassis.addChild(body)
         chassis.zPosition = 2
+        addChild(rocco)
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
@@ -39,6 +41,14 @@ final class BikeNode: SKNode {
                  project: (Vector2) -> CGPoint, terrain: (Double) -> Double, reducedMotion: Bool,
                  seconds: Double = 0, isPreview: Bool = false) {
         if currentID != rider.id { configure(rider) }
+        if rider.id == "croco" {
+            rocco.display(state, rider: rider, pointsPerMetre: pointsPerMetre, project: project,
+                          reducedMotion: reducedMotion, seconds: seconds)
+            // Crash presentation follows the detached physical bodies. Rocco is
+            // never duplicated by the old combined character/motorcycle texture.
+            alpha = 1
+            return
+        }
         let bike = state.bike
         let rear = project(bike.rear.position), front = project(bike.front.position)
         let axleAngle = atan2(front.y - rear.y, front.x - rear.x)
@@ -93,9 +103,21 @@ final class BikeNode: SKNode {
         alpha = state.status == .recovering ? 0.55 + 0.2 * sin(Double(state.tick) * 0.13) : 1
     }
 
+    var visibleFrame: CGRect {
+        if rider.id == "croco", let parent {
+            let frame = rocco.visibleBounds(in: parent)
+            if !frame.isNull { return frame }
+        }
+        return calculateAccumulatedFrame()
+    }
+
     private func configure(_ rider: Rider) {
         self.rider = rider
         currentID = rider.id
+        rocco.isHidden = rider.id != "croco"
+        chassis.isHidden = rider.id == "croco"
+        wheels.forEach { $0.isHidden = rider.id == "croco" }
+        if rider.id == "croco" { return }
         wheels.forEach { $0.removeAllChildren() }
         guard let image = GameAssets.image(named: rider.assetName), let layers = RiderArtwork.layers(for: rider) else { return }
         artworkSize = image.size

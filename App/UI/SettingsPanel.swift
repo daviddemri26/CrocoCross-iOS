@@ -112,6 +112,7 @@ struct SettingsPanel: View {
                 LabeledContent(
                     "Build", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—")
                 LabeledContent("Engine", value: PhysicsConfiguration.engineVersion)
+                LabeledContent("Physics", value: "Box2D \(GameSimulation.backendVersion)")
             }
             Section("Information") {
                 DisclosureGroup("Privacy") { PrivacyView() }
@@ -195,11 +196,22 @@ private struct CreditsView: View {
             )
             Text("Explosion sound: Fuel Explosion by Mixkit, used under the Mixkit Sound Effects Free License.")
             Link("Mixkit license", destination: URL(string: "https://mixkit.co/license/#sfxFree")!)
+            DisclosureGroup("Box2D license") {
+                Text(box2DLicense).font(.footnote).padding(.vertical, 8)
+            }
             DisclosureGroup("Rider icon license") {
                 Text(LegacyRiderIcon.license).font(.footnote).padding(.vertical, 8)
             }
             Text("Built with Swift, SpriteKit, SwiftUI, AVFAudio and GameKit.").font(.footnote).foregroundStyle(
                 .secondary)
         }.padding(.vertical, 12)
+    }
+
+    private var box2DLicense: String {
+        guard let url = Bundle.main.url(forResource: "box2d-license", withExtension: "txt"),
+              let license = try? String(contentsOf: url, encoding: .utf8) else {
+            return "Box2D \(GameSimulation.backendVersion) by Erin Catto. MIT License."
+        }
+        return license
     }
 }

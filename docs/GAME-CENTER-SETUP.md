@@ -2,6 +2,8 @@
 
 Prepared September 12, 2026. This is a configuration procedure for the independent iOS app. The identifiers below are implemented locally; they are not evidence that App Store Connect resources exist. No GameKit bundle is fabricated by this document and no synchronization has been performed as part of its preparation.
 
+Box2D migration, September 16, 2026: the client now targets **v2** boards. Legacy v1 scores and queued submissions are preserved and never retagged. New local records and the score queue use the `box2d-1` namespace. Both modes require confirmed matching boards before online submission; offline play remains available. No v2 board has been created or synchronized during this migration.
+
 ## App identity
 
 - App and target: `CrocoCross`
@@ -23,9 +25,9 @@ Let Xcode generate the package contents; no public serialization schema was esta
 
 | Reference name and English display name | Identifier | Type | Score format | Ordering |
 |---|---|---|---|---|
-| Weekly High Score | `com.daviddemri.crococross.weekly.score.v1` | Recurring | Integer | High to low |
-| Weekly Fastest Finish | `com.daviddemri.crococross.weekly.time.v1` | Recurring | Elapsed time in centiseconds | Low to high |
-| Endless High Score | `com.daviddemri.crococross.endless.score.v1` | Classic | Integer | High to low |
+| Weekly High Score | `com.daviddemri.crococross.weekly.score.v2` | Recurring | Integer | High to low |
+| Weekly Fastest Finish | `com.daviddemri.crococross.weekly.time.v2` | Recurring | Elapsed time in centiseconds | Low to high |
+| Endless High Score | `com.daviddemri.crococross.endless.score.v2` | Classic | Integer | High to low |
 
 Use **Best Score** for all three. Do not use Most Recent Score. Keep optional score limits unset unless a validated range has been established for the final physics and scoring. Add at least an English localization before synchronization. The time board receives an integer count of hundredths of a second, not seconds or milliseconds. [Apple leaderboard properties](https://developer.apple.com/help/app-store-connect/reference/game-center/leaderboards).
 
@@ -39,9 +41,9 @@ Enable **Recurring** for both weekly boards. Under the recurring settings, use t
 
 The duration controls how long an occurrence accepts scores; the restart interval controls when the next one begins. Equal values make consecutive occurrences with no gap. [Apple recurring leaderboards](https://developer.apple.com/documentation/gamekit/creating-recurring-leaderboards).
 
-For configuration on September 12, 2026, use `2026-09-14T00:00:00Z`. Recalculate if preparation happens later. Check the UTC instant even if Xcode's date control displays a local time zone. Apple requires the first remote start to be in the future. [Apple's first-start-date explanation](https://developer.apple.com/videos/play/wwdc2021/10067/).
+For configuration after September 16, 2026, choose the next future Monday UTC. Recalculate at the time of synchronization. Check the UTC instant even if Xcode's date control displays a local time zone. Apple requires the first remote start to be in the future. [Apple's first-start-date explanation](https://developer.apple.com/videos/play/wwdc2021/10067/).
 
-CrocoCross validates Monday midnight UTC, the seven-day duration, and `nextStartDate - startDate == 604800` for both returned leaderboards. Their occurrences must match and be active. The server occurrence start determines the stable `native-5` course seed. A mismatched, inactive or unavailable configuration leaves weekly play in practice mode. [`GKLeaderboard.nextStartDate`](https://developer.apple.com/documentation/gamekit/gkleaderboard/nextstartdate).
+CrocoCross validates Monday midnight UTC, the seven-day duration, and `nextStartDate - startDate == 604800` for both returned leaderboards. Their occurrences must match and be active. The server occurrence start determines the stable `box2d-1` course seed. A mismatched, inactive or unavailable configuration leaves weekly play in practice mode. [`GKLeaderboard.nextStartDate`](https://developer.apple.com/documentation/gamekit/gkleaderboard/nextstartdate).
 
 ## Preserve Xcode's generated configuration
 
