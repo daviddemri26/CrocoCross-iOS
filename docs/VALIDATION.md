@@ -1,5 +1,14 @@
 # Validation record
 
+## GTA-only trimmed death cue — September 16, 2026
+
+- Build 14 removes both Universfield clips and the original untrimmed GTA MP3 from the app bundle. Every death uses the single trimmed GTA WAV; randomized/test-index selection is removed.
+- PCM analysis found the first 60 ms effectively silent; after 6.1 s the remaining tail stays below -40 dBFS RMS in 100 ms windows, with silence after about 7.0 s. Keep source 0.06–6.15 s, fading the last 150 ms. Duration is **6.09 s**, reduced from 7.758367 s by 1.668367 s (21.5%). No internal edits, speed changes, or pitch changes. The user original in Downloads is untouched.
+- Full AVAudioPlayer/AVAudioFile decode passes: 268,569 stereo frames at 44.1 kHz, finite samples, peak 0.937653. Signed app contains exactly the one expected death WAV and its bytes match the verified output. Existing cinematic minimums and full-playback waits remain unchanged.
+- The iPhone simulator Endless final-life/retry test passes: **1 test, 0 failures, 41.725 s**, exercising all three losses and the extended final wait. Signed Release **1.0.0 (14)** builds successfully. Installation and normal launch on David’s paired iPhone both succeeded (launch 17:16:22 PDT). No new driving-physics or subjective audio-quality claim is made.
+
+Evidence: `artifacts/qa/2026-09-16-gta-trim/`, `/tmp/crococross-gta-trim-ui.xcresult`, and reproducible `scripts/trim-death-sound.py`.
+
 ## Random full-length death clips — September 16, 2026
 
 - Build 13 imports the three user-provided MP3s intact and removes the synthesized death cue. Each normal death selects uniformly at random, with repeats permitted. A dedicated AVAudioPlayer prevents other effects from interrupting the clip and follows Effects volume/mute.

@@ -1,5 +1,5 @@
 // xcrun swiftc App/Services/AudioService.swift scripts/check-death-sounds.swift -o /tmp/check-death-sounds
-// /tmp/check-death-sounds [directory containing the three bundled MP3s]
+// /tmp/check-death-sounds [directory containing the bundled death sound]
 // Decode the actual imported clips without playing through any audio output.
 import Foundation
 import AVFAudio
@@ -8,9 +8,9 @@ import AVFAudio
     static func main() throws {
         let directory = CommandLine.arguments.dropFirst().first ?? "App/Resources/GameAssets/DeathSounds"
         var report: [[String: Any]] = []
-        precondition(Set(DeathSoundCatalog.filenames).count == 3)
+        precondition(Set(DeathSoundCatalog.filenames).count == 1)
         for name in DeathSoundCatalog.filenames {
-            let url = URL(fileURLWithPath: directory).appendingPathComponent(name + ".mp3")
+            let url = URL(fileURLWithPath: directory).appendingPathComponent(name + "." + DeathSoundCatalog.fileExtension)
             let player = try AVAudioPlayer(contentsOf: url)
             precondition(player.duration.isFinite && player.duration > 0)
             let file = try AVAudioFile(forReading: url)
@@ -31,7 +31,7 @@ import AVFAudio
                 }
             }
             precondition(frames == file.length && frames > 0, "The complete clip must decode")
-            report.append(["file": name + ".mp3", "seconds": player.duration,
+            report.append(["file": name + "." + DeathSoundCatalog.fileExtension, "seconds": player.duration,
                            "decodedFrames": frames, "peak": peak,
                            "endlessFinalMinimum": max(1.8, player.duration),
                            "slowMotionMinimum": max(3.6, player.duration)])

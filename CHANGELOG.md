@@ -4,7 +4,7 @@
 
 Current native iOS development candidate:
 
-- Replace the synthesized death cue with three intact user-provided MP3s, selected randomly for each death. Extend results/recovery holds to the selected clip’s end while preserving existing minimum cinematic durations.
+- Use only the GTA death cue, trimmed to 6.09 seconds with a gentle end fade; retain full playback and cinematic minimums.
 
 - Anchor both palms on the visible handlebar grips and recalibrate forearm reach to retain contact through rider movement.
 

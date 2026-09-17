@@ -78,13 +78,10 @@ enum AudioPreferenceStorage {
     }
 }
 
-/// Imported clips are kept intact. AVAudioPlayer supplies their decoded duration.
+/// The trimmed GTA cue is decoded losslessly; its player supplies the duration.
 enum DeathSoundCatalog {
-    static let filenames = [
-        "universfield-cinematic-impact-boom-05-352465",
-        "universfield-ground-impact-352053",
-        "gta-v-wasted-death-sound"
-    ]
+    static let filenames = ["gta-death-trimmed"]
+    static let fileExtension = "wav"
 }
 
 #if canImport(UIKit)
@@ -366,7 +363,7 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
 
     private func loadDeathSounds() {
         deathPlayers = DeathSoundCatalog.filenames.compactMap { filename in
-            guard let url = bundle.url(forResource: filename, withExtension: "mp3", subdirectory: "GameAssets/DeathSounds"),
+            guard let url = bundle.url(forResource: filename, withExtension: DeathSoundCatalog.fileExtension, subdirectory: "GameAssets/DeathSounds"),
                   let player = try? AVAudioPlayer(contentsOf: url), player.duration.isFinite, player.duration > 0 else { return nil }
             player.numberOfLoops = 0
             player.delegate = self
@@ -377,14 +374,7 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
 
     private func playDeathSound() {
         stopDeathSound()
-        // Reproducible long-clip coverage only for the existing muted UI-test mode.
-        let args = ProcessInfo.processInfo.arguments
-        let testIndex = args.contains("-ui-testing") ? args.firstIndex(of: "-death-sound-index").flatMap {
-            args.indices.contains($0 + 1) ? Int(args[$0 + 1]) : nil
-        } : nil
-        let selected = testIndex.flatMap { deathPlayers.indices.contains($0) ? deathPlayers[$0] : nil }
-            ?? deathPlayers.randomElement()
-        guard let selected else { return }
+        guard let selected = deathPlayers.first else { return }
         deathPlayer = selected
         deathSoundDuration = selected.duration
         selected.currentTime = 0
