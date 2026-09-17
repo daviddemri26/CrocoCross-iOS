@@ -6,8 +6,7 @@
   "build": "17",
   "primaryLanguage": "en-US",
   "metadataLocalizations": [
-    "en-US",
-    "fr-FR"
+    "en-US"
   ],
   "appInterfaceLanguages": [
     "en"
@@ -33,5 +32,7 @@
   "privacyURL": "https://daviddemri26.github.io/CrocoCross-iOS/privacy.html",
   "marketingURL": "https://daviddemri26.github.io/CrocoCross-iOS/",
   "supportEmail": "support@lafayette-consulting.us",
-  "privacyEmail": "privacy@lafayette-consulting.us"
+  "privacyEmail": "privacy@lafayette-consulting.us",
+  "appStoreConnectID": "6812979862",
+  "appStoreConnectURL": "https://appstoreconnect.apple.com/apps/6812979862/distribution/ios/version/inflight"
 }

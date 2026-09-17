@@ -1,52 +1,49 @@
-# Déclarations de soumission — version 1.0.0 (17)
+# Submission declarations — 1.0.0 (17)
 
-Réponses préparées à partir du code et des contenus actuels ; les validations administratives restent dans App Store Connect.
+Prepared from the current code and content. These declarations apply only to this app version.
 
-## Confidentialité
+## Privacy
 
-Réponse proposée : **aucune donnée collectée par le développeur depuis l’app**. Aucun serveur propre, analytics, publicité, identifiant publicitaire ni SDK de suivi. Les préférences, records et files d’attente sont locaux. Game Center utilise `gamePlayerID`, pas `teamPlayerID` ; l’app ne collecte pas les amis.
+Proposed answer: **Data Not Collected by the developer from the app**. There is no developer-operated backend, analytics, advertising or tracking SDK. Preferences, records and pending submissions are local. Game Center uses the app-scoped `gamePlayerID`, not `teamPlayerID`, and does not request friends.
 
-Apple opère l’authentification et les classements. Les scores, temps et identifiants propres au jeu sont traités par Apple. La politique CrocoCross les décrit explicitement. Cette proposition dépend de l’absence de collecte supplémentaire par l’éditeur : ne pas la reprendre si un backend, une extraction de profils ou un outil d’analyse est ajouté. Apple distingue les traitements purement locaux et les données collectées par ses propres services de celles collectées par le développeur. [App Privacy Details](https://developer.apple.com/app-store/app-privacy-details/), [identifiants GameKit](https://developer.apple.com/documentation/gamekit/protecting-the-player-s-privacy-using-scoped-identifiers).
+Apple operates authentication and leaderboards. Eligible scores, times and game-scoped identifiers are processed by Apple, as explained in the public policy. Do not retain this declaration if a developer backend, profile extraction or analytics is added. [Apple App Privacy Details](https://developer.apple.com/app-store/app-privacy-details/), [GameKit identifiers](https://developer.apple.com/documentation/gamekit/protecting-the-player-s-privacy-using-scoped-identifiers).
 
-- Tracking : **No**. Aucun écran ATT nécessaire.
-- Privacy Policy : URL fournie dans chaque langue.
-- Privacy Choices : facultatif ; la section choix/suppression de la politique peut servir.
-- Assistance volontaire par e-mail : hors du gameplay, limitée aux informations envoyées par l’utilisateur ; expliquée dans la politique.
-- Le site GitHub Pages a ses propres requêtes techniques d’hébergement ; pas d’analytics ajouté.
+- Tracking: No. No ATT prompt is needed.
+- Privacy policy: the English URL in metadata.
+- Optional support email contains only the information the user chooses to send.
+- GitHub Pages processes technical hosting requests; no analytics scripts are added.
+- Privacy manifest: no tracking; empty collected-data array; UserDefaults reason **CA92.1**; SystemBootTime **35F9.1** for local audio/haptic intervals and Box2D timing. These clocks do not identify devices or send timing data to a server.
 
-Manifeste iOS : `NSPrivacyTracking=false`, collecte déclarée vide, UserDefaults **CA92.1** pour les préférences de l’app, SystemBootTime **35F9.1** pour les intervalles audio/haptiques et les mesures du moteur Box2D. Pas d’usage de ces horloges pour identifier un appareil. [Raisons autorisées Apple](https://developer.apple.com/documentation/bundleresources/app-privacy-configuration/nsprivacyaccessedapitypes/nsprivacyaccessedapitype).
+## Age rating
 
-## Âge : répondre au contenu, laisser Apple calculer
+Cartoon crocodile falls and the final-life explosion contain no blood, gore or realistic human injury. Do not reuse the keyboard app's rating; Apple calculates this app's rating from its answers.
 
-Ne pas recopier le « 4+ » du clavier : le contenu du jeu est différent. Les chutes d’un crocodile et l’explosion sont stylisées, sans sang, blessure détaillée ni violence humaine réaliste.
-
-| Question | Proposition pour la version actuelle |
+| Field | Current content |
 |---|---|
-| Contrôle parental / assurance de l’âge | Non / Non |
-| Navigation web illimitée intégrée | Non ; liens externes fixes uniquement |
-| Contenu utilisateur / chat / réseaux sociaux | Non ; pas de publication libre ni de flux social dans CrocoCross |
-| Publicité | Non |
-| Grossièretés, sexualité, nudité, drogues, sujets médicaux | Aucun |
-| Horreur / peur | Aucun thème d’horreur ; les chutes sont des échecs de course cartoon |
-| Violence cartoon/fantastique | Présente : chutes répétables, explosion finale ; proposer « Frequent » si le questionnaire distingue la fréquence, car elles peuvent survenir à chaque tentative |
-| Violence réaliste / sadique / armes | Aucune |
-| Concours / compétitions | Présents, fréquents : classement et défi hebdomadaire ; aucun prix monétaire |
-| Jeux d’argent / simulation de paris / loot boxes | Aucun |
-| Made for Kids | Non |
+| Parental controls / age assurance | No / No |
+| Unrestricted in-app web browsing | No; fixed external links only |
+| User-generated content, chat, social feeds | No |
+| Advertising | No |
+| Profanity, sexual content, nudity, drugs, medical topics | None |
+| Horror / fear | No horror themes; cartoon race failures |
+| Cartoon / fantasy violence | Repeated falls and explosions during play |
+| Realistic violence, sadistic violence, weapons | None |
+| Contests | Repeated leaderboard competition and weekly challenges; no monetary prizes |
+| Gambling, simulated gambling, loot boxes | None |
+| Made for Kids | No |
 
-L’estimation issue de ces réponses peut atteindre **13+ sur les OS 26+**, notamment pour les compétitions fréquentes. Apple calcule aussi des classifications régionales et pour les anciens OS. La fréquence est une appréciation à confirmer sur le gameplay, pas une classification obtenue par cette préparation. [Définitions officielles Apple](https://developer.apple.com/help/app-store-connect/reference/app-information/age-ratings-values-and-definitions).
+Frequent cartoon violence/contests may produce **13+ on OS 26+**. Use Apple's actual calculated rating and regional results. [Apple rating definitions](https://developer.apple.com/help/app-store-connect/reference/app-information/age-ratings-values-and-definitions).
 
-## Export / chiffrement
+## Encryption
 
-`ITSAppUsesNonExemptEncryption=false`. Aucun chiffrement propriétaire ni bibliothèque cryptographique embarquée ; les connexions et protections de stockage utilisent les services système Apple. Choisir l’exemption correspondant uniquement au chiffrement de l’OS si le questionnaire est présenté. Cette configuration ne remplace pas un examen si la cryptographie de l’app change. [Apple : chiffrement](https://developer.apple.com/help/app-store-connect/manage-app-information/overview-of-export-compliance/).
+`ITSAppUsesNonExemptEncryption=false`. No custom cryptography or bundled cryptographic library. Connections and storage protections use Apple operating-system services. [Apple export compliance](https://developer.apple.com/help/app-store-connect/manage-app-information/overview-of-export-compliance/).
 
-## Droits / identité / distribution
+## Publisher, rights and distribution
 
-- Éditeur Apple : David Demri, confirmé sur SweetKeyboard Pro et dans le compte App Store Connect.
-- Copyright : 2026 Lafayette Consulting, identique à SweetKeyboard Pro.
-- David confirme l’origine des illustrations, musiques et du son de chute ; celui-ci est renommé `rider-fall-impact.wav`, audio inchangé. Voir `docs/SOURCE-PROVENANCE.md`.
-- Mixkit Fuel Explosion conserve sa licence distincte et son crédit ; Box2D et l’icône Lucide conservent leurs mentions de licence.
-- EULA : contrat standard Apple, sauf choix explicite ultérieur de l’éditeur.
-- DSA / statut professionnel et adresse : reprendre la déclaration réelle de l’éditeur au niveau du compte. Aucune adresse ni qualité juridique n’a été inventée.
-- Accessibilité Store : le jeu respecte Reduce Motion et possède des labels dans les menus ; ne pas revendiquer VoiceOver pour l’intégralité du gameplay sans validation dédiée.
-- Disponibilité : choisir les territoires dans le compte. Les pays exigeant une autorisation locale de jeu restent à traiter manuellement ; aucun numéro de licence locale n’est fourni.
+- Seller: David Demri. Copyright: 2026 Lafayette Consulting, matching SweetKeyboard Pro.
+- The owner confirmed authorship of the artwork, music and rider-fall sound. The sound is now named `rider-fall-impact.wav`, without changing its audio. See `docs/SOURCE-PROVENANCE.md`.
+- The Mixkit Fuel Explosion effect, Box2D and Lucide retain their separate licenses and credits.
+- Standard Apple EULA applies unless the owner chooses a custom agreement.
+- Reuse the existing account's verified business/trader details. Do not invent addresses or legal status.
+- Reduced Motion is implemented. Do not claim full gameplay VoiceOver support without dedicated validation.
+- Territories with local game-license requirements need actual authorization; no license number has been supplied.

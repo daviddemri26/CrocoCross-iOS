@@ -11,7 +11,9 @@ def png(path):
  blob=path.read_bytes();require(blob[:8]==b'\x89PNG\r\n\x1a\n',str(path.relative_to(ROOT))+' PNG')
  w,h,depth,color=struct.unpack('>IIBB',blob[16:26]);require(color==2 and depth==8,str(path.relative_to(ROOT))+' opaque 8-bit RGB')
  return w,h
-for lang in ['en-US','fr-FR']:
+require(not (D/'metadata/fr-FR').exists() and not (D/'screenshots/upload/fr-FR').exists(),'English-only store localization')
+require(not list((D/'web').glob('*-fr.html')),'English-only public pages')
+for lang in ['en-US']:
  for field,limit in [('name',30),('subtitle',30),('promotional-text',170),('description',4000),('keywords',100)]:
   value=(D/'metadata'/lang/(field+'.txt')).read_text().strip();count=len(value.encode('utf-8')) if field=='keywords' else len(value)
   require(0<count<=limit,f'{lang} {field}: {count}/{limit}')

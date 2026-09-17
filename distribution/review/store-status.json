@@ -1,0 +1,17 @@
+{
+  "appStoreConnectID": "6812979862",
+  "version": "1.0.0",
+  "build": "17",
+  "language": "en-US",
+  "record": "created",
+  "versionMetadata": "saved",
+  "releaseMode": "manual",
+  "appStoreExport": "succeeded",
+  "buildUpload": "succeeded; Apple processing/selection still to verify",
+  "screenshots": {
+    "iphone6_9": "five uploaded; ordering to verify",
+    "ipad13": "upload in progress"
+  },
+  "finalAppReviewSubmission": "not submitted; reserved for owner",
+  "publicRelease": "not published; reserved for owner"
+}

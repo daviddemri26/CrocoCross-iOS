@@ -4,6 +4,8 @@
 
 Current native iOS development candidate:
 
+- Keep the submission package and public support/privacy pages in English only; remove French screenshot sets and metadata.
+
 - Prepare build 17 for manual App Store submission with English/French listing copy, real iPhone/iPad screenshots, opaque icons, bilingual support/privacy pages and a reproducible archive workflow.
 - Declare local elapsed-time API use, disable Release testability, and rename the owner-created fall sound without changing its audio. App Store distribution signing and live Game Center setup remain pending.
 
