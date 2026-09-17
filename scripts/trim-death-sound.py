@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Trim a decoded user GTA clip; decode first with afconvert -f WAVE -d LEI16.
+"""Trim a decoded owner-created impact clip; decode first with afconvert -f WAVE -d LEI16.
 Keep the original attack and both impacts, then shorten the echo with a
 450 ms end fade. Keep 0.06–4.15 s: 4.09 seconds, no speed/pitch change.
 """

@@ -5,7 +5,7 @@
 - Display name: CrocoCross
 - Bundle ID: `com.daviddemri.crococross`
 - Development team: `57XAAX65VC` (public certificate metadata verified locally)
-- Current preview version/build: 1.0.0/16
+- Current preview version/build: 1.0.0/17
 - Target families: iPhone+iPad; iOS18+
 - Box2D 3.1.1 is compiled into the native app; its MIT license is bundled and accessible in About. No advertisements, purchases or background audio entitlement.
 
@@ -33,8 +33,8 @@ Required live proof: sign in, load matching week, finish a real run, submit poin
 
 -1024px opaque icon included.
 -Capture actual iPhone and iPad screens from the validated release build.
--Create a concise description covering the weekly 4,000 m challenge, Endless, Rocco, nine worlds and touch controls. The eight other riders are disabled during this preview and will return progressively; do not advertise them as playable.
--Publish independent support/privacy URLs; owner support contact must be confirmed.
+-Create a concise description covering the weekly 4,000 m challenge, Endless, Rocco, Canyon and touch controls. The eight other riders are disabled during this preview and will return progressively; do not advertise them as playable.
+-Dedicated support/privacy pages and owner contacts are prepared in `distribution/`; see its README for live publication and signing status.
 -Complete age rating, encryption/export questions, EU trader information where applicable, and privacy disclosures based on actual Game Center data flows. The privacy manifest is not a substitute for the App Store privacy questionnaire.
 - Asset publication authorized by David Demri on September 12, 2026; original artwork/music authorship and rights confirmation are recorded in [SOURCE-PROVENANCE.md](SOURCE-PROVENANCE.md).
 -Recheck Apple's SDK requirements on submission day.

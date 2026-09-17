@@ -1,0 +1,41 @@
+{
+  "configurationStatus": "Not yet created in App Store Connect; configure and verify before enabling for review.",
+  "ruleVersion": "box2d-1",
+  "weeklyStartRule": "Next future Monday 00:00 UTC; both recurring boards must share the same anchor.",
+  "durationSeconds": 604800,
+  "restartIntervalSeconds": 604800,
+  "scoreSubmission": "Best Score",
+  "leaderboards": [
+    {
+      "id": "com.daviddemri.crococross.weekly.score.v2",
+      "referenceName": "Weekly Score v2",
+      "title_en": "Weekly Score",
+      "title_fr": "Score de la semaine",
+      "type": "Recurring",
+      "sort": "Descending",
+      "format": "Integer",
+      "suffix_en": " points",
+      "suffix_fr": " points"
+    },
+    {
+      "id": "com.daviddemri.crococross.weekly.time.v2",
+      "referenceName": "Weekly Time v2",
+      "title_en": "Weekly Time",
+      "title_fr": "Temps de la semaine",
+      "type": "Recurring",
+      "sort": "Ascending",
+      "format": "Elapsed time, hundredths of a second"
+    },
+    {
+      "id": "com.daviddemri.crococross.endless.score.v2",
+      "referenceName": "Endless Score v2",
+      "title_en": "Endless Score",
+      "title_fr": "Score infini",
+      "type": "Classic",
+      "sort": "Descending",
+      "format": "Integer",
+      "suffix_en": " points",
+      "suffix_fr": " points"
+    }
+  ]
+}

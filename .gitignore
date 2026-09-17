@@ -25,3 +25,7 @@ Config/Local.xcconfig
 *.xcresult/
 *.log
 __pycache__/
+
+# Local owner contact and packaged release deliverables
+distribution/private/
+distribution/*.zip

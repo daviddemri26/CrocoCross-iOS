@@ -1,0 +1,37 @@
+{
+  "name": "CrocoCross",
+  "bundleID": "com.daviddemri.crococross",
+  "sku": "CROCOCROSS-IOS-001",
+  "version": "1.0.0",
+  "build": "17",
+  "primaryLanguage": "en-US",
+  "metadataLocalizations": [
+    "en-US",
+    "fr-FR"
+  ],
+  "appInterfaceLanguages": [
+    "en"
+  ],
+  "seller": "David Demri",
+  "copyright": "2026 Lafayette Consulting",
+  "developmentTeam": "57XAAX65VC",
+  "primaryCategory": "Games",
+  "gameSubcategories": [
+    "Racing",
+    "Sports"
+  ],
+  "price": "Free",
+  "inAppPurchases": false,
+  "ads": false,
+  "release": "Manual",
+  "minimumOS": "18.0",
+  "platforms": [
+    "iPhone",
+    "iPad"
+  ],
+  "supportURL": "https://daviddemri26.github.io/CrocoCross-iOS/support.html",
+  "privacyURL": "https://daviddemri26.github.io/CrocoCross-iOS/privacy.html",
+  "marketingURL": "https://daviddemri26.github.io/CrocoCross-iOS/",
+  "supportEmail": "support@lafayette-consulting.us",
+  "privacyEmail": "privacy@lafayette-consulting.us"
+}

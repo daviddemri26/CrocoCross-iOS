@@ -42,3 +42,7 @@ David supplied three MP3 attachments and explicitly requested random, full-lengt
 Build 14 uses only the GTA attachment, trimmed from 0.06 s to 6.15 s with a 150 ms end fade and stored as PCM WAV to avoid another lossy encoding. The two Universfield clips and untrimmed MP3 are removed from the app bundle. Original source hashes remain recorded in Git history; the current source/output pair is in `death-sounds.json`.
 
 Build 15 further shortens the same source to 0.06–4.15 s (4.09 s total), with a 450 ms end fade. The attack and both impacts remain; the echo is shortened as requested.
+
+## App Store authorship clarification — September 16, 2026
+
+David Demri explicitly confirmed that he created the currently selected death sound entirely himself and authorized its inclusion in the App Store version. The earlier source filename did not establish third-party authorship. This confirmation supersedes the unresolved authorship statement for that selected clip above; it does not assert rights for the unused Universfield clips. Build 17 renames the bundled file to `rider-fall-impact.wav` without changing any bytes (SHA-256 `228f570ceabf993e83907366e50a630f583e743c0371f9a603f0235ef63e31c2`). Historical source names and hashes remain as provenance.

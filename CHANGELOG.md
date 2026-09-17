@@ -4,6 +4,9 @@
 
 Current native iOS development candidate:
 
+- Prepare build 17 for manual App Store submission with English/French listing copy, real iPhone/iPad screenshots, opaque icons, bilingual support/privacy pages and a reproducible archive workflow.
+- Declare local elapsed-time API use, disable Release testability, and rename the owner-created fall sound without changing its audio. App Store distribution signing and live Game Center setup remain pending.
+
 - Focus the preview on Canyon with continuous background travel and rider-focused crash zoom.
 - Center Game Over and total score, show distance/flip point contributions, and enlarge Ride again below the secondary actions.
 - Enlarge the HUD score, align solid hearts right with a falling/fading loss animation, and integrate directional flip notices.

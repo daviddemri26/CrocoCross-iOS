@@ -1,0 +1,9 @@
+CrocoCross is a native side-view motorcycle game for iPhone and iPad. No app account, demo credentials, purchase or subscription is required. The interface is in English. Rocco and Canyon are the playable character and world in version 1.0.
+
+To play: select Weekly for a 4,000 m course with one life, or Endless for an unlimited trail with three lives. Hold the right grip to accelerate/lean back; hold the left lever to brake/lean forward. Short presses provide finer control. Flips score only on safe landing. Open How to for illustrated instructions and scoring.
+
+Game Center is optional. The two modes can be played locally without authentication. Game Center uses the app-scoped player identifier and official Apple leaderboards only. Before a weekly leaderboard occurrence is available, the weekly course is playable locally. Weekly leaderboard entries require a full 4,000 m finish from an eligible start. No demo login is required.
+
+Audio: Home has a sound toggle. Settings opens Audio, with separate music, engine and effects volumes. The app has no background-audio entitlement. Returning Home or leaving the app abandons the run; relaunch opens Home, preserving local records and preferences.
+
+Cartoon rider falls and a final-life explosion contain no blood or gore. The optional slow-motion fall effect respects Reduce Motion. Artwork, music and the original rider-fall sound are provided by their author David Demri. The separately licensed Mixkit explosion sound and Box2D MIT license are credited in Settings > About.

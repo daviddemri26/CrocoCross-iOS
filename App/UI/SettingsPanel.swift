@@ -183,6 +183,8 @@ private struct PrivacyView: View {
                 "Playing without Game Center keeps your results local. Removing the app removes its local data; it does not delete data held separately by Game Center."
             )
             Text("No camera, microphone, location or contacts access is requested.")
+            Link("CrocoCross privacy policy", destination: URL(string: "https://daviddemri26.github.io/CrocoCross-iOS/privacy.html")!)
+            Link("Contact support", destination: URL(string: "https://daviddemri26.github.io/CrocoCross-iOS/support.html")!)
             Link(
                 "Apple Game Center privacy",
                 destination: URL(string: "https://www.apple.com/legal/privacy/data/en/game-center/")!)

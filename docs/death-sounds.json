@@ -1,11 +1,12 @@
 {
   "source": "gta-v-wasted-death-sound.mp3",
   "sourceSHA256": "e95924a8ad7beed439ea6ac264a64f5aca99e65b2e3e1d730b644a565e009b6c",
-  "file": "gta-death-trimmed.wav",
+  "file": "rider-fall-impact.wav",
   "sha256": "228f570ceabf993e83907366e50a630f583e743c0371f9a603f0235ef63e31c2",
   "bytes": 721520,
   "trimStartSeconds": 0.06,
   "trimEndSeconds": 4.15,
   "fadeOutSeconds": 0.45,
-  "durationSeconds": 4.09
+  "durationSeconds": 4.09,
+  "authorship": "David Demri confirmed sole creation and authorized App Store distribution on 2026-09-16"
 }

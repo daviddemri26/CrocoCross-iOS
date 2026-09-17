@@ -433,7 +433,7 @@
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
 				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
 				"MARKETING_VERSION" = "1.0.0";
-				"CURRENT_PROJECT_VERSION" = "16";
+				"CURRENT_PROJECT_VERSION" = "17";
 				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/Frameworks";
 				"SUPPORTS_MACCATALYST" = "NO";
 				"SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD" = "NO";
@@ -442,6 +442,7 @@
 				"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
 				"ONLY_ACTIVE_ARCH" = "YES";
 				"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "DEBUG";
+				"ENABLE_TESTABILITY" = "YES";
 			};
 		};
 		"6A522292BDC8D2848215C5E6" = {
@@ -458,7 +459,7 @@
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
 				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
 				"MARKETING_VERSION" = "1.0.0";
-				"CURRENT_PROJECT_VERSION" = "16";
+				"CURRENT_PROJECT_VERSION" = "17";
 				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/Frameworks";
 				"SUPPORTS_MACCATALYST" = "NO";
 				"SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD" = "NO";
@@ -466,6 +467,8 @@
 				"GENERATE_INFOPLIST_FILE" = "NO";
 				"SWIFT_OPTIMIZATION_LEVEL" = "-O";
 				"ONLY_ACTIVE_ARCH" = "NO";
+				"ENABLE_TESTABILITY" = "NO";
+				"VALIDATE_PRODUCT" = "YES";
 			};
 		};
 		"DE5E39CBBA5A001B7B64CD5C" = {
@@ -504,6 +507,16 @@
 			"dependencies" = ();
 			"packageProductDependencies" = ("F27584CD34350A27B015B217");
 		};
+		"8CD96EDD0A7922FC021689F4" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "UITests/AppStoreCaptureTests.swift";
+			"sourceTree" = "SOURCE_ROOT";
+		};
+		"BBF9AC5BA0D5EB021EAFAA51" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "8CD96EDD0A7922FC021689F4";
+		};
 		"608982739B577C7103EF2E83" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -540,6 +553,7 @@
 				"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
 				"ONLY_ACTIVE_ARCH" = "YES";
 				"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "DEBUG";
+				"ENABLE_TESTABILITY" = "YES";
 			};
 		};
 		"9ACBD4C42B2789FA6323CDC1" = {
@@ -555,6 +569,8 @@
 				"DEVELOPMENT_TEAM" = "57XAAX65VC";
 				"SWIFT_OPTIMIZATION_LEVEL" = "-O";
 				"ONLY_ACTIVE_ARCH" = "NO";
+				"ENABLE_TESTABILITY" = "NO";
+				"VALIDATE_PRODUCT" = "YES";
 			};
 		};
 		"9239B413304AA072000BA2BB" = {
@@ -566,7 +582,7 @@
 		"4AC6D2D3EB3B918C36F7C620" = {
 			"isa" = "PBXSourcesBuildPhase";
 			"buildActionMask" = 2147483647;
-			"files" = ("448BE60F0877BBEFED75732E");
+			"files" = ("BBF9AC5BA0D5EB021EAFAA51", "448BE60F0877BBEFED75732E");
 			"runOnlyForDeploymentPostprocessing" = 0;
 		};
 		"6AEA91B3ED7C8BDAF5C2FDA9" = {
@@ -606,7 +622,7 @@
 		};
 		"04D13FD0AA6F0197CF2C9990" = {
 			"isa" = "PBXGroup";
-			"children" = ("608982739B577C7103EF2E83");
+			"children" = ("8CD96EDD0A7922FC021689F4", "608982739B577C7103EF2E83");
 			"name" = "UI Tests";
 			"sourceTree" = "<group>";
 		};
@@ -631,10 +647,10 @@
 				"CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER" = "YES";
 				"SWIFT_STRICT_CONCURRENCY" = "complete";
 				"DEBUG_INFORMATION_FORMAT" = "dwarf-with-dsym";
-				"ENABLE_TESTABILITY" = "YES";
 				"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
 				"ONLY_ACTIVE_ARCH" = "YES";
 				"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "DEBUG";
+				"ENABLE_TESTABILITY" = "YES";
 			};
 		};
 		"DFF34D48C0AEC1CD611F6606" = {
@@ -653,9 +669,10 @@
 				"CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER" = "YES";
 				"SWIFT_STRICT_CONCURRENCY" = "complete";
 				"DEBUG_INFORMATION_FORMAT" = "dwarf-with-dsym";
-				"ENABLE_TESTABILITY" = "YES";
 				"SWIFT_OPTIMIZATION_LEVEL" = "-O";
 				"ONLY_ACTIVE_ARCH" = "NO";
+				"ENABLE_TESTABILITY" = "NO";
+				"VALIDATE_PRODUCT" = "YES";
 			};
 		};
 		"03FC260028FDA1286DBBE810" = {

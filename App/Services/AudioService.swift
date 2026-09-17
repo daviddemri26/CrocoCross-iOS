@@ -78,9 +78,9 @@ enum AudioPreferenceStorage {
     }
 }
 
-/// The trimmed GTA cue is decoded losslessly; its player supplies the duration.
+/// The original rider-fall cue is decoded losslessly; its player supplies the duration.
 enum DeathSoundCatalog {
-    static let filenames = ["gta-death-trimmed"]
+    static let filenames = ["rider-fall-impact"]
     static let fileExtension = "wav"
 }
 

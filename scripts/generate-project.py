@@ -31,6 +31,8 @@ def configurations(label, values):
         settings['SWIFT_OPTIMIZATION_LEVEL'] = '-Onone' if name == 'Debug' else '-O'
         settings['ONLY_ACTIVE_ARCH'] = 'YES' if name == 'Debug' else 'NO'
         if name == 'Debug': settings['SWIFT_ACTIVE_COMPILATION_CONDITIONS'] = 'DEBUG'
+        settings['ENABLE_TESTABILITY'] = 'YES' if name == 'Debug' else 'NO'
+        if name == 'Release': settings['VALIDATE_PRODUCT'] = 'YES'
         configs.append(add(label + ':' + name, 'XCBuildConfiguration', name=name, buildSettings=settings))
     return add(label + ':list', 'XCConfigurationList', buildConfigurations=configs, defaultConfigurationIsVisible=0, defaultConfigurationName='Release')
 
@@ -55,7 +57,6 @@ common = {
     'GCC_WARN_UNDECLARED_SELECTOR': 'YES', 'GCC_WARN_UNINITIALIZED_AUTOS': 'YES_AGGRESSIVE',
     'CLANG_WARN_DOCUMENTATION_COMMENTS': 'YES', 'CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER': 'YES',
     'SWIFT_STRICT_CONCURRENCY': 'complete', 'DEBUG_INFORMATION_FORMAT': 'dwarf-with-dsym',
-    'ENABLE_TESTABILITY': 'YES',
 }
 app_settings = {
     'PRODUCT_BUNDLE_IDENTIFIER': 'com.daviddemri.crococross', 'PRODUCT_NAME': '$(TARGET_NAME)',
@@ -63,7 +64,7 @@ app_settings = {
     'CODE_SIGN_ENTITLEMENTS': 'App/CrocoCross.entitlements', 'INFOPLIST_FILE': 'App/Info.plist',
     'TARGETED_DEVICE_FAMILY': '1,2', 'SUPPORTED_PLATFORMS': 'iphoneos iphonesimulator',
     'ASSETCATALOG_COMPILER_APPICON_NAME': 'AppIcon', 'MARKETING_VERSION': '1.0.0',
-    'CURRENT_PROJECT_VERSION': '16', 'LD_RUNPATH_SEARCH_PATHS': '$(inherited) @executable_path/Frameworks',
+    'CURRENT_PROJECT_VERSION': '17', 'LD_RUNPATH_SEARCH_PATHS': '$(inherited) @executable_path/Frameworks',
     'SUPPORTS_MACCATALYST': 'NO', 'SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD': 'NO',
     'SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD': 'NO', 'GENERATE_INFOPLIST_FILE': 'NO',
 }

@@ -33,6 +33,8 @@ jobs:
         run: |
           python3 scripts/generate-project.py
           git diff --exit-code -- CrocoCross.xcodeproj
+      - name: Validate App Store package
+        run: python3 scripts/check-app-store-package.py
       - name: Test game rules and physics
         run: swift test --disable-sandbox
       - name: Test local persistence
