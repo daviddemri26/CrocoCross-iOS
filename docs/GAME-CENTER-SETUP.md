@@ -1,8 +1,10 @@
 # CrocoCross — native Game Center setup
 
-Prepared September 12, 2026. This is a configuration procedure for the independent iOS app. The identifiers below are implemented locally; they are not evidence that App Store Connect resources exist. No GameKit bundle is fabricated by this document and no synchronization has been performed as part of its preparation.
+## Live configuration status — September 17, 2026
 
-Box2D migration, September 16, 2026: the client now targets **v2** boards. Legacy v1 scores and queued submissions are preserved and never retagged. New local records and the score queue use the `box2d-1` namespace. Both modes require confirmed matching boards before online submission; offline play remains available. No v2 board has been created or synchronized during this migration.
+All three v2 leaderboards below have been created in App Store Connect for app **6812979862**, with English (U.S.) localization only. Weekly Score and Weekly Time use Best Score and start together at **2026-09-21 00:00 UTC**, lasting and restarting every seven days. The current browser UI displays this as **September 20, 17:00 UTC-7**; always check the displayed time zone. Endless Score is a classic, descending Best Score board. Game Center is enabled for app version 1.0.0, build 17.
+
+The review submission is being prepared for the owner; configuration does not prove live score upload/read-back. The real-run acceptance checks below remain necessary. Legacy v1 scores and queues were not retagged; new records use the `box2d-1` namespace. The following Xcode instructions are an optional future local test workflow, not a claim that a `.gamekit` bundle was generated.
 
 ## App identity
 
@@ -25,9 +27,9 @@ Let Xcode generate the package contents; no public serialization schema was esta
 
 | Reference name and English display name | Identifier | Type | Score format | Ordering |
 |---|---|---|---|---|
-| Weekly High Score | `com.daviddemri.crococross.weekly.score.v2` | Recurring | Integer | High to low |
-| Weekly Fastest Finish | `com.daviddemri.crococross.weekly.time.v2` | Recurring | Elapsed time in centiseconds | Low to high |
-| Endless High Score | `com.daviddemri.crococross.endless.score.v2` | Classic | Integer | High to low |
+| Weekly Score | `com.daviddemri.crococross.weekly.score.v2` | Recurring | Integer | High to low |
+| Weekly Time | `com.daviddemri.crococross.weekly.time.v2` | Recurring | Elapsed time in centiseconds | Low to high |
+| Endless Score | `com.daviddemri.crococross.endless.score.v2` | Classic | Integer | High to low |
 
 Use **Best Score** for all three. Do not use Most Recent Score. Keep optional score limits unset unless a validated range has been established for the final physics and scoring. Add at least an English localization before synchronization. The time board receives an integer count of hundredths of a second, not seconds or milliseconds. [Apple leaderboard properties](https://developer.apple.com/help/app-store-connect/reference/game-center/leaderboards).
 

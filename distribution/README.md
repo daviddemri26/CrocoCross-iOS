@@ -28,7 +28,7 @@ Use one screenshot set per device. The contact sheets named `preview-*.jpg` are 
 - Version **1.0.0**, build **17**. Primary language: **English (U.S.)** only.
 - Seller: **David Demri**. Copyright: **2026 Lafayette Consulting**.
 - Free, no ads, no in-app purchases. Games: Racing / Sports.
-- Native Mac and Vision targets are disabled. Check their separate Store availability settings.
+- Native Mac and Vision targets are disabled. Their separate Store availability settings are also off.
 
 ## Public URLs
 
@@ -40,7 +40,7 @@ Support and privacy contacts reuse the publisher details from SweetKeyboard Pro.
 
 ## Apple preparation and final handoff
 
-The CrocoCross record has been created. The owner connected the Apple Developer account in Xcode, and the App Store export succeeded. The earlier account/provisioning blocker is resolved. Upload and completion status are recorded in `review/store-status.json` when verified.
+The CrocoCross record has been created. The owner connected the Apple Developer account in Xcode, and the App Store export succeeded. The earlier account/provisioning blocker is resolved. Build 17 has been uploaded, processed and selected. Detailed live status is recorded in `review/store-status.json`; see `HANDOFF.md` for the remaining owner actions.
 
 The final action to **submit to App Review** and the eventual **release** remain with the owner. The first submission goes through Apple's review before the app can be publicly released. See [Apple's submission workflow](https://developer.apple.com/help/app-store-connect/manage-submissions-to-app-review/submit-an-app/).
 

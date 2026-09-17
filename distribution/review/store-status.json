@@ -1,17 +1,50 @@
 {
   "appStoreConnectID": "6812979862",
+  "appStoreConnectURL": "https://appstoreconnect.apple.com/apps/6812979862/distribution/ios/version/inflight",
+  "verifiedOn": "2026-09-17",
   "version": "1.0.0",
   "build": "17",
   "language": "en-US",
   "record": "created",
-  "versionMetadata": "saved",
+  "versionMetadata": "saved; review contact, no-login notes and manual release configured",
   "releaseMode": "manual",
   "appStoreExport": "succeeded",
-  "buildUpload": "succeeded; Apple processing/selection still to verify",
+  "buildUpload": "succeeded; Apple processing completed; build 17 selected for version 1.0.0",
   "screenshots": {
-    "iphone6_9": "five uploaded; ordering to verify",
-    "ipad13": "upload in progress"
+    "iphone6_9": "five uploaded and ordered 01-05; Apple derives 6.5-inch set",
+    "ipad13": "five uploaded and ordered 01-05"
   },
+  "ageRating": {
+    "OS26Plus": "13+ with regional exceptions",
+    "earlierOS": "12+ with regional exceptions",
+    "cartoonViolence": "frequent",
+    "contests": "frequent"
+  },
+  "contentRights": "third-party content rights declared; licenses retained",
+  "price": "free, USD 0.00 base, all local equivalents 0",
+  "availability": {
+    "selectedTerritories": 171,
+    "excluded": [
+      "China mainland: game license not supplied",
+      "Vietnam: game license not supplied",
+      "Afghanistan: Apple age-rating restriction",
+      "Morocco: Apple age-rating restriction"
+    ],
+    "futureTerritoriesAutomatic": false,
+    "iPhoneAndIPadOnMac": false,
+    "iPhoneAndIPadOnVisionPro": false
+  },
+  "gameCenter": "enabled for app version; three English v2 leaderboards created and added to one iOS draft submission",
+  "weeklyStartUTC": "2026-09-21T00:00:00Z",
+  "privacy": {
+    "url": "https://daviddemri26.github.io/CrocoCross-iOS/privacy.html",
+    "answer": "Data Not Collected",
+    "saved": true,
+    "published": false,
+    "pending": "Owner confirmation requested for Apple privacy accuracy/update attestation"
+  },
+  "validation": "Add for Review reports only the unpublished privacy declaration as missing; app version is not yet in the draft containing the three leaderboards",
   "finalAppReviewSubmission": "not submitted; reserved for owner",
-  "publicRelease": "not published; reserved for owner"
+  "publicRelease": "not published; reserved for owner",
+  "liveGameCenterScoreReadback": "not performed"
 }

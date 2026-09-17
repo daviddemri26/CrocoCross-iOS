@@ -7,3 +7,5 @@ Game Center is optional. The two modes can be played locally without authenticat
 Audio: Home has a sound toggle. Settings opens Audio, with separate music, engine and effects volumes. The app has no background-audio entitlement. Returning Home or leaving the app abandons the run; relaunch opens Home, preserving local records and preferences.
 
 Cartoon rider falls and a final-life explosion contain no blood or gore. The optional slow-motion fall effect respects Reduce Motion. Artwork, music and the original rider-fall sound are provided by their author David Demri. The separately licensed Mixkit explosion sound and Box2D MIT license are credited in Settings > About.
+
+The three v2 Game Center leaderboards are configured. Both weekly boards start September 21, 2026 at 00:00 UTC and repeat every seven days. Weekly practice remains playable before that first occurrence.
