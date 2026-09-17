@@ -2,10 +2,10 @@
   "source": "gta-v-wasted-death-sound.mp3",
   "sourceSHA256": "e95924a8ad7beed439ea6ac264a64f5aca99e65b2e3e1d730b644a565e009b6c",
   "file": "gta-death-trimmed.wav",
-  "sha256": "cd634846e3b972bb0f8c69c0c5a4326a45ed7ca6931d2fc2a73e46f397deb17a",
-  "bytes": 1074320,
+  "sha256": "228f570ceabf993e83907366e50a630f583e743c0371f9a603f0235ef63e31c2",
+  "bytes": 721520,
   "trimStartSeconds": 0.06,
-  "trimEndSeconds": 6.15,
-  "fadeOutSeconds": 0.15,
-  "durationSeconds": 6.09
+  "trimEndSeconds": 4.15,
+  "fadeOutSeconds": 0.45,
+  "durationSeconds": 4.09
 }

@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Trim a decoded user GTA clip; decode first with afconvert -f WAVE -d LEI16.
-Measured 10 ms leading windows are silent until 60 ms; trailing 100 ms
-windows stay below -40 dBFS RMS after 6.1 s. Preserve the audible echo,
-with 150 ms fade to silence at 6.15 s. No speed or pitch changes.
+Keep the original attack and both impacts, then shorten the echo with a
+450 ms end fade. Keep 0.06–4.15 s: 4.09 seconds, no speed/pitch change.
 """
 import array
 import sys
@@ -14,7 +13,7 @@ with wave.open(sys.argv[1], 'rb') as source:
     samples = array.array('h', source.readframes(source.getnframes()))
 if sys.byteorder != 'little':
     samples.byteswap()
-start, end, fade = round(0.06 * rate), round(6.15 * rate), round(0.15 * rate)
+start, end, fade = round(0.06 * rate), round(4.15 * rate), round(0.45 * rate)
 samples = samples[start * channels:end * channels]
 frames = len(samples) // channels
 for frame in range(frames - fade, frames):

@@ -111,9 +111,11 @@ public final class GameSimulation {
         return events
     }
 
-    /// A bounded results animation. No game clock, life, distance or score advances.
-    public func stepPresentation() {
-        guard state.status == .crashed, presentationTicks < 216 else { return }
+    /// A bounded detached-body animation. Game time, recovery countdown and score stay fixed.
+    /// The caller may extend presentation to match audio, with a hard ten-second limit at 0.5×.
+    public func stepPresentation(maximumSteps: Int = 216) {
+        guard state.status == .crashed || state.status == .recovering,
+              presentationTicks < min(600, max(0, maximumSteps)) else { return }
         presentationTicks += 1
         physics.advance(input: .neutral); copySnapshot()
     }

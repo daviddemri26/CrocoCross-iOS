@@ -253,8 +253,8 @@ final class CrocoCrossUITests: XCTestCase {
         XCTAssertFalse(app.buttons["rideAgain"].exists, "The long death clip must retain its cinematic")
         capture("endless-final-explosion")
         XCTAssertTrue(app.buttons["rideAgain"].waitForExistence(timeout: 12))
-        XCTAssertGreaterThan(Date().timeIntervalSince(finalLossObserved), 4,
-                             "The 6.1-second clip must not use the old 1.8-second result delay")
+        XCTAssertGreaterThan(Date().timeIntervalSince(finalLossObserved), 2.5,
+                             "The 4.1-second clip must not use the old 1.8-second result delay")
         XCTAssertEqual(lives.value as? String, "0 of 3 remaining")
         let finalScore = app.staticTexts["finalScore"].label
         Thread.sleep(forTimeInterval: 0.3)

@@ -127,6 +127,28 @@ final class PhysicsTests: XCTestCase {
         XCTAssertEqual(sim.state.rider, end.rider); XCTAssertEqual(sim.state.bike.position, end.bike.position)
     }
 
+    func testExtendedTerminalPresentationRemainsBoundedAndDoesNotScore() {
+        let sim = flatFixture(speed: 5, height: 2, descent: -3, angle: .pi)
+        for _ in 0..<360 {
+            sim.step(input: .neutral)
+            if sim.state.status == .crashed { break }
+        }
+        XCTAssertEqual(sim.state.status, .crashed)
+        let crash = sim.state
+        for _ in 0..<216 { sim.stepPresentation(maximumSteps: 306) }
+        let oldEnd = sim.state
+        for _ in 0..<90 { sim.stepPresentation(maximumSteps: 306) }
+        XCTAssertNotEqual(sim.state.bike.position, oldEnd.bike.position)
+        XCTAssertEqual(sim.state.tick, crash.tick)
+        XCTAssertEqual(sim.state.score, crash.score)
+        XCTAssertEqual(sim.state.distance, crash.distance)
+        XCTAssertEqual(sim.state.lives, crash.lives)
+        let end = sim.state
+        for _ in 0..<120 { sim.stepPresentation(maximumSteps: 306) }
+        XCTAssertEqual(sim.state.bike, end.bike)
+        XCTAssertEqual(sim.state.rider, end.rider)
+    }
+
     func testRecoveringContinuesMotionWithoutAddingScoreThenRespawnsAttached() {
         var initial = SimulationState(mode: .endless, seed: 3)
         initial.bike.position = .init(x: 3, y: 2); initial.bike.angle = .pi
@@ -143,6 +165,16 @@ final class PhysicsTests: XCTestCase {
         XCTAssertNotEqual(sim.state.rider.torso.position, crash.rider.torso.position)
         XCTAssertEqual(sim.state.score, crash.score); XCTAssertEqual(sim.state.distance, crash.distance)
         XCTAssertEqual(sim.state.lives, 2)
+        // Audio can outlast the normal fall: presentation must keep moving without
+        // spending recovery ticks or allowing another life/score change.
+        let beforeAudioTail = sim.state
+        for _ in 0..<90 { sim.stepPresentation(maximumSteps: 306) }
+        XCTAssertNotEqual(sim.state.rider.torso.position, beforeAudioTail.rider.torso.position)
+        XCTAssertEqual(sim.state.tick, beforeAudioTail.tick)
+        XCTAssertEqual(sim.state.score, beforeAudioTail.score)
+        XCTAssertEqual(sim.state.distance, beforeAudioTail.distance)
+        XCTAssertEqual(sim.state.lives, beforeAudioTail.lives)
+        XCTAssertEqual(sim.state.status, .recovering)
         var respawns = 0
         for _ in 0..<156 { respawns += sim.step(input: .neutral).filter { $0 == .respawned }.count }
         XCTAssertEqual(respawns, 1); XCTAssertEqual(sim.state.status, .active)

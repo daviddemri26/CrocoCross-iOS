@@ -4,7 +4,7 @@
 
 Current native iOS development candidate:
 
-- Use only the GTA death cue, trimmed to 6.09 seconds with a gentle end fade; retain full playback and cinematic minimums.
+- Use only the GTA death cue, trimmed to 4.09 seconds with a 450 ms end fade; retain full playback and cinematic minimums. Keep detached bodies moving through the audio tail without advancing score or recovery.
 
 - Anchor both palms on the visible handlebar grips and recalibrate forearm reach to retain contact through rider movement.
 

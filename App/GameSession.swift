@@ -53,7 +53,7 @@ final class GameSession {
     @ObservationIgnored private var crashPresentationSteps = 0
     @ObservationIgnored private var recoveryPresentationSteps = 0
     @ObservationIgnored private var deathHoldRemaining: TimeInterval = 0
-    private static let crashPresentationStepLimit = 216
+    @ObservationIgnored private var crashPresentationStepLimit = 216
 
     init() {
         let prefs = UserDefaults.standard
@@ -216,12 +216,15 @@ final class GameSession {
                 var steps = 0
                 while accumulator >= 1.0 / 120 && steps < 12 && phase == .playing {
                     let recoveringStep = simulation.state.status == .recovering
-                    // Retain the last fall pose until the selected clip completes.
-                    // The final recovery step performs the checkpoint respawn.
+                    // Keep detached bodies moving while audio finishes. These extra
+                    // presentation steps do not advance recovery, score or game time.
                     if recoveringStep && recoveryPresentationSteps >= 215 &&
                         (deathHoldRemaining > 0 || audio.deathSoundPending) {
-                        accumulator = 0
-                        break
+                        previousState = simulation.state
+                        simulation.stepPresentation(maximumSteps: crashPresentationStepLimit)
+                        accumulator -= GameSimulation.timeStep
+                        steps += 1
+                        continue
                     }
                     if recoveringStep { recoveryPresentationSteps += 1 }
                     previousState = simulation.state
@@ -238,16 +241,16 @@ final class GameSession {
                 }
                 audio.update(bike: simulation.state.bike)
             }
-        } else if phase == .results && !finished && !showingFinalExplosion && !interrupted &&
-                    crashPresentationSteps < Self.crashPresentationStepLimit {
+        } else if phase == .results && !resultsVisible && !finished && !showingFinalExplosion && !interrupted &&
+                    crashPresentationSteps < crashPresentationStepLimit {
             // The result is already final. Only detached-body presentation advances.
             if rawDelta <= 0.25 {
                 accumulator += dt * 0.5
                 var steps = 0
                 while accumulator >= GameSimulation.timeStep && steps < 12 &&
-                        crashPresentationSteps < Self.crashPresentationStepLimit {
+                        crashPresentationSteps < crashPresentationStepLimit {
                     previousState = simulation.state
-                    simulation.stepPresentation()
+                    simulation.stepPresentation(maximumSteps: crashPresentationStepLimit)
                     crashPresentationSteps += 1
                     accumulator -= GameSimulation.timeStep
                     steps += 1
@@ -275,7 +278,7 @@ final class GameSession {
     /// Blend only presentation coordinates; scoring and contact always use fixed-step state.
     private func renderedState() -> SimulationState {
         let physicsIsAdvancing = phase == .playing || (phase == .results && !finished && !showingFinalExplosion &&
-            crashPresentationSteps < Self.crashPresentationStepLimit)
+            crashPresentationSteps < crashPresentationStepLimit)
         guard physicsIsAdvancing, !interrupted, previousState.status == simulation.state.status,
             abs(previousState.bike.position.x - simulation.state.bike.position.x) < 2
         else { return simulation.state }
@@ -312,6 +315,9 @@ final class GameSession {
             let terminal = simulation.state.status == .crashed
             let baseDuration = terminal ? (reducedMotion ? 0.3 : mode == .endless ? 1.8 : 3.6) : 3.6
             deathHoldRemaining = max(baseDuration, audio.deathSoundDuration)
+            // Budget the half-speed fall for the entire cue, plus one second of
+            // scheduling headroom. Core still enforces a hard 600-step ceiling.
+            crashPresentationStepLimit = min(600, max(216, Int(ceil(deathHoldRemaining * 60)) + 60))
             scene.playCrash(at: simulation.state.bike.position, impact: min(2, max(0.6, speed / 35)),
                             finalExplosion: simulation.state.mode == .endless && simulation.state.status == .crashed)
             eventText = nil

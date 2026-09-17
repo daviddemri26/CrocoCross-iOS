@@ -1,5 +1,13 @@
 # Validation record
 
+## Shorter GTA cue and continuous fall — September 16, 2026
+
+- Build 15 cuts another **2.00 seconds** from the GTA cue: source 0.06–4.15 s, **4.09 s** total, with a **450 ms end fade**. Both impacts and the original timing/pitch remain; the echo tail is deliberately shortened. Full decode passes for 180,369 stereo frames at 44.1 kHz. The signed app WAV matches the verified source output.
+- The old 216-step presentation budget froze Weekly falls at 3.6 s while audio continued. Terminal presentation now budgets for the full half-speed cue, plus scheduling headroom and a hard 600-step ceiling. Recoverable falls use presentation-only steps while awaiting their final respawn step, so they also keep moving through the audio tail. These additional steps cannot increment score, distance, game time, lives or the recovery countdown. The final-life explosion keeps its real-time cadence.
+- **60 core tests pass, zero failures (92.396 s)**, including motion beyond the previous terminal limit, bounded extended presentation, invariant score/time/lives and eventual attached recovery. Both iPhone UI scenarios pass: Weekly crash/results/retry and all three Endless lives/retry. Signed Release **1.0.0 (15)** builds successfully. Physical installation and normal launch succeeded on David’s paired iPhone (17:32:58 PDT).
+
+Evidence: `artifacts/qa/2026-09-16-gta-short/` and `/tmp/crococross-gta-short-ui.xcresult`.
+
 ## GTA-only trimmed death cue — September 16, 2026
 
 - Build 14 removes both Universfield clips and the original untrimmed GTA MP3 from the app bundle. Every death uses the single trimmed GTA WAV; randomized/test-index selection is removed.
