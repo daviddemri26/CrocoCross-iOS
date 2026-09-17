@@ -1,5 +1,15 @@
 # Validation record
 
+## Random full-length death clips — September 16, 2026
+
+- Build 13 imports the three user-provided MP3s intact and removes the synthesized death cue. Each normal death selects uniformly at random, with repeats permitted. A dedicated AVAudioPlayer prevents other effects from interrupting the clip and follows Effects volume/mute.
+- Actual decoded durations: **2.088 s**, **1.440 s**, **7.758367 s**. Full decode checks pass for all three clips (100,224 / 69,120 / 342,144 frames), with finite PCM samples. Original, repository and signed-app bytes match. Hashes are recorded in `death-sounds.json`.
+- Results and respawn wait for the greater of the previous visual minimum and the selected duration, and also wait while its player is still playing. The existing bounded animation then holds its final pose/site if necessary; slow-motion physics and real-time explosion cadence stay unchanged. Recoverable manual pause pauses the clip/countdown. Explicit navigation abandons playback; OS interruptions follow the existing audio-route policy.
+- **22 audio preference checks pass**. Final iPhone UI tests pass **2 tests, zero failures, 101.920 seconds**: Weekly crash/results/retry and all three Endless deaths with the long clip forced only in UI-test mode. The final-life test asserts an extended wait before results and successful restart with three lives. These muted UI checks establish timing, not subjective speaker sound quality. No new physical interruption/headphone test or core-suite run is claimed.
+- Signed Release **1.0.0 (13)** builds and installs on David’s iPhone 17. All three bundled MP3s match source and project regeneration is stable. Normal launch on the physical iPhone succeeded at 17:08:06 PDT, without UI-testing flags or a forced sound selection.
+
+Evidence: local `artifacts/qa/2026-09-16-death-sounds/`, plus `scripts/check-death-sounds.swift`.
+
 ## Palm-to-handlebar contact — September 16, 2026
 
 - Build 12 recalibrates the forearm's distal/contact point to the palm grip center and targets the visible handlebar grip. Elbow-to-palm reach is 0.28 m; together with the upper arm this retains contact through the bounded attached posture. All source PNGs remain unchanged.

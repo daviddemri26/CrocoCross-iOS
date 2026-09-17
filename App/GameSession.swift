@@ -51,6 +51,8 @@ final class GameSession {
     @ObservationIgnored private var discardNextPlayingDelta = false
     @ObservationIgnored private var awaitingFirstSimulationStep = true
     @ObservationIgnored private var crashPresentationSteps = 0
+    @ObservationIgnored private var recoveryPresentationSteps = 0
+    @ObservationIgnored private var deathHoldRemaining: TimeInterval = 0
     private static let crashPresentationStepLimit = 216
 
     init() {
@@ -68,6 +70,9 @@ final class GameSession {
     }
 
     func start(_ mode: RunMode) {
+        audio.stopDeathSound()
+        deathHoldRemaining = 0
+        recoveryPresentationSteps = 0
         if !GameCatalog.playableRiders.contains(where: { $0.id == characterID }) { characterID = "croco" }
         self.mode = mode
         recordToBeat = mode == .weekly ? bestWeekly : bestEndless
@@ -111,6 +116,7 @@ final class GameSession {
     func pause() {
         guard phase == .playing else { return }
         phase = .paused
+        audio.pauseDeathSound()
         clearPedals()
         accumulator = 0
         audio.setPaused(true)
@@ -129,9 +135,13 @@ final class GameSession {
         phase = .playing
         interrupted = false
         audio.setPaused(false)
+        audio.resumeDeathSound()
     }
 
     func goHome() {
+        audio.stopDeathSound()
+        deathHoldRemaining = 0
+        recoveryPresentationSteps = 0
         if phase == .playing || phase == .paused { submitProgress() }
         phase = .home
         accumulator = 0
@@ -173,6 +183,7 @@ final class GameSession {
             // Do not integrate an inactive interval into the crash presentation.
             accumulator = 0
             audio.startMusic()
+            if phase == .results { audio.resumeDeathSound() }
             Task { await gameCenter.refresh() }
         }
     }
@@ -187,6 +198,9 @@ final class GameSession {
     private func frame(_ rawDelta: Double) {
         let dt = rawDelta.isFinite ? max(0, min(rawDelta, 0.1)) : 0
         if !interrupted { frameTime += dt }
+        if !interrupted && (phase == .playing || phase == .results) {
+            deathHoldRemaining = max(0, deathHoldRemaining - dt)
+        }
         if phase == .playing && !interrupted {
             // GameScene has established a fresh timestamp for this frame. Its interval
             // may include menu, pause or setup work, so gameplay begins on the next one.
@@ -201,6 +215,15 @@ final class GameSession {
                 accumulator += dt * (simulation.state.status == .recovering ? 0.5 : 1)
                 var steps = 0
                 while accumulator >= 1.0 / 120 && steps < 12 && phase == .playing {
+                    let recoveringStep = simulation.state.status == .recovering
+                    // Retain the last fall pose until the selected clip completes.
+                    // The final recovery step performs the checkpoint respawn.
+                    if recoveringStep && recoveryPresentationSteps >= 215 &&
+                        (deathHoldRemaining > 0 || audio.deathSoundPending) {
+                        accumulator = 0
+                        break
+                    }
+                    if recoveringStep { recoveryPresentationSteps += 1 }
                     previousState = simulation.state
                     let events = simulation.step(input: input)
                     awaitingFirstSimulationStep = false
@@ -235,7 +258,8 @@ final class GameSession {
             eventText = nil
             eventPoints = 0
         }
-        if phase == .results && !interrupted && !resultsVisible && frameTime >= resultsAt { resultsVisible = true }
+        if phase == .results && !interrupted && !resultsVisible && frameTime >= resultsAt &&
+            deathHoldRemaining <= 0 && !audio.deathSoundPending { resultsVisible = true }
         scene.isPreview = phase == .home
         if phase == .home {
             scene.display(
@@ -284,6 +308,10 @@ final class GameSession {
             eventPoints = GameSimulation.flipBonus(for: count)
             eventUntil = frameTime + 1.8
         case .crashed:
+            recoveryPresentationSteps = 0
+            let terminal = simulation.state.status == .crashed
+            let baseDuration = terminal ? (reducedMotion ? 0.3 : mode == .endless ? 1.8 : 3.6) : 3.6
+            deathHoldRemaining = max(baseDuration, audio.deathSoundDuration)
             scene.playCrash(at: simulation.state.bike.position, impact: min(2, max(0.6, speed / 35)),
                             finalExplosion: simulation.state.mode == .endless && simulation.state.status == .crashed)
             eventText = nil
@@ -298,6 +326,8 @@ final class GameSession {
             let x = simulation.state.bike.position.x
             scene.playLanding(at: Vector2(x: x, y: simulation.terrainHeight(at: x)), intensity: impact)
         case .respawned:
+            audio.stopDeathSound()
+            deathHoldRemaining = 0
             scene.restoreBikeAfterRespawn()
             clearPedals()
             eventPoints = 0
@@ -328,7 +358,8 @@ final class GameSession {
         resultsVisible = false
         crashPresentationSteps = 0
         // Let the physical fall play before showing the score card.
-        resultsAt = frameTime + (finished || reducedMotion ? 0.3 : showingFinalExplosion ? 1.8 : 3.6)
+        let baseDuration = finished || reducedMotion ? 0.3 : showingFinalExplosion ? 1.8 : 3.6
+        resultsAt = frameTime + max(baseDuration, deathHoldRemaining)
         audio.setPaused(true)
         submitProgress()
     }

@@ -34,3 +34,7 @@ The articulated Rocco artwork was generated with the built-in imagegen tool from
 The explosion effect retains its existing attribution: Mixkit Fuel Explosion, item 1705, under the [Mixkit Sound Effects Free License](https://mixkit.co/license/#sfxFree). This sound-effect credit is separate from David Demri's authorship of the three music tracks.
 
 Publication of this repository does not apply an open-source license or grant downstream rights to its media; see [RIGHTS.md](../RIGHTS.md).
+
+## User-provided death sounds — September 16, 2026
+
+David supplied three MP3 attachments and explicitly requested random, full-length playback at death. They are copied intact into `GameAssets/DeathSounds`: `universfield-cinematic-impact-boom-05-352465.mp3`, `universfield-ground-impact-352053.mp3`, and `gta-v-wasted-death-sound.mp3`. The supplied filenames are retained. [File hashes and byte sizes](death-sounds.json) identify these exact imports. They replace the synthesized death cue; the original music tracks remain separate. No authorship or redistribution-license claim is made for these new third-party files; no license documents accompanied the attachments.

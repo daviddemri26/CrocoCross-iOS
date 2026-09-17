@@ -78,30 +78,13 @@ enum AudioPreferenceStorage {
     }
 }
 
-/// A pre-rendered impact with softer, progressively darker echoes.
-/// Kept independent of AVAudioEngine so the cue can be checked offline.
-enum CrashSound {
-    static let duration = 2.1
-
-    static func sample(at time: Double) -> Float {
-        guard time >= 0, time < duration else { return 0 }
-        var value = impact(at: time, brightness: 1)
-        value += 0.50 * impact(at: time - 0.24, brightness: 0.55)
-        value += 0.30 * impact(at: time - 0.48, brightness: 0.30)
-        value += 0.17 * impact(at: time - 0.78, brightness: 0.15)
-        let release = min(1, (duration - time) / 0.08)
-        return Float(tanh(value * 0.85) * release)
-    }
-
-    private static func impact(at time: Double, brightness: Double) -> Double {
-        guard time >= 0 else { return 0 }
-        let texture = sin(time * 13_731) * sin(time * 6_043) + sin(time * 2_749) * 0.3
-        // Descending low tone adds weight; the echoes lose their sharp edge.
-        let phase = 2 * Double.pi * (42 * time + 6.25 * (1 - exp(-time * 8)))
-        let low = sin(phase) + 0.22 * sin(phase * 1.5)
-        let attack = min(1, time / 0.003)
-        return attack * (texture * 0.10 * brightness * exp(-time * 15) + low * 0.68 * exp(-time * 7))
-    }
+/// Imported clips are kept intact. AVAudioPlayer supplies their decoded duration.
+enum DeathSoundCatalog {
+    static let filenames = [
+        "universfield-cinematic-impact-boom-05-352465",
+        "universfield-ground-impact-352053",
+        "gta-v-wasted-death-sound"
+    ]
 }
 
 #if canImport(UIKit)
@@ -155,6 +138,7 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
             storedEffectsVolume = normalized
             defaults.set(normalized, forKey: "audio.effectsVolume")
             effectMixer.outputVolume = isMuted ? 0 : Float(normalized)
+            deathPlayer?.volume = isMuted ? 0 : Float(normalized) * 0.75
         }
     }
     var hapticsEnabled: Bool {
@@ -168,6 +152,7 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
             storedMuted = newValue
             defaults.set(newValue, forKey: "audio.muted")
             effectMixer.outputVolume = newValue ? 0 : Float(effectsVolume)
+            deathPlayer?.volume = newValue ? 0 : Float(effectsVolume) * 0.75
             if newValue {
                 motor.volume = 0; lastMotorVolume = 0
                 pauseMusicPlayer()
@@ -208,7 +193,11 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
     @ObservationIgnored private var effectPlayer = AVAudioPlayerNode()
     @ObservationIgnored private var effectMixer = AVAudioMixerNode()
     @ObservationIgnored private var motorBuffer: AVAudioPCMBuffer?
-    @ObservationIgnored private var crashBuffer: AVAudioPCMBuffer?
+    @ObservationIgnored private var deathPlayers: [AVAudioPlayer] = []
+    @ObservationIgnored private var deathPlayer: AVAudioPlayer?
+    @ObservationIgnored private var deathPlaybackPaused = false
+    @ObservationIgnored private(set) var deathSoundDuration: TimeInterval = 0
+    var deathSoundPending: Bool { deathPlaybackPaused || deathPlayer?.isPlaying == true }
     @ObservationIgnored private var landingBuffer: AVAudioPCMBuffer?
     @ObservationIgnored private var successBuffer: AVAudioPCMBuffer?
     @ObservationIgnored private var musicPlayer: AVAudioPlayer?
@@ -236,6 +225,7 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
         storedMuted = defaults.bool(forKey: "audio.muted")
         playback = MusicPlaybackState(defaults: defaults)
         super.init()
+        loadDeathSounds()
         observeAudioLifecycle()
     }
 
@@ -349,10 +339,7 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
             motorSuppressed = true
             motor.volume = 0
             lastMotorVolume = 0
-            if !isMuted, effectsVolume > 0 {
-                // A weighted impact and fading echoes accompany the slow-motion fall.
-                playEffect(crashBuffer, volume: 0.75)
-            }
+            playDeathSound()
             if hapticsEnabled { UINotificationFeedbackGenerator().notificationOccurred(.error) }
             lastHapticTime = now
         case .landed(let impact):
@@ -377,9 +364,60 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
         }
     }
 
+    private func loadDeathSounds() {
+        deathPlayers = DeathSoundCatalog.filenames.compactMap { filename in
+            guard let url = bundle.url(forResource: filename, withExtension: "mp3", subdirectory: "GameAssets/DeathSounds"),
+                  let player = try? AVAudioPlayer(contentsOf: url), player.duration.isFinite, player.duration > 0 else { return nil }
+            player.numberOfLoops = 0
+            player.delegate = self
+            player.prepareToPlay()
+            return player
+        }
+    }
+
+    private func playDeathSound() {
+        stopDeathSound()
+        // Reproducible long-clip coverage only for the existing muted UI-test mode.
+        let args = ProcessInfo.processInfo.arguments
+        let testIndex = args.contains("-ui-testing") ? args.firstIndex(of: "-death-sound-index").flatMap {
+            args.indices.contains($0 + 1) ? Int(args[$0 + 1]) : nil
+        } : nil
+        let selected = testIndex.flatMap { deathPlayers.indices.contains($0) ? deathPlayers[$0] : nil }
+            ?? deathPlayers.randomElement()
+        guard let selected else { return }
+        deathPlayer = selected
+        deathSoundDuration = selected.duration
+        selected.currentTime = 0
+        selected.volume = isMuted ? 0 : Float(effectsVolume) * 0.75
+        // A separate player cannot be interrupted by landing or success effects.
+        do { try prepareAudio(); selected.play() }
+        catch { statusMessage = "The death sound could not be played." }
+    }
+
+    func pauseDeathSound() {
+        guard deathPlayer?.isPlaying == true else { return }
+        deathPlaybackPaused = true
+        deathPlayer?.pause()
+    }
+
+    func resumeDeathSound() {
+        guard deathPlaybackPaused, !suspended, !interrupted, !routeNeedsUserResume else { return }
+        deathPlaybackPaused = false
+        do { try prepareAudio(); deathPlayer?.play() }
+        catch { statusMessage = "The death sound could not resume." }
+    }
+
+    func stopDeathSound() {
+        deathPlayer?.stop()
+        deathPlayer = nil
+        deathPlaybackPaused = false
+        deathSoundDuration = 0
+    }
+
     /// Background entrypoint. Retains playback position and preferences for foreground restoration.
     func shutdown() {
         suspended = true
+        pauseDeathSound()
         pauseMusicPlayer()
         motor.volume = 0
         motor.stop()
@@ -424,9 +462,6 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
         }
         landingBuffer = Self.makeBuffer(format: format, seconds: 0.13) { t in
             Float(sin(2 * Double.pi * 75 * t) * exp(-t * 32) * 0.6)
-        }
-        crashBuffer = Self.makeBuffer(format: format, seconds: CrashSound.duration) { t in
-            CrashSound.sample(at: t)
         }
         successBuffer = Self.makeBuffer(format: format, seconds: 0.28) { t in
             let frequency = t < 0.12 ? 660.0 : 880.0
@@ -479,6 +514,7 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
                 guard let self, let rawType, let type = AVAudioSession.InterruptionType(rawValue: rawType) else { return }
                 if type == .began {
                     self.interrupted = true
+                    self.pauseDeathSound()
                     self.pauseMusicPlayer()
                     self.effectPlayer.stop()
                     self.motor.volume = 0
@@ -487,12 +523,14 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
                     self.interrupted = false
                     let mayResume = AVAudioSession.InterruptionOptions(rawValue: rawOptions).contains(.shouldResume)
                     if !mayResume {
+                        self.stopDeathSound()
                         self.routeNeedsUserResume = true
                         self.musicNeedsUserResume = true
                         self.statusMessage = "Audio paused. Resume playback or the game."
                     }
                     if mayResume, !self.suspended, UIApplication.shared.applicationState == .active {
                         self.startMusic()
+                        self.resumeDeathSound()
                     }
                 }
             }
@@ -502,6 +540,7 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
             Task { @MainActor [weak self] in
                 guard let self, let rawReason else { return }
                 if AVAudioSession.RouteChangeReason(rawValue: rawReason) == .oldDeviceUnavailable {
+                    self.stopDeathSound()
                     // Headphones unplugged: do not surprise the player by switching music to the speaker.
                     self.routeNeedsUserResume = true
                     self.musicNeedsUserResume = true
@@ -557,6 +596,8 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
     }
 
     private func rebuildAfterMediaReset() {
+        stopDeathSound()
+        loadDeathSounds()
         if let musicPlayer { playback.position = musicPlayer.currentTime }
         playback.save(to: defaults)
         engine.stop()

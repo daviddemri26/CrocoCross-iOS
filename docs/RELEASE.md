@@ -5,7 +5,7 @@
 - Display name: CrocoCross
 - Bundle ID: `com.daviddemri.crococross`
 - Development team: `57XAAX65VC` (public certificate metadata verified locally)
-- Current preview version/build: 1.0.0/12
+- Current preview version/build: 1.0.0/13
 - Target families: iPhone+iPad; iOS18+
 - Box2D 3.1.1 is compiled into the native app; its MIT license is bundled and accessible in About. No advertisements, purchases or background audio entitlement.
 

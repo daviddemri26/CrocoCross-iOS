@@ -239,7 +239,7 @@ final class CrocoCrossUITests: XCTestCase {
     }
 
     @MainActor func testEndlessFinalLifeAndRetry() throws {
-        let app = launch(extraArguments: ["-world", "mine"])
+        let app = launch(extraArguments: ["-world", "mine", "-death-sound-index", "2"])
         app.buttons["startEndless"].tap()
         waitForPlaying(app)
         let lives = app.descendants(matching: .any).matching(identifier: "lives").firstMatch
@@ -249,8 +249,12 @@ final class CrocoCrossUITests: XCTestCase {
             let lastLife = lives.value as? String == "1 of 3 remaining"
             app.buttons["throttle"].press(forDuration: lastLife ? 0.5 : 3)
         }
+        let finalLossObserved = Date()
+        XCTAssertFalse(app.buttons["rideAgain"].exists, "The long death clip must retain its cinematic")
         capture("endless-final-explosion")
-        XCTAssertTrue(app.buttons["rideAgain"].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.buttons["rideAgain"].waitForExistence(timeout: 12))
+        XCTAssertGreaterThan(Date().timeIntervalSince(finalLossObserved), 5,
+                             "The 7.8-second clip must not use the old 1.8-second result delay")
         XCTAssertEqual(lives.value as? String, "0 of 3 remaining")
         let finalScore = app.staticTexts["finalScore"].label
         Thread.sleep(forTimeInterval: 0.3)
