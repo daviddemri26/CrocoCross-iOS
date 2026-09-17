@@ -13,17 +13,14 @@ Verified September 17, 2026. App **6812979862**, version **1.0.0**, build **17**
 - Game Center enabled. Three English v2 leaderboards are in a single iOS draft submission. The two weekly boards start September 21 at 00:00 UTC and recur every seven days.
 - Manual public release selected. Nothing has been sent to App Review or released.
 
-## Remaining owner confirmation
+## Final owner action
 
-The [privacy page](https://appstoreconnect.apple.com/apps/6812979862/distribution/privacy) has the policy URL and **Data Not Collected** answer saved. Apple asks for an explicit accuracy/update attestation before publishing these answers. The assistant requested the owner's confirmation and has not accepted that commitment yet. This publishes only the privacy label, not the game.
+The [privacy declaration](https://appstoreconnect.apple.com/apps/6812979862/distribution/privacy) is published, as verified in App Store Connect. Version **1.0.0 (17)** has joined the same iOS draft as the three leaderboards. Apple shows **four items ready** and an enabled **Submit for Review** button, with no blocking message.
 
-After this attestation:
+1. In the open draft, the owner clicks **Submit for Review** (French UI: **Envoyer pour vérification**).
+2. After Apple approves it, the owner performs the manual public release.
 
-1. Open [version 1.0.0](https://appstoreconnect.apple.com/apps/6812979862/distribution/ios/version/inflight), choose **Add for Review**, and add it to the existing draft containing all three leaderboards.
-2. Review the four items together (app version plus three leaderboards). The owner performs **Submit for Review**.
-3. After Apple approves it, the owner performs the manual public release.
-
-The version-level validation reports only the unpublished privacy declaration as missing. Live Game Center score upload/read-back has not been tested; creation of the boards is configuration evidence only. Weekly practice works before the first scheduled occurrence.
+The draft remains open in Chrome. Nothing has been submitted to App Review or publicly released. Live Game Center score upload/read-back has not been tested; creation of the boards is configuration evidence only. Weekly practice works before the first scheduled occurrence.
 
 ## Local delivery
 

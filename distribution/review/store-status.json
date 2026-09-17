@@ -40,11 +40,18 @@
     "url": "https://daviddemri26.github.io/CrocoCross-iOS/privacy.html",
     "answer": "Data Not Collected",
     "saved": true,
-    "published": false,
-    "pending": "Owner confirmation requested for Apple privacy accuracy/update attestation"
+    "published": true,
+    "publicationVerified": "Published by David Demri; verified in App Store Connect on September 17, 2026."
   },
-  "validation": "Add for Review reports only the unpublished privacy declaration as missing; app version is not yet in the draft containing the three leaderboards",
+  "validation": "App version 1.0.0 (17) and all three leaderboards are in one iOS draft. Four items ready; Submit for Review enabled; no blocking message.",
   "finalAppReviewSubmission": "not submitted; reserved for owner",
   "publicRelease": "not published; reserved for owner",
-  "liveGameCenterScoreReadback": "not performed"
+  "liveGameCenterScoreReadback": "not performed",
+  "reviewDraft": {
+    "items": 4,
+    "appVersion": "1.0.0 (17)",
+    "leaderboards": 3,
+    "submitForReviewEnabled": true,
+    "submitted": false
+  }
 }

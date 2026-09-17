@@ -20,4 +20,4 @@ Build 17 was not newly installed on a physical device during Store preparation. 
 
 ## App Store Connect validation
 
-The version has five iPhone and five iPad screenshots in the intended order, English metadata, review contact/notes, Games > Racing/Sports, a calculated 13+ rating, free pricing and manual release. Three v2 Game Center boards are in one draft submission. The version-level Add for Review check reports only the unpublished privacy declaration as missing. Apple's privacy attestation is awaiting the owner's confirmation. The app version cannot join the draft until that is finalized.
+The version has five iPhone and five iPad screenshots in the intended order, English metadata, review contact/notes, Games > Racing/Sports, a calculated 13+ rating, free pricing and manual release. The privacy declaration is now published. App version 1.0.0 (17) and all three v2 Game Center boards are in one iOS draft submission. Apple displays four ready items and an enabled Submit for Review button, with no blocking message. The final submission remains with the owner.
