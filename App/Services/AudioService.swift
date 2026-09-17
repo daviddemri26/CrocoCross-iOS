@@ -135,7 +135,7 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
             storedEffectsVolume = normalized
             defaults.set(normalized, forKey: "audio.effectsVolume")
             effectMixer.outputVolume = isMuted ? 0 : Float(normalized)
-            deathPlayer?.volume = isMuted ? 0 : Float(normalized) * 0.75
+            deathPlayer?.volume = isMuted ? 0 : Float(normalized) * deathGain
         }
     }
     var hapticsEnabled: Bool {
@@ -149,7 +149,7 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
             storedMuted = newValue
             defaults.set(newValue, forKey: "audio.muted")
             effectMixer.outputVolume = newValue ? 0 : Float(effectsVolume)
-            deathPlayer?.volume = newValue ? 0 : Float(effectsVolume) * 0.75
+            deathPlayer?.volume = newValue ? 0 : Float(effectsVolume) * deathGain
             if newValue {
                 motor.volume = 0; lastMotorVolume = 0
                 pauseMusicPlayer()
@@ -192,6 +192,8 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
     @ObservationIgnored private var motorBuffer: AVAudioPCMBuffer?
     @ObservationIgnored private var deathPlayers: [AVAudioPlayer] = []
     @ObservationIgnored private var deathPlayer: AVAudioPlayer?
+    @ObservationIgnored private var explosionPlayer: AVAudioPlayer?
+    @ObservationIgnored private var deathGain: Float = 0.75
     @ObservationIgnored private var deathPlaybackPaused = false
     @ObservationIgnored private(set) var deathSoundDuration: TimeInterval = 0
     var deathSoundPending: Bool { deathPlaybackPaused || deathPlayer?.isPlaying == true }
@@ -328,7 +330,7 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
         motor.volume = lastMotorVolume
     }
 
-    func handle(event: GameEvent) {
+    func handle(event: GameEvent, finalExplosion: Bool = false) {
         guard !suspended, !interrupted, !routeNeedsUserResume else { return }
         let now = ProcessInfo.processInfo.systemUptime
         switch event {
@@ -336,7 +338,7 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
             motorSuppressed = true
             motor.volume = 0
             lastMotorVolume = 0
-            playDeathSound()
+            playDeathSound(finalExplosion: finalExplosion)
             if hapticsEnabled { UINotificationFeedbackGenerator().notificationOccurred(.error) }
             lastHapticTime = now
         case .landed(let impact):
@@ -370,15 +372,23 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
             player.prepareToPlay()
             return player
         }
+        if let url = assetURL("fuel-explosion", extension: "mp3"),
+           let player = try? AVAudioPlayer(contentsOf: url) {
+            player.numberOfLoops = 0
+            player.delegate = self
+            player.prepareToPlay()
+            explosionPlayer = player
+        }
     }
 
-    private func playDeathSound() {
+    private func playDeathSound(finalExplosion: Bool) {
         stopDeathSound()
-        guard let selected = deathPlayers.first else { return }
+        guard let selected = finalExplosion ? explosionPlayer : deathPlayers.first else { return }
+        deathGain = finalExplosion ? 1 : 0.75
         deathPlayer = selected
         deathSoundDuration = selected.duration
         selected.currentTime = 0
-        selected.volume = isMuted ? 0 : Float(effectsVolume) * 0.75
+        selected.volume = isMuted ? 0 : Float(effectsVolume) * deathGain
         // A separate player cannot be interrupted by landing or success effects.
         do { try prepareAudio(); selected.play() }
         catch { statusMessage = "The death sound could not be played." }

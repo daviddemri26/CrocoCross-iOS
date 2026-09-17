@@ -47,6 +47,10 @@ jobs:
         run: |
           xcrun swiftc -swift-version 6 App/Services/CompetitionRules.swift App/Services/LocalStore.swift scripts/check-competition-versioning.swift -o "$RUNNER_TEMP/crococross-competition-check"
           "$RUNNER_TEMP/crococross-competition-check"
+      - name: Test continuous panorama coverage
+        run: |
+          xcrun swiftc App/Scene/BackgroundPanorama.swift scripts/check-panorama.swift -o "$RUNNER_TEMP/crococross-panorama-check"
+          "$RUNNER_TEMP/crococross-panorama-check"
       - name: Validate articulated Rocco assets
         run: |
           xcrun swiftc -swift-version 6 scripts/check-rocco-assets.swift -o "$RUNNER_TEMP/crococross-rocco-check"

@@ -4,10 +4,10 @@ import SwiftUI
 struct SettingsPanel: View {
     @Bindable var session: GameSession
     let onClose: () -> Void
-    @State private var selectedTab: SettingsTab = .general
+    @State private var selectedTab: SettingsTab = .audio
 
     private enum SettingsTab: String, CaseIterable, Identifiable {
-        case general, audio, about
+        case audio, general, about
         var id: String { rawValue }
         var title: String {
             switch self {
@@ -53,6 +53,14 @@ struct SettingsPanel: View {
     private var audioPanel: some View {
         @Bindable var audio = session.audio
         return Form {
+            Section("Volume") {
+                volume("Music volume", value: $audio.musicVolume)
+                volume("Engine", value: $audio.engineVolume)
+                volume("Effects", value: $audio.effectsVolume)
+                SoundToggleButton(audio: audio, identifier: "settingsSoundToggle")
+                    .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                    .listRowBackground(Color.clear)
+            }
             Section("Music") {
                 Toggle("Play music", isOn: $audio.musicEnabled)
                 Picker("Playback", selection: $audio.musicPlaybackMode) {
@@ -93,12 +101,7 @@ struct SettingsPanel: View {
                     .accessibilityIdentifier("music.track.\(track.id)")
                 }
             }
-            Section("Volume") {
-                Toggle("Mute all sound", isOn: $audio.isMuted)
-                volume("Music volume", value: $audio.musicVolume)
-                volume("Engine", value: $audio.engineVolume)
-                volume("Effects", value: $audio.effectsVolume)
-            }
+
         }
     }
 

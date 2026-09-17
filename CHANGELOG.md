@@ -4,6 +4,13 @@
 
 Current native iOS development candidate:
 
+- Focus the preview on Canyon with continuous background travel and rider-focused crash zoom.
+- Center Game Over and total score, show distance/flip point contributions, and enlarge Ride again below the secondary actions.
+- Enlarge the HUD score, align solid hearts right with a falling/fading loss animation, and integrate directional flip notices.
+- Simplify rider/world selection, remove the preview label, and rebuild How to with grip artwork and clear scoring blocks.
+- Open Settings on Audio with Volume first; share an explicit Sound on/off shortcut with Home.
+- Use only a stronger Fuel Explosion sound on the third Endless life, shortening the result delay to about 2.35 seconds.
+
 - Use only the GTA death cue, trimmed to 4.09 seconds with a 450 ms end fade; retain full playback and cinematic minimums. Keep detached bodies moving through the audio tail without advancing score or recovery.
 
 - Anchor both palms on the visible handlebar grips and recalibrate forearm reach to retain contact through rider movement.

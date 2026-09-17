@@ -9,8 +9,11 @@ final class GameScene: SKScene {
 
     var onFrame: ((Double) -> Void)?
     var isPreview = false
+    var isCrashPaused = false
+    private var crashElapsed: Double = 0
+    private var crashStartScale: CGFloat = 0
 
-    private let backgroundTiles = [SKSpriteNode()]
+    private let backgroundTiles = (0..<3).map { _ in SKSpriteNode() }
     private var backgroundOriginX: Double?
     private let atmosphere = AmbientNode()
     private let wayside = WaysideNode()
@@ -114,25 +117,30 @@ final class GameScene: SKScene {
         var desiredScale = isPreview ? previewWheelbase / CGFloat(PhysicsConfiguration().wheelbase) : playScale
         let presentationReset = lastSeed != state.seed || state.tick < lastTick || lastPreview != isPreview || lastViewportSize != size
         let reset = presentationReset || cameraNeedsRespawnReset
-        // Keep both detached bodies visible without zooming in as the bike slows down.
-        if presentingCrash && renderScale > 0 {
-            let span = abs(state.bike.position.x - state.rider.torso.position.x) + 8
-            desiredScale = min(renderScale, size.width / CGFloat(span))
+        // Follow the rider as the bike separates. Zoom is based on crash time,
+        // not the bike slowing down, and remains gentle and bounded.
+        if presentingCrash && !finalExplosion {
+            if !isCrashPaused { crashElapsed += frameDuration }
+            let progress = reducedMotion ? 0 : min(1, crashElapsed / 3.2)
+            let smooth = progress * progress * (3 - 2 * progress)
+            desiredScale = max(23, crashStartScale) * (1 + CGFloat(smooth) * 0.38)
         }
         if reset || renderScale == 0 { renderScale = desiredScale }
         else { renderScale += (desiredScale - renderScale) * min(1, frameDuration * 2.8) }
         let ppm = renderScale
         let playAnchor = (landscape ? CGFloat(0.30) : 0.28) - speedFraction * (landscape ? 0.06 : 0.04)
         let previewCentre = widePreview ? Self.homePanelWidth + previewContentWidth / 2 : size.width / 2
-        let horizontalFraction: CGFloat = isPreview ? previewCentre / size.width : presentingCrash ? 0.45 : playAnchor
-        let followedX = presentingCrash ? (state.bike.position.x + state.rider.torso.position.x) * 0.5 : state.bike.position.x
+        let horizontalFraction: CGFloat = isPreview ? previewCentre / size.width : presentingCrash ? 0.5 : playAnchor
+        let followedX = presentingCrash && !finalExplosion ? state.rider.torso.position.x : state.bike.position.x
         let desiredX = followedX - Double(size.width * horizontalFraction / ppm)
         let ahead = terrain(state.bike.position.x + (landscape ? 5 : 3))
         let near = terrain(state.bike.position.x)
         let highestBody = presentingCrash ? max(state.bike.position.y, state.rider.torso.position.y) : state.bike.position.y
         let followedHeight = max(near * 0.6 + ahead * 0.4, highestBody - (landscape ? 2.4 : 3.2))
         let verticalFraction: CGFloat = isPreview ? previewVerticalFraction : (landscape ? 0.40 : 0.39)
-        let desiredY = (isPreview ? near : followedHeight) - Double(size.height * verticalFraction / ppm)
+        let desiredY = presentingCrash && !finalExplosion
+            ? state.rider.torso.position.y - Double(size.height * 0.50 / ppm)
+            : (isPreview ? near : followedHeight) - Double(size.height * verticalFraction / ppm)
         if reset {
             cameraX = desiredX
             cameraY = desiredY
@@ -158,7 +166,7 @@ final class GameScene: SKScene {
         // during large jumps. The common translation keeps every wheel attached.
         bike.position = .zero
         bike.display(state, rider: GameCatalog.rider(characterID), pointsPerMetre: ppm, project: project, terrain: terrain, reducedMotion: reducedMotion, seconds: scenicTime, isPreview: isPreview)
-        if !isPreview {
+        if !isPreview && !presentingCrash {
             let ceiling = size.height - min(size.height * 0.20, landscape ? 80 : 120)
             let excess = max(0, bike.visibleFrame.maxY - ceiling)
             if excess > 0 {
@@ -203,6 +211,8 @@ final class GameScene: SKScene {
     /// Intensity is normalized to 0...1. The session owns the matching audio event.
     func playCrash(at position: Vector2, impact: Double = 1, finalExplosion: Bool = false) {
         presentingCrash = true
+        crashElapsed = 0
+        crashStartScale = renderScale
         dust.particleBirthRate = 0
         dust.resetSimulation()
         // Effects use scenic time at real speed, independently of slow-motion bodies.
@@ -252,6 +262,24 @@ final class GameScene: SKScene {
     }
 
     private func displayBackground(reducedMotion: Bool) {
+        if worldID == "canyon" {
+            let aspect = max(1, textureSize.width) / max(1, textureSize.height)
+            let height = max(size.height * 1.50, (size.width + 4) / aspect)
+            let width = max(size.width + 4, height * aspect)
+            if backgroundOriginX == nil { backgroundOriginX = cameraX }
+            let travel = reducedMotion || isPreview ? 0 : cameraX - (backgroundOriginX ?? cameraX)
+            let tiles = BackgroundPanorama.tiles(viewportWidth: size.width, tileWidth: width, travel: travel)
+            let vertical = reducedMotion ? 0 : min(24, max(-24, CGFloat(cameraY) * -0.8))
+            for (node, tile) in zip(backgroundTiles, tiles) {
+                node.isHidden = false
+                node.size = CGSize(width: width + 1, height: height)
+                node.xScale = tile.mirrored ? -1 : 1
+                node.position = CGPoint(x: tile.centre, y: height / 2 - 28 + vertical)
+            }
+            return
+        }
+        for (index, tile) in backgroundTiles.enumerated() { tile.isHidden = index > 0 }
+
         // One painting avoids mirrored landmarks and artificial joins. Overscan
         // covers both axes, including a high jump with the road below the view.
         let aspect = max(1, textureSize.width) / max(1, textureSize.height)

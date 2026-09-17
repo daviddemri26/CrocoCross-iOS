@@ -25,6 +25,8 @@ final class StuntTests: XCTestCase {
                     XCTAssertEqual(tracker.advance(delta: 0, orientation: 0, airborne: false, safeContact: true), 0)
                 }
                 XCTAssertEqual(tracker.advance(delta: 0, orientation: 0, airborne: false, safeContact: true), turns)
+                XCTAssertEqual(tracker.landedBackflips, direction > 0 ? turns : 0)
+                XCTAssertEqual(tracker.landedFrontflips, direction < 0 ? turns : 0)
                 XCTAssertEqual(tracker.advance(delta: 0, orientation: 0, airborne: false, safeContact: true), 0)
             }
         }

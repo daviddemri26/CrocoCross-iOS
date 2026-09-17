@@ -140,6 +140,10 @@ struct GameRootView: View {
                 }
             }
         }
+        .overlay(alignment: .topTrailing) {
+            SoundToggleButton(audio: session.audio, compact: true, identifier: "homeSoundToggle")
+                .padding(.trailing, 16).padding(.top, 8)
+        }
     }
 
     private var brand: some View {
@@ -149,9 +153,7 @@ struct GameRootView: View {
             } else {
                 Text("CROCO\nCROSS").font(.system(size: 53, weight: .black, design: .rounded)).italic().lineSpacing(-8)
             }
-            Text("ROCCO PREVIEW")
-                .font(.system(size: 10, weight: .bold, design: .rounded)).tracking(1.4)
-                .foregroundStyle(CrocoTheme.lime).accessibilityIdentifier("previewStatus")
+
         }.accessibilityElement(children: .ignore).accessibilityLabel("CrocoCross")
     }
 
@@ -248,7 +250,7 @@ struct GameRootView: View {
                             Text(session.mode == .weekly ? "WEEKLY" : "ENDLESS")
                                 .font(.system(size: 9, weight: .heavy, design: .monospaced)).tracking(1.5).foregroundStyle(
                                     CrocoTheme.lime)
-                            Text(session.score.formatted()).font(.system(size: 26, weight: .black, design: .rounded))
+                            Text(session.score.formatted()).font(.custom("AvenirNextCondensed-HeavyItalic", size: 36))
                                 .lineLimit(1).minimumScaleFactor(0.6)
                                 .monospacedDigit().contentTransition(.numericText()).accessibilityIdentifier("score")
                         }
@@ -269,7 +271,11 @@ struct GameRootView: View {
                         }
                     }
                     Rectangle().fill(.white.opacity(0.10)).frame(height: 1)
-                    livesRow(wide: wide)
+                    HStack(spacing: 6) {
+                        Color.clear.frame(width: 70, height: 24)
+                        stuntNotice.frame(maxWidth: .infinity)
+                        livesRow(wide: wide)
+                    }.frame(height: 24)
                 }.padding(.horizontal, 14).padding(.vertical, 8)
                     .frame(maxWidth: 560)
                     .background(CrocoTheme.ink.opacity(0.9), in: RoundedRectangle(cornerRadius: 16))
@@ -280,20 +286,6 @@ struct GameRootView: View {
                             width: geo.size.width * min(1, max(0, session.distance / 4_000)))
                     }.frame(height: 4).accessibilityLabel("Course progress").accessibilityValue(
                         "\(Int(min(100, session.distance / 40))) percent")
-                }
-                if let text = session.eventText {
-                    HStack(spacing: 12) {
-                        Image(systemName: "arrow.trianglehead.2.clockwise.rotate.90").font(.title2.bold())
-                        Text(text).font(.system(size: 22, weight: .black, design: .rounded)).italic()
-                        if session.eventPoints > 0 {
-                            Text("+\(session.eventPoints.formatted())").font(
-                                .system(size: 22, weight: .black, design: .rounded)
-                            ).monospacedDigit()
-                        }
-                    }.foregroundStyle(CrocoTheme.lime).padding(.horizontal, 18).padding(.vertical, 12)
-                        .background(CrocoTheme.ink.opacity(0.94), in: RoundedRectangle(cornerRadius: 17))
-                        .accessibilityElement(children: .combine).accessibilityIdentifier("stuntNotice")
-                        .transition(.opacity.combined(with: .scale(scale: 0.85)))
                 }
                 Spacer()
             }.padding(.horizontal, wide ? 28 : 16).padding(.top, 12).padding(.bottom, wide ? 88 : 160).allowsHitTesting(false)
@@ -312,18 +304,34 @@ struct GameRootView: View {
             .animation(reducedMotion ? nil : .spring(response: 0.3, dampingFraction: 0.8), value: session.eventText)
     }
 
+    @ViewBuilder private var stuntNotice: some View {
+        if let text = session.eventText {
+            HStack(spacing: 5) {
+                Image(systemName: session.eventRotatesForward ? "arrow.clockwise" : "arrow.counterclockwise")
+                    .font(.system(size: 13, weight: .black))
+                Text(text).font(.custom("AvenirNextCondensed-HeavyItalic", size: 17))
+                    .lineLimit(1).minimumScaleFactor(0.7)
+            }.foregroundStyle(CrocoTheme.lime)
+                .accessibilityElement(children: .combine).accessibilityIdentifier("stuntNotice")
+                .transition(.opacity)
+        } else { Color.clear.frame(height: 24) }
+    }
+
     private func livesRow(wide: Bool) -> some View {
         let capacity = session.mode == .endless ? 3 : 1
         let remaining = min(capacity, max(0, session.lives))
-        return HStack(spacing: wide ? 10 : 12) {
-            ForEach(0..<capacity, id: \.self) { index in
-                Image(systemName: index < remaining ? "heart.fill" : "heart")
-                    .font(.system(size: wide ? 18 : 20, weight: .bold))
-                    .foregroundStyle(index < remaining ? CrocoTheme.orange : .white.opacity(0.22))
-                    .frame(width: wide ? 26 : 28, height: 24)
+        return HStack(spacing: 7) {
+            // Stable indices remove the LEFTMOST surviving heart. No empty slots.
+            ForEach((capacity - remaining)..<capacity, id: \.self) { _ in
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 18, weight: .bold)).foregroundStyle(CrocoTheme.orange)
+                    .frame(width: 20, height: 24)
+                    .transition(.asymmetric(insertion: .opacity,
+                        removal: reducedMotion ? .opacity : .offset(y: 42).combined(with: .opacity)))
             }
         }
-        .frame(maxWidth: .infinity)
+        .frame(width: 74, height: 24, alignment: .trailing)
+        .animation(.easeIn(duration: reducedMotion ? 0.2 : 0.7), value: remaining)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Lives")
         .accessibilityValue("\(remaining) of \(capacity) remaining")
@@ -357,65 +365,73 @@ struct GameRootView: View {
 
     private var resultsOverlay: some View {
         modal {
-            HStack {
-                Image(systemName: session.finished ? "flag.checkered" : "bolt.fill")
-                    .font(.system(size: 24, weight: .black)).foregroundStyle(CrocoTheme.orange)
+            VStack(spacing: 6) {
                 Text(session.finished ? "FINISH!" : "GAME OVER")
-                    .font(.system(size: 29, weight: .black, design: .rounded)).italic()
-            }
-            VStack(alignment: .leading, spacing: 5) {
+                    .font(.custom("AvenirNextCondensed-HeavyItalic", size: 46))
+                    .tracking(1).foregroundStyle(CrocoTheme.orange)
+                    .shadow(color: .black.opacity(0.8), radius: 0, x: 2, y: 3)
+                    .frame(maxWidth: .infinity).accessibilityIdentifier("resultHeading")
                 if session.newRecord {
-                    Label("NEW BEST", systemImage: "trophy.fill").font(
-                        .system(size: 11, weight: .black, design: .rounded)
-                    )
-                    .foregroundStyle(CrocoTheme.ink).padding(.horizontal, 10).padding(.vertical, 6)
-                    .background(CrocoTheme.orange, in: Capsule())
+                    Label("NEW BEST", systemImage: "trophy.fill")
+                        .font(.system(size: 10, weight: .black, design: .rounded))
+                        .foregroundStyle(CrocoTheme.ink).padding(.horizontal, 10).padding(.vertical, 5)
+                        .background(CrocoTheme.orange, in: Capsule())
                 }
                 ScoreCounter(score: session.score, reducedMotion: reducedMotion)
-                Text("POINTS").font(.system(size: 10, weight: .heavy, design: .monospaced)).tracking(2).foregroundStyle(
-                    CrocoTheme.muted)
+                    .frame(maxWidth: .infinity)
+                Text("TOTAL SCORE").font(.custom("AvenirNextCondensed-HeavyItalic", size: 18))
+                    .tracking(2).foregroundStyle(CrocoTheme.muted)
+            }.frame(maxWidth: .infinity)
+            HStack(spacing: 10) {
+                resultStat("DISTANCE", value: "\((Double(session.distancePoints) / 10).formatted(.number.precision(.fractionLength(1)))) m",
+                           points: session.distancePoints, icon: "point.bottomleft.forward.to.point.topright.scurvepath")
+                resultStat("FLIPS", value: "\(session.flips) landed",
+                           points: session.flipPoints, icon: "arrow.clockwise")
             }
-            HStack(spacing: 8) {
-                resultStat(
-                    "DISTANCE", value: "\(Int(session.distance)) m",
-                    icon: "point.bottomleft.forward.to.point.topright.scurvepath")
-                resultStat("TIME", value: timeString(session.elapsed), icon: "stopwatch")
-                resultStat("FLIPS", value: "\(session.flips)", icon: "arrow.clockwise")
-            }
-            if session.mode == .weekly {
-                VStack(spacing: 6) {
-                    ProgressView(value: min(4_000, session.distance), total: 4_000).tint(CrocoTheme.lime)
-                    HStack {
-                        Text("\(Int(min(100, session.distance / 40)))%")
-                        Spacer()
-                        Text("4,000 m")
-                    }
-                    .font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundStyle(CrocoTheme.muted)
-                }
-            }
-            primaryButton("Ride again", icon: "arrow.clockwise", id: "rideAgain") { session.start(session.mode) }
+            HStack {
+                Label(timeString(session.elapsed), systemImage: "stopwatch")
+                Spacer()
+                if session.finished { Text("FINISH +\(session.finishPoints.formatted())") }
+                else if session.mode == .weekly { Text("\(Int(min(100, session.distance / 40)))% OF 4,000 m") }
+            }.font(.system(size: 11, weight: .bold, design: .monospaced)).foregroundStyle(CrocoTheme.muted)
             HStack(spacing: 10) {
                 menuAction("Rankings", icon: "trophy.fill", id: "resultsRankings") { panel = .rankings }
                 menuAction("Home", icon: "house.fill", id: "home") { session.goHome() }
             }
+            Button { session.start(session.mode) } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "arrow.clockwise").font(.system(size: 26, weight: .black))
+                    Text("RIDE AGAIN").font(.custom("AvenirNextCondensed-HeavyItalic", size: 30)).tracking(1)
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right.2").font(.system(size: 18, weight: .black))
+                }.padding(.horizontal, 22).frame(maxWidth: .infinity).frame(height: 80)
+                    .foregroundStyle(CrocoTheme.ink)
+                    .background(LinearGradient(colors: [CrocoTheme.lime, Color(red: 0.57, green: 0.83, blue: 0.16)],
+                                               startPoint: .topLeading, endPoint: .bottomTrailing),
+                                in: RoundedRectangle(cornerRadius: 20))
+                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(.white.opacity(0.4), lineWidth: 1.5))
+                    .shadow(color: CrocoTheme.lime.opacity(0.17), radius: 12, y: 5)
+            }.accessibilityIdentifier("rideAgain").accessibilityLabel("Ride again")
         }
     }
 
-    private func resultStat(_ title: String, value: String, icon: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Image(systemName: icon).font(.system(size: 16, weight: .bold)).foregroundStyle(CrocoTheme.orange)
-            Text(value).font(.system(size: 18, weight: .black, design: .rounded)).lineLimit(1).minimumScaleFactor(0.7)
-                .monospacedDigit()
-            Text(title).font(.system(size: 8, weight: .heavy, design: .monospaced)).foregroundStyle(CrocoTheme.muted)
-        }.frame(maxWidth: .infinity, alignment: .leading).padding(11)
-            .background(.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 14))
+    private func resultStat(_ title: String, value: String, points: Int, icon: String) -> some View {
+        VStack(spacing: 7) {
+            Label(title, systemImage: icon).font(.system(size: 10, weight: .heavy, design: .monospaced))
+                .foregroundStyle(CrocoTheme.muted)
+            Text("+\(points.formatted())").font(.custom("AvenirNextCondensed-HeavyItalic", size: 27))
+                .foregroundStyle(CrocoTheme.lime).monospacedDigit().lineLimit(1).minimumScaleFactor(0.65)
+                .accessibilityIdentifier(title == "DISTANCE" ? "distancePoints" : "flipPoints")
+            Text(value).font(.system(size: 12, weight: .bold, design: .rounded)).foregroundStyle(.white)
+        }.frame(maxWidth: .infinity).padding(.vertical, 13)
+            .background(.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 16))
     }
 
     private func modal<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         ZStack {
             Color.black.opacity(0.6).ignoresSafeArea()
             ScrollView {
-                VStack(alignment: .leading, spacing: 20, content: content)
+                VStack(alignment: .leading, spacing: 16, content: content)
                     .padding(27).frame(maxWidth: 400)
                     .background(CrocoTheme.ink, in: RoundedRectangle(cornerRadius: 30))
                     .overlay(RoundedRectangle(cornerRadius: 30).stroke(.white.opacity(0.15), lineWidth: 1))
@@ -436,10 +452,6 @@ struct GameRootView: View {
         case .riders:
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    Text("Ride with Rocco")
-                        .font(.title2.bold()).foregroundStyle(.white)
-                    Text("This preview introduces Rocco's new movement and falls. The other riders will return after their animations are adapted. All nine worlds are available.")
-                        .font(.subheadline).foregroundStyle(CrocoTheme.muted)
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 145), spacing: 14)], spacing: 14) {
                         ForEach(GameCatalog.playableRiders) { rider in
                             catalogCard(
@@ -456,7 +468,7 @@ struct GameRootView: View {
         case .worlds:
             ScrollView {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 155), spacing: 14)], spacing: 14) {
-                    ForEach(GameCatalog.worlds) { world in
+                    ForEach(GameCatalog.playableWorlds) { world in
                         catalogCard(
                             id: world.id, name: world.name, asset: world.assetName,
                             selected: session.worldID == world.id
@@ -469,34 +481,7 @@ struct GameRootView: View {
             }.background(CrocoTheme.ink)
         case .settings: SettingsPanel(session: session) { panel = nil }
         case .rankings: RankingsPanel(session: session)
-        case .help:
-            ScrollView {
-                VStack(alignment: .leading, spacing: 26) {
-                    helpRow(
-                        "arrow.right", "Right thumb",
-                        "Accelerate and lean back as a wheel lifts. Use short bursts to control wheelies and backward rotation in the air."
-                    )
-                    helpRow(
-                        "arrow.left", "Left thumb",
-                        "Brake and lean forward as a wheel lifts. Catch a wheelie or control forward rotation in the air. Release to coast.")
-                    helpRow(
-                        "hand.tap.fill", "Touch controls",
-                        "Hold the right grip to accelerate or the left brake lever to slow down. Each button applies full power while held; lift your thumb to release. Use short presses for finer control. Both buttons can be held together."
-                    )
-                    helpRow(
-                        "arrow.down.right", "Land with the slope",
-                        "Match the bike to the landing. Suspension absorbs a measured impact; a hard sideways landing can end your ride. Flips count only when you land safely."
-                    )
-                    helpRow(
-                        "calendar", "One week. One trail.",
-                        "The 4,000-metre challenge changes every Monday at 00:00 UTC. One life, no time limit. Finish to enter the weekly score and time leaderboards."
-                    )
-                    helpRow(
-                        "wifi.slash", "Ride anywhere",
-                        "Both game modes work offline. Open Rankings to connect and compare scores."
-                    )
-                }.padding(24)
-            }.background(CrocoTheme.ink)
+        case .help: HowToView()
         }
     }
 
@@ -536,15 +521,6 @@ struct GameRootView: View {
             .accessibilityLabel(name).accessibilityAddTraits(selected ? [.isSelected] : [])
     }
 
-    private func helpRow(_ icon: String, _ title: String, _ text: String) -> some View {
-        HStack(alignment: .top, spacing: 16) {
-            Image(systemName: icon).foregroundStyle(CrocoTheme.lime).font(.title2).frame(width: 28)
-            VStack(alignment: .leading, spacing: 6) {
-                Text(title).font(.headline)
-                Text(text).font(.body).foregroundStyle(CrocoTheme.muted)
-            }
-        }
-    }
     private func panelTitle(_ item: GamePanel) -> String {
         switch item {
         case .riders: "Riders"
@@ -564,7 +540,7 @@ private struct ScoreCounter: View {
     let reducedMotion: Bool
     @State private var shown = 0
     var body: some View {
-        Text(shown.formatted()).font(.system(size: 58, weight: .black, design: .rounded))
+        Text(shown.formatted()).font(.custom("AvenirNextCondensed-HeavyItalic", size: 72))
             .foregroundStyle(CrocoTheme.lime).monospacedDigit().contentTransition(.numericText())
             .lineLimit(1).minimumScaleFactor(0.55).accessibilityIdentifier("finalScore").accessibilityLabel(
                 "\(score.formatted()) points"

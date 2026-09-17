@@ -63,6 +63,8 @@ enum GameCatalog {
         .init(id: "clouds", name: "Cloud Nine", subtitle: "Floating trails above the world", assetName: "cloud-nine", sky: .hex(0x65C7EC), earth: .hex(0xFFFFFF), deepEarth: .hex(0xBAAFEA), edge: .white, accent: .hex(0xFCE6FF))
     ]
 
+    static var playableWorlds: [World] { worlds.filter { $0.id == "canyon" } }
+
     static func rider(_ id: String) -> Rider { riders.first { $0.id == id } ?? riders[0] }
     static func world(_ id: String) -> World { worlds.first { $0.id == id } ?? worlds[0] }
 }

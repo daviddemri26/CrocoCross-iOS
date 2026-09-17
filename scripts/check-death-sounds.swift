@@ -9,8 +9,11 @@ import AVFAudio
         let directory = CommandLine.arguments.dropFirst().first ?? "App/Resources/GameAssets/DeathSounds"
         var report: [[String: Any]] = []
         precondition(Set(DeathSoundCatalog.filenames).count == 1)
-        for name in DeathSoundCatalog.filenames {
-            let url = URL(fileURLWithPath: directory).appendingPathComponent(name + "." + DeathSoundCatalog.fileExtension)
+        let base = URL(fileURLWithPath: directory, isDirectory: true)
+        let cues = DeathSoundCatalog.filenames.map {
+            base.appendingPathComponent($0 + "." + DeathSoundCatalog.fileExtension)
+        } + [base.deletingLastPathComponent().appendingPathComponent("fuel-explosion.mp3")]
+        for url in cues {
             let player = try AVAudioPlayer(contentsOf: url)
             precondition(player.duration.isFinite && player.duration > 0)
             let file = try AVAudioFile(forReading: url)
@@ -31,7 +34,7 @@ import AVFAudio
                 }
             }
             precondition(frames == file.length && frames > 0, "The complete clip must decode")
-            report.append(["file": name + "." + DeathSoundCatalog.fileExtension, "seconds": player.duration,
+            report.append(["file": url.lastPathComponent, "seconds": player.duration,
                            "decodedFrames": frames, "peak": peak,
                            "endlessFinalMinimum": max(1.8, player.duration),
                            "slowMotionMinimum": max(3.6, player.duration)])

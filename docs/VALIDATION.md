@@ -1,5 +1,17 @@
 # Validation record
 
+## Canyon, HUD, results and audio UI — September 16, 2026
+
+- Build 16 centers Game Over and the animated total in Avenir Next Condensed Heavy Italic, adds exact distance/flip point contributions (and separate finish bonus), and places the larger Ride again below Home/Rankings. Distance detail shows tenths to match the awarded points.
+- The HUD enlarges the score, right-aligns solid hearts, removes the leftmost heart with a 0.7-second downward fade, and places directional flip notices in its lower center without a points popup. Direction comes from the safely landed signed rotations; the scoring contract stays unchanged. How to uses the actual grip artwork and the shared 1,000/3,000/7,000 scoring formula.
+- Only Canyon and Rocco remain selectable, including fallback from saved deferred worlds. Selection panels contain only their cards; the Home preview label is removed. Audio opens first, with Volume above Music/Tracks. Home and Settings share one explicit Sound on/off action, icon and persisted state.
+- Canyon scrolls continuously at 8 points/metre with three reflected copies of the original painting. Its raised horizon keeps the cliffs visible above the track. Coverage and edge checks include reverse movement and long distances. Non-explosion crash framing follows the rider torso and progressively zooms up to 38%, respecting pause and Reduce Motion.
+- Recoverable/Weekly falls retain the 4.09-second GTA cue. The third Endless death uses only Fuel Explosion at full effect gain and waits **2.35 s**, preserving the original real-time explosion. Both cues decode completely and signed-bundle bytes match source.
+- **60 core tests pass (69.396 s)**, including front/back direction assertions. **24 panorama checks** and **22 audio preference checks** pass. Five iPhone UI scenarios pass (158.140 s); after the final horizon/decimal-detail adjustment, three relevant iPhone tests pass again (74.706 s). iPad Sound/How to passes (17.175 s); the first concurrent Endless test encountered the Pause overlay and failed, then its isolated rerun passes (47.454 s), without disabling the app pause guard.
+- Exported final iPhone/iPad captures were visually inspected for centered totals, retry ordering, HUD hearts, scenery, guide blocks and sound state. Signed Release **1.0.0 (16)** builds and installs on David’s iPhone after a transient connection reset. Normal launch succeeded at 22:20:29 PDT. These checks do not claim subjective play feel or a new live Game Center verification.
+
+Evidence: `artifacts/qa/2026-09-16-canyon-ui/`, `/tmp/crococross-canyon-final.xcresult`, `/tmp/crococross-canyon-ipad-retry.xcresult`.
+
 ## Shorter GTA cue and continuous fall — September 16, 2026
 
 - Build 15 cuts another **2.00 seconds** from the GTA cue: source 0.06–4.15 s, **4.09 s** total, with a **450 ms end fade**. Both impacts and the original timing/pitch remain; the echo tail is deliberately shortened. Full decode passes for 180,369 stereo frames at 44.1 kHz. The signed app WAV matches the verified source output.

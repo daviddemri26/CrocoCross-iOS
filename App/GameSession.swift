@@ -14,6 +14,10 @@ final class GameSession {
     var speed: Double = 0
     var lives = 1
     var flips = 0
+    var distancePoints: Int { Int(floor(distance * 10)) }
+    var finishPoints: Int { finished ? 1_000 : 0 }
+    var flipPoints: Int { max(0, score - distancePoints - finishPoints) }
+    var eventRotatesForward = false
     var finished = false
     var recovering = false
     var showingFinalExplosion: Bool { phase == .results && !finished && mode == .endless }
@@ -66,7 +70,7 @@ final class GameSession {
         // Legacy rider selection, records and pending scores remain untouched.
         scene.scaleMode = .resizeFill
         scene.onFrame = { [weak self] dt in self?.frame(dt) }
-        if !GameCatalog.worlds.contains(where: { $0.id == worldID }) { worldID = "canyon" }
+        if !GameCatalog.playableWorlds.contains(where: { $0.id == worldID }) { worldID = "canyon" }
     }
 
     func start(_ mode: RunMode) {
@@ -74,6 +78,7 @@ final class GameSession {
         deathHoldRemaining = 0
         recoveryPresentationSteps = 0
         if !GameCatalog.playableRiders.contains(where: { $0.id == characterID }) { characterID = "croco" }
+        if !GameCatalog.playableWorlds.contains(where: { $0.id == worldID }) { worldID = "canyon" }
         self.mode = mode
         recordToBeat = mode == .weekly ? bestWeekly : bestEndless
         newRecord = false
@@ -263,6 +268,7 @@ final class GameSession {
         }
         if phase == .results && !interrupted && !resultsVisible && frameTime >= resultsAt &&
             deathHoldRemaining <= 0 && !audio.deathSoundPending { resultsVisible = true }
+        scene.isCrashPaused = phase == .paused || interrupted
         scene.isPreview = phase == .home
         if phase == .home {
             scene.display(
@@ -303,11 +309,16 @@ final class GameSession {
     }
 
     private func handle(_ event: GameEvent) {
-        audio.handle(event: event)
+        audio.handle(event: event, finalExplosion: simulation.state.mode == .endless && simulation.state.status == .crashed)
         switch event {
         case .flip(let count):
             let prefix = count == 2 ? "DOUBLE " : count == 3 ? "TRIPLE " : count > 3 ? "\(count)× " : ""
-            eventText = "\(prefix)FLIP!"
+            eventRotatesForward = simulation.landedFrontflips > 0 && simulation.landedBackflips == 0
+            if simulation.landedBackflips > 0 && simulation.landedFrontflips > 0 {
+                eventText = "BACK + FRONTFLIP"
+            } else {
+                eventText = prefix + (eventRotatesForward ? "FRONTFLIP" : "BACKFLIP")
+            }
             eventPoints = GameSimulation.flipBonus(for: count)
             eventUntil = frameTime + 1.8
         case .crashed:

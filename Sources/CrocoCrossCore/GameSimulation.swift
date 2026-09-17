@@ -17,6 +17,8 @@ public final class GameSimulation {
     private var physics: Box2DBikeWorld
     private var stunt = StuntTracker()
     private var stuntScore = 0
+    public var landedBackflips: Int { stunt.landedBackflips }
+    public var landedFrontflips: Int { stunt.landedFrontflips }
     private var crashContactTicks = 0
     private var recoveryTicks = 0
     private var shieldTicks = 0

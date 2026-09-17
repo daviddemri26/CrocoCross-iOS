@@ -10,7 +10,9 @@ CrocoCross is about finding your rhythm: accelerate into a hill, balance in the 
 
 **Free by design. No ads. No in-app purchases. No separate game account.**
 
-## Explore the nine worlds
+## Canyon first
+
+Canyon is the only selectable world in this preview. The other eight worlds are retained for future artwork and motion updates. The gallery below shows the earlier world artwork.
 
 <table>
   <tr><th>Paris</th><th>San Francisco</th><th>Old Gold Mine</th></tr>
@@ -50,7 +52,7 @@ There is no time limit on the weekly trail. Both Endless and weekly practice wor
 
 ## Ride with Rocco
 
-Rocco is the first rider with an articulated body and a motorcycle simulated separately. The other eight characters are temporarily disabled while their artwork and movement are adapted. All nine worlds remain available.
+Rocco is the first rider with an articulated body and a motorcycle simulated separately. The other eight characters are temporarily disabled while their artwork and movement are adapted. Canyon is the only selectable world while the other eight backgrounds are reworked.
 
 <p align="center">
   <img src="docs/images/mobile/home.png" alt="CrocoCross mobile home screen with rider and world selection, Weekly and Endless modes" width="280">
@@ -97,7 +99,7 @@ xcodebuild -project CrocoCross.xcodeproj -scheme CrocoCross \
 | `docs/` | Development, artwork, validation and release documentation |
 | `scripts/` | Project generation and focused checks |
 
-**Development status:** the `box2d-1` migration replaces the custom physics engine with vendored Box2D 3.1.1 and separates Rocco from the motorcycle. Rocco is the first playable articulated rider; the other eight characters remain in source for later adaptation. All nine worlds remain available. See the [migration plan](docs/BOX2D-MIGRATION.md) and [validation record](docs/VALIDATION.md) for measured checks and device status. This repository does not currently provide an App Store or TestFlight download.
+**Development status:** the `box2d-1` migration replaces the custom physics engine with vendored Box2D 3.1.1 and separates Rocco from the motorcycle. Rocco is the first playable articulated rider; the other eight characters remain in source for later adaptation. Canyon is the only selectable world while the other eight backgrounds are reworked. See the [migration plan](docs/BOX2D-MIGRATION.md) and [validation record](docs/VALIDATION.md) for measured checks and device status. This repository does not currently provide an App Store or TestFlight download.
 
 GitHub Actions runs core tests, persistence, competition-version isolation and audio checks, project consistency, and a simulator build. It does not publish the app. Live leaderboard submission/read-back, remaining device checks and distribution are tracked in the [release checklist](docs/RELEASE.md).
 

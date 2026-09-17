@@ -59,10 +59,10 @@ final class CrocoCrossUITests: XCTestCase {
             XCTAssertTrue(tab.isHittable)
             XCTAssertEqual(tab.frame.midY, audio.frame.midY, accuracy: 2)
         }
-        XCTAssertTrue(general.isSelected)
-        XCTAssertTrue(app.switches["Haptic feedback"].exists)
-        capture("settings-general")
-        audio.tap()
+        XCTAssertTrue(audio.isSelected)
+        XCTAssertLessThan(audio.frame.minX, general.frame.minX)
+        XCTAssertTrue(app.sliders["Effects"].exists)
+        capture("settings-audio-default")
         let tabFrame = audio.frame
         let closeFrame = app.buttons["closePanel"].frame
         XCTAssertEqual(closeFrame.midY, tabFrame.midY, accuracy: 2)
@@ -146,19 +146,10 @@ final class CrocoCrossUITests: XCTestCase {
         app.buttons["home"].tap()
         waitForHome(app)
         app.buttons["worlds"].tap()
-        XCTAssertTrue(app.buttons["select-japan"].waitForExistence(timeout: 5))
-        let oldFrame = app.buttons["select-japan"].frame
+        XCTAssertTrue(app.buttons["select-canyon"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["select-japan"].exists)
+        XCTAssertFalse(app.buttons["select-clouds"].exists)
         assertBottomClose(app)
-        app.buttons["select-japan"].tap()
-        waitForHome(app)
-        XCTAssertEqual(app.buttons["worlds"].label, "World: Japan Mountains")
-        app.buttons["worlds"].tap()
-        XCTAssertTrue(app.buttons["select-japan"].waitForExistence(timeout: 5))
-        XCTAssertEqual(app.buttons["select-japan"].frame, oldFrame)
-        let canyon = app.buttons["select-canyon"].frame
-        let japan = app.buttons["select-japan"].frame
-        XCTAssertLessThanOrEqual(canyon.maxX, japan.minX, "Terrain artwork must stay inside its own grid column")
-        XCTAssertGreaterThanOrEqual(canyon.minX, app.navigationBars.firstMatch.frame.minX)
         Thread.sleep(forTimeInterval: 0.3)
         capture("world-selection")
         app.buttons["closePanel"].tap()
@@ -169,7 +160,47 @@ final class CrocoCrossUITests: XCTestCase {
         app.buttons["select-croco"].tap()
         waitForHome(app)
         XCTAssertEqual(app.buttons["riders"].label, "Rider: Rocco")
-        capture("home-japan")
+        capture("home-canyon")
+    }
+
+    @MainActor func testSoundShortcutCanyonAndHowTo() throws {
+        let app = launch(extraArguments: ["-world", "japan"])
+        XCTAssertEqual(app.buttons["worlds"].label, "World: Canyon", "Deferred saved worlds fall back to Canyon")
+        XCTAssertFalse(app.staticTexts["previewStatus"].exists)
+        let sound = app.buttons["homeSoundToggle"]
+        XCTAssertTrue(sound.isHittable)
+        XCTAssertEqual(sound.value as? String, "Sound off")
+        sound.tap()
+        XCTAssertEqual(sound.value as? String, "Sound on")
+        app.buttons["settings"].tap()
+        XCTAssertTrue(app.buttons["settings.tab.audio"].isSelected)
+        let settingsSound = app.buttons["settingsSoundToggle"]
+        reveal(settingsSound, in: app)
+        XCTAssertEqual(settingsSound.value as? String, "Sound on")
+        settingsSound.tap()
+        XCTAssertEqual(settingsSound.value as? String, "Sound off")
+        capture("settings-sound-off")
+        app.buttons["closePanel"].tap()
+        XCTAssertEqual(sound.value as? String, "Sound off")
+        capture("home-sound-off")
+        app.buttons["riders"].tap()
+        XCTAssertTrue(app.buttons["select-croco"].exists)
+        XCTAssertFalse(app.staticTexts["Ride with Rocco"].exists)
+        capture("riders-selector-only")
+        app.buttons["closePanel"].tap()
+        app.buttons["worlds"].tap()
+        XCTAssertTrue(app.buttons["select-canyon"].exists)
+        XCTAssertFalse(app.buttons["select-japan"].exists)
+        capture("worlds-canyon-only")
+        app.buttons["closePanel"].tap()
+        app.buttons["help"].tap()
+        XCTAssertTrue(app.navigationBars["How to play"].waitForExistence(timeout: 5))
+        Thread.sleep(forTimeInterval: 0.35)
+        capture("how-to-controls")
+        app.swipeUp()
+        capture("how-to-flips")
+        XCTAssertTrue(app.staticTexts["Every metre = 10 points"].exists)
+        app.buttons["closePanel"].tap()
     }
 
     @MainActor func testAdaptiveLayoutAndSettings() throws {
@@ -253,12 +284,19 @@ final class CrocoCrossUITests: XCTestCase {
         XCTAssertFalse(app.buttons["rideAgain"].exists, "The long death clip must retain its cinematic")
         capture("endless-final-explosion")
         XCTAssertTrue(app.buttons["rideAgain"].waitForExistence(timeout: 12))
-        XCTAssertGreaterThan(Date().timeIntervalSince(finalLossObserved), 2.5,
-                             "The 4.1-second clip must not use the old 1.8-second result delay")
+        XCTAssertLessThan(Date().timeIntervalSince(finalLossObserved), 3.8,
+                          "Final-life explosion must not wait for the 4.1-second GTA clip")
+        XCTAssertGreaterThan(app.buttons["rideAgain"].frame.minY, app.buttons["home"].frame.maxY)
+        XCTAssertGreaterThan(app.buttons["rideAgain"].frame.width, app.buttons["home"].frame.width)
+        XCTAssertEqual(app.staticTexts["finalScore"].frame.midX,
+                       app.staticTexts["resultHeading"].frame.midX, accuracy: 3)
+        XCTAssertTrue(app.staticTexts["distancePoints"].exists)
+        XCTAssertTrue(app.staticTexts["flipPoints"].exists)
         XCTAssertEqual(lives.value as? String, "0 of 3 remaining")
         let finalScore = app.staticTexts["finalScore"].label
         Thread.sleep(forTimeInterval: 0.3)
         XCTAssertEqual(app.staticTexts["finalScore"].label, finalScore)
+        Thread.sleep(forTimeInterval: 0.7)
         capture("endless-final-results")
         app.buttons["rideAgain"].tap()
         waitForPlaying(app)
@@ -457,7 +495,6 @@ final class CrocoCrossUITests: XCTestCase {
         for (panel, selection, label) in [
             ("riders", "croco", "Rider: Rocco"),
             ("worlds", "canyon", "World: Canyon"),
-            ("worlds", "clouds", "World: Cloud Nine"),
         ] {
             app.buttons[panel].tap()
             let choice = app.buttons["select-\(selection)"]
@@ -471,7 +508,7 @@ final class CrocoCrossUITests: XCTestCase {
         app.launch()
         waitForHome(app)
         XCTAssertEqual(app.buttons["riders"].label, "Rider: Rocco")
-        XCTAssertEqual(app.buttons["worlds"].label, "World: Cloud Nine")
+        XCTAssertEqual(app.buttons["worlds"].label, "World: Canyon")
         capture("immediate-selection-persisted")
     }
 
@@ -658,13 +695,14 @@ final class CrocoCrossUITests: XCTestCase {
         XCTAssertEqual(lives.value as? String, "3 of 3 remaining")
         // Accessibility reports the painted SF Symbol bounds, not its padded frame.
         XCTAssertGreaterThanOrEqual(lives.frame.height, orientation == .portrait ? 17 : 16)
-        XCTAssertLessThanOrEqual(lives.frame.height, 22, "Keep the revised hearts compact")
+        XCTAssertLessThanOrEqual(lives.frame.height, 25, "Keep the revised hearts compact")
         let viewport = app.windows.firstMatch.frame
         XCTAssertEqual(viewport.width > viewport.height, orientation != .portrait)
         XCTAssertGreaterThan(lives.frame.minY, app.staticTexts["score"].frame.maxY)
         XCTAssertGreaterThan(lives.frame.minY, app.staticTexts["distance"].frame.maxY)
         XCTAssertLessThan(lives.frame.maxY, app.windows.firstMatch.frame.height * 0.42)
         let height = lives.frame.height
+        XCTAssertGreaterThan(lives.frame.midX, app.staticTexts["score"].frame.maxX)
         capture(orientation == .portrait ? "readable-lives-portrait" : "readable-lives-landscape")
         if recover {
             for _ in 0..<8 {
@@ -683,13 +721,9 @@ final class CrocoCrossUITests: XCTestCase {
         }
     }
 
-    @MainActor func testRoccoAndAllWorldsRenderAndPlay() throws {
+    @MainActor func testRoccoAndCanyonRenderAndPlay() throws {
         let app = launch()
-        let pairs = [
-            ("croco", "canyon"), ("croco", "japan"), ("croco", "highway"),
-            ("croco", "jungle"), ("croco", "arctic"), ("croco", "mine"),
-            ("croco", "sanfrancisco"), ("croco", "paris"), ("croco", "clouds"),
-        ]
+        let pairs = [("croco", "canyon")]
         for (rider, world) in pairs {
             for (panel, selection) in [("worlds", world), ("riders", rider)] {
                 app.buttons[panel].tap()

@@ -12,13 +12,17 @@ struct StuntTracker: Codable, Sendable {
     private var gapTicks = 0
     private var landingTicks = 0
     private var pending = 0
+    private var pendingBackflips = 0
+    private var pendingFrontflips = 0
+    private(set) var landedBackflips = 0
+    private(set) var landedFrontflips = 0
 
     mutating func clear() { self = StuntTracker() }
 
     var isValid: Bool {
         [angle, forwardTravel, backwardTravel].allSatisfy { $0.isFinite && abs($0) < 1e9 } &&
         forwardTravel >= 0 && backwardTravel >= 0 && sector > -1_000_000_000 && sector < 1_000_000_000 &&
-        [airTicks, gapTicks, landingTicks, pending].allSatisfy { $0 >= 0 && $0 < 1_000_000_000 }
+        [airTicks, gapTicks, landingTicks, pending, pendingBackflips, pendingFrontflips, landedBackflips, landedFrontflips].allSatisfy { $0 >= 0 && $0 < 1_000_000_000 }
     }
 
     mutating func advance(delta: Double, orientation: Double, airborne: Bool, safeContact: Bool, terminal: Bool = false) -> Int {
@@ -42,6 +46,8 @@ struct StuntTracker: Codable, Sendable {
             if upright && (forward || backward) {
                 sector += forward ? 1 : -1
                 forwardTravel = 0; backwardTravel = 0; pending += 1
+                // Positive world rotation raises the front wheel: a backflip.
+                if forward { pendingBackflips += 1 } else { pendingFrontflips += 1 }
             }
         }
         if airborne {
@@ -52,7 +58,10 @@ struct StuntTracker: Codable, Sendable {
             landingTicks = safeContact ? landingTicks + 1 : 0
             if landingTicks >= 8 || (terminal && safeContact) {
                 let count = airTicks >= 12 ? pending : 0
+                let back = count > 0 ? pendingBackflips : 0
+                let front = count > 0 ? pendingFrontflips : 0
                 clear()
+                landedBackflips = back; landedFrontflips = front
                 return count
             }
         }
