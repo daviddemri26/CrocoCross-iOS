@@ -12,7 +12,7 @@ CrocoCross is about finding your rhythm: accelerate into a hill, balance in the 
 
 ## Canyon first
 
-Canyon is the only selectable world in this preview. The other eight worlds are retained for future artwork and motion updates. The gallery below shows the earlier world artwork.
+Canyon is the playable world in this preview. All nine worlds appear in the picker; the other eight are locked, with lightly filtered previews and space for future unlock requirements. The gallery below shows the earlier world artwork.
 
 <table>
   <tr><th>Paris</th><th>San Francisco</th><th>Old Gold Mine</th></tr>
@@ -43,16 +43,18 @@ Every world has its own riding surface and scenery: mine rails, Parisian paving,
 
 | | Weekly | Endless |
 | --- | --- | --- |
-| **The goal** | Complete a shared 4,000 m trail | Ride as far as you can |
+| **The goal** | Complete a shared 2,600 m trail | Ride as far as you can |
 | **Lives** | One | Three |
 | **The course** | A new challenge every Monday at 00:00 UTC | Procedural hills that keep unfolding |
 | **Your next target** | A clean finish, a higher score, a faster time | Distance, stunts and personal bests |
+
+The working tree is preparing the next version; see [accumulated changes and release status](docs/NEXT-RELEASE.md).
 
 There is no time limit on the weekly trail. Both Endless and weekly practice work offline. Apple Game Center supplies optional online competition; a ranked weekly attempt requires a confirmed active event before starting.
 
 ## Ride with Rocco
 
-Rocco is the first rider with an articulated body and a motorcycle simulated separately. The other eight characters are temporarily disabled while their artwork and movement are adapted. Canyon is the only selectable world while the other eight backgrounds are reworked.
+Rocco is the first rider with an articulated body and a motorcycle simulated separately. All nine riders and nine worlds are listed. Eight entries in each list remain locked while their artwork, movement and distinct courses are prepared. Rocco and Canyon remain playable.
 
 <p align="center">
   <img src="docs/images/mobile/home.png" alt="CrocoCross mobile home screen with rider and world selection, Weekly and Endless modes" width="280">
@@ -99,7 +101,7 @@ xcodebuild -project CrocoCross.xcodeproj -scheme CrocoCross \
 | `docs/` | Development, artwork, validation and release documentation |
 | `scripts/` | Project generation and focused checks |
 
-**Development status:** the `box2d-1` migration replaces the custom physics engine with vendored Box2D 3.1.1 and separates Rocco from the motorcycle. Rocco is the first playable articulated rider; the other eight characters remain in source for later adaptation. Canyon is the only selectable world while the other eight backgrounds are reworked. See the [migration plan](docs/BOX2D-MIGRATION.md) and [validation record](docs/VALIDATION.md) for measured checks and device status. This repository does not currently provide an App Store or TestFlight download.
+**Development status:** the `box2d-1` migration replaces the custom physics engine with vendored Box2D 3.1.1 and separates Rocco from the motorcycle. Rocco and Canyon remain playable; the full catalogs now present the other entries as locked. Per-world routes and separate score identities are staged for future work. See the [migration plan](docs/BOX2D-MIGRATION.md) and [validation record](docs/VALIDATION.md) for measured checks and device status. This repository does not currently provide an App Store or TestFlight download.
 
 GitHub Actions runs core tests, persistence, competition-version isolation and audio checks, project consistency, and a simulator build. It does not publish the app. Live leaderboard submission/read-back, remaining device checks and distribution are tracked in the [release checklist](docs/RELEASE.md).
 

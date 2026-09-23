@@ -1,11 +1,12 @@
 import Foundation
 
-/// Incompatible physics starts a new competition without rewriting legacy data.
+/// Each competition revision starts fresh records, queues and leaderboards.
 enum CompetitionRules {
-    static let version = "box2d-1"
-    static let leaderboardVersion = "v2"
+    static let version = "box2d-2"
+    static let leaderboardVersion = "v3"
     static let queueFilename = "game-center-pending-\(version).json"
-    static let riderPreferenceKey = "rider.\(version)"
+    // A competition reset does not reset the selected rider.
+    static let riderPreferenceKey = "rider.box2d-1"
     static let weeklyRecordKey = "bestWeekly.\(version)"
     static let endlessRecordKey = "bestEndless.\(version)"
 
@@ -14,7 +15,7 @@ enum CompetitionRules {
     }
 
     static func isCurrentLeaderboard(_ identifier: String) -> Bool {
-        identifier.hasSuffix(".\(leaderboardVersion)")
+        ["weekly.score", "weekly.time", "endless.score"].contains { leaderboardID($0) == identifier }
     }
 
     static func acceptsSubmission(rulesVersion: String, leaderboardID: String,

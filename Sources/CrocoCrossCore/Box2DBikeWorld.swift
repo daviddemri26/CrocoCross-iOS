@@ -247,6 +247,13 @@ final class Box2DBikeWorld {
         b2WheelJoint_SetMaxMotorTorque(joint, Float(torque))
     }
 
+    func coast() {
+        throttle = 0
+        bike.throttle = 0
+        motor(rearSpring, speed: 0, torque: 0)
+        motor(frontSpring, speed: 0, torque: 0)
+    }
+
     func detach() {
         guard attached else { return }
         attached = false; throttle = 0

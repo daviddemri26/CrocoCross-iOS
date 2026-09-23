@@ -199,6 +199,7 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
     var deathSoundPending: Bool { deathPlaybackPaused || deathPlayer?.isPlaying == true }
     @ObservationIgnored private var landingBuffer: AVAudioPCMBuffer?
     @ObservationIgnored private var successBuffer: AVAudioPCMBuffer?
+    @ObservationIgnored private var victoryBuffer: AVAudioPCMBuffer?
     @ObservationIgnored private var musicPlayer: AVAudioPlayer?
     @ObservationIgnored private var configured = false
     @ObservationIgnored private var motorScheduled = false
@@ -355,7 +356,7 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
         case .finished:
             motorSuppressed = true
             motor.volume = 0
-            if !isMuted, effectsVolume > 0 { playEffect(successBuffer) }
+            if !isMuted, effectsVolume > 0 { playEffect(victoryBuffer) }
             if hapticsEnabled { UINotificationFeedbackGenerator().notificationOccurred(.success) }
         case .respawned:
             motorSuppressed = false
@@ -466,6 +467,19 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
         successBuffer = Self.makeBuffer(format: format, seconds: 0.28) { t in
             let frequency = t < 0.12 ? 660.0 : 880.0
             return Float(sin(t * 2 * Double.pi * frequency) * min(1, t * 150) * exp(-t * 8) * 0.35)
+        }
+        // Original short major arpeggio: separate from the small flip reward.
+        victoryBuffer = Self.makeBuffer(format: format, seconds: 0.9) { t in
+            let notes = [523.25, 659.25, 783.99, 1046.50]
+            var sample = 0.0
+            for (index, frequency) in notes.enumerated() {
+                let age = t - Double(index) * 0.11
+                guard age >= 0 else { continue }
+                let envelope = min(1, age * 100) * exp(-age * 7) * min(1, (0.9 - t) * 30)
+                let phase = 2 * Double.pi * frequency * age
+                sample += (sin(phase) + 0.18 * sin(2 * phase)) * envelope * 0.18
+            }
+            return Float(sample)
         }
         configured = true
         engine.prepare()

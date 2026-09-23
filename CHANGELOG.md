@@ -1,8 +1,23 @@
 # Changelog
 
-## Unreleased
+## Next version — unreleased
 
-Current native iOS development candidate:
+Changes accumulated for the next owner-authorized release; version/build not assigned yet.
+
+- Restore all nine riders and nine worlds to the pickers, with locked names, large padlocks and reserved unlock requirements. Apply the same lightly filtered preview to every locked entry; keep Rocco/Canyon playable.
+- Stage per-world route/road/score identities and a plan for distinct terrain. The future Weekly event will share one world among all players each week.
+- Shorten Weekly from 4,000 m to 2,600 m; update the finish line, progress, Home and How to.
+- Keep failed Weekly points visible with one short explanation: “Reach the finish line to validate your score.”
+- Keep the large Game Over title, reduce failed Weekly scores and enlarge the finish-line explanation.
+- Enlarge the finish flag and add a translucent vertical checker guide. Celebrate a Weekly finish for five seconds in full-color half-speed coasting, with confetti and a short original victory cue; falls beyond the line cannot change the saved victory, score or time.
+- Put Keep riding below the secondary actions in Pause.
+- Start Weekly and Endless records, pending submissions and all three leaderboards fresh (`box2d-2` / Game Center `v3`), with no import of earlier scores.
+
+Preparation and future launch gates: [next release](docs/NEXT-RELEASE.md). No archive, upload or App Store/Game Center change is part of this preparation.
+
+## 1.0.0 (17) — submission baseline
+
+The owner reported this first version awaiting App Store review on September 20, 2026. The following notes describe its earlier preparation:
 
 - Keep the submission package and public support/privacy pages in English only; remove French screenshot sets and metadata.
 

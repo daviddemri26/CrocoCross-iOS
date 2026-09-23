@@ -4,10 +4,10 @@ Native SwiftUI / SpriteKit motorcycle game. Independent from the continuing Chat
 
 ## Product
 
-- Weekly competition: 4,000 metres, one life, no time limit; Monday 00:00 UTC rollover.
+- Weekly competition: 2,600 metres, one life, no time limit; Monday 00:00 UTC rollover.
 - Endless: three lives, procedural hills, stable-ground recovery and local records.
 - Rear-wheel drive, chassis inertia, damped suspension, traction-limited acceleration, natural wheelies and gravity-driven jumps. No owner workshop or automatic upright assist.
-- Rocco as the first articulated rider (eight other characters retained for later rig adaptation) and Canyon as the only selectable world (eight other worlds retained for later artwork updates), textured terrain, below-ground details, native audio and haptics.
+- All nine riders and nine worlds appear in the selection catalogs. Rocco and Canyon are playable; eight entries in each list remain locked, with the same filtered artwork treatment for every locked entry. Each locked card reserves an unlock-requirement area. See [world/route planning](WORLDS-AND-UNLOCKS.md).
 - iPhone portrait, iPad landscape, adaptive scene bounds for wide/foldable displays. Fixed illustrated buttons sit in the lower left/right corners; Pause stays at bottom centre.
 - Game Center only: weekly points, weekly completion time, endless points. Both modes remain playable offline; connection status appears only in Rankings.
 - Free; no ads, purchases, custom backend or third-party analytics.
@@ -40,11 +40,11 @@ Painted scenery, its independent random placement, asset provenance and isolated
 
 Physics constants live in `PhysicsConfiguration`. Score/terrain changes that make records incomparable require a new engine/course version and new Game Center leaderboard identifiers. Existing App Store clients retain their own rule/board versions. Do not port the historical web verification engines or connect the original Sites database.
 
-The current development engine is `box2d-1`, backed by pinned Box2D 3.1.1. [Physics](PHYSICS.md) documents the five-body rig, wheel joints and pilot posture. Gameplay runs at 120 Hz with four solver substeps per tick. SpriteKit renders independent chassis, wheel, pelvis and torso poses; it does not resolve collisions. The rider shifts weight with bounded bike-relative muscle effort and detaches only after a confirmed body impact. There is no world-upright target, automatic recovery, landing speed injection or launch impulse.
+The current development rules revision is `box2d-2`, backed by pinned Box2D 3.1.1. [Physics](PHYSICS.md) documents the five-body rig, wheel joints and pilot posture. Gameplay runs at 120 Hz with four solver substeps per tick. SpriteKit renders independent chassis, wheel, pelvis and torso poses; it does not resolve collisions. The rider shifts weight with bounded bike-relative muscle effort and detaches only after a confirmed body impact. There is no world-upright target, automatic recovery, landing speed injection or launch impulse.
 
 Motor effort ramps over 0.18 seconds and tapers toward 24 m/s; gravity can carry the bike faster downhill. Full braking requests 2,800 N equivalent wheel effort, split 65% rear / 35% front. Wheel motors exchange torque with the chassis and Box2D contacts enforce friction. Holding both buttons cancels lean while drive and braking remain requested. Left balance gains extra authority only when the rear supports a raised front wheel.
 
-Rides are not saved or restored. `GameSimulation` is a reference with one owned Box2D world, not Codable or Sendable; reproducibility uses fresh worlds with identical input sequences. Legacy records, rider choice and queued scores remain untouched. New local keys and queue use `box2d-1`; Game Center uses new `.v2` identifiers. Records from the two engines are not comparable. Neither legacy scores nor queued submissions are retagged for the new boards. Offline play stays available if the new boards are not configured.
+Rides are not saved or restored. `GameSimulation` is a reference with one owned Box2D world, not Codable or Sendable; reproducibility uses fresh worlds with identical input sequences. The next version starts Weekly and Endless records and pending scores fresh under `box2d-2`; all three Game Center identifiers use `.v3`. Earlier results are not imported or retagged. The selected rider and audio/world preferences are retained. This rules revision changes the Weekly distance to 2,600 m without retuning physics. Offline play stays available while the new boards await the authorized release. See [next release](NEXT-RELEASE.md).
 
 
 ## Navigation
@@ -62,6 +62,10 @@ Right grip: throttle and backward balance. Left grip and brake lever: braking an
 Returning Home or backgrounding the app abandons the ride and resets the controls; relaunch always opens Home. Starting and restarting begin immediately, without a Continue button or confirmation. Manual pause, a transient system interruption, a large layout change or a long frame stall pauses the ride in memory; Keep riding resumes it. Personal records and eligible pending Game Center scores survive leaving the ride. Progress is submitted every 1,200 simulation ticks and when pausing; weekly scores still require finishing. An expired weekly ride can continue locally after a temporary pause, without a status label.
 
 ## Effects and scores
+
+Weekly finishes play five foreground seconds of full-color 0.5× coasting before the result card, with two confetti jets and an original 0.9-second victory arpeggio. The result is recorded at the line; later impacts may detach the rider but never invalidate it or play a death cue. The enlarged flag and viewport-height translucent checker guide are visual only. Reduce Motion keeps the physical coast and substitutes stationary decorative pieces. Failed Weekly cards retain the large Game Over heading, with a smaller score and a larger single-sentence explanation.
+
+Debug UI coverage can approach the real finish with both `-ui-testing` and `-finish-preview`; adding `-finish-preview-airborne` starts an inverted airborne approach. These fixtures disable online eligibility, exercise the production finish/presentation flow, and are excluded from Release builds. Ordinary starts always begin at zero.
 
 The HUD speedometer applies a presentation-only multiplier of 2 to `hypot(vx, vy) * 3.6`. Its display is therefore an arcade scale, not physical km/h; the dial uses a matching 200-unit range. Simulation velocities remain metres per second, course distance is still horizontal progress in metres, and timers/scoring are unchanged.
 

@@ -1,5 +1,12 @@
 # CrocoCross — native Game Center setup
 
+## Next-version preparation — September 20, 2026
+
+The owner reports version 1.0.0 (17) awaiting Apple review. Accumulate local changes until the owner explicitly authorizes the next release; do not archive, upload, submit or change live Game Center configuration during preparation. [Next-release tracking](NEXT-RELEASE.md) is authoritative for the new 2,600 m course and complete leaderboard reset.
+
+The next version uses fresh `weekly.score.v3`, `weekly.time.v3` and `endless.score.v3` boards under `com.daviddemri.crococross`, and local rules namespace `box2d-2`. These new boards are only referenced locally so far; their creation, review and activation are pending. The v2 setup documented below is the first-version baseline, not the configuration to reuse for the next release.
+
+
 ## Live configuration status — September 17, 2026
 
 All three v2 leaderboards below have been created in App Store Connect for app **6812979862**, with English (U.S.) localization only. Weekly Score and Weekly Time use Best Score and start together at **2026-09-21 00:00 UTC**, lasting and restarting every seven days. The current browser UI displays this as **September 20, 17:00 UTC-7**; always check the displayed time zone. Endless Score is a classic, descending Best Score board. Game Center is enabled for app version 1.0.0, build 17.

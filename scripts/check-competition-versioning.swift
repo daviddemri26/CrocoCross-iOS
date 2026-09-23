@@ -16,8 +16,8 @@ import Foundation
         let weeklyScore = CompetitionRules.leaderboardID("weekly.score")
         let weeklyTime = CompetitionRules.leaderboardID("weekly.time")
         let endless = CompetitionRules.leaderboardID("endless.score")
-        let week = "box2d-1.weekly.1789344000"
-        func accepted(_ board: String, _ challenge: String?, version: String = "box2d-1") -> Bool {
+        let week = "box2d-2.weekly.1789344000"
+        func accepted(_ board: String, _ challenge: String?, version: String = "box2d-2") -> Bool {
             CompetitionRules.acceptsSubmission(rulesVersion: version, leaderboardID: board,
                 weeklyBoardIDs: [weeklyScore, weeklyTime], endlessBoardID: endless,
                 challengeIdentifier: challenge)
@@ -25,7 +25,7 @@ import Foundation
         try expect(accepted(weeklyScore, week), "Current weekly points must remain eligible")
         try expect(accepted(weeklyTime, week), "Current weekly times must remain eligible")
         try expect(accepted(endless, nil), "Current Endless scores must remain eligible")
-        for version in ["native-5", "box2d-2", ""] {
+        for version in ["native-5", "box2d-1", "box2d-3", ""] {
             try expect(!accepted(weeklyScore, week, version: version), "Other rule versions must never submit")
             try expect(!accepted(endless, nil, version: version), "Endless must enforce rule version too")
         }
@@ -33,16 +33,28 @@ import Foundation
         try expect(!accepted(weeklyScore, nil), "Weekly needs its original challenge")
         try expect(!accepted(endless, week), "A weekly result cannot enter Endless")
         try expect(!accepted("com.daviddemri.crococross.endless.score.v1", nil), "Legacy board IDs must be rejected")
-        try expect(!accepted("unrelated.score.v2", nil), "Version suffix alone does not authorize a board")
+        try expect(!accepted("unrelated.score.v3", nil), "Version suffix alone does not authorize a board")
         try expect(CompetitionRules.weeklyRecordKey != "bestWeekly" &&
                    CompetitionRules.endlessRecordKey != "bestEndless" &&
                    CompetitionRules.riderPreferenceKey != "rider", "Legacy preferences must retain their namespace")
 
+        try expect(!accepted(weeklyScore, "box2d-1.weekly.1789344000"), "The previous 4,000 m course must not submit")
+        for suffix in ["weekly.score", "weekly.time", "endless.score"] {
+            let oldBoard = "com.daviddemri.crococross.\(suffix).v2"
+            try expect(!CompetitionRules.isCurrentLeaderboard(oldBoard), "All previous boards must be excluded")
+            try expect(!accepted(oldBoard, suffix.hasPrefix("weekly") ? week : nil), "No result may use an old board")
+        }
+        try expect(CompetitionRules.weeklyRecordKey != "bestWeekly.box2d-1" &&
+                   CompetitionRules.endlessRecordKey != "bestEndless.box2d-1" &&
+                   CompetitionRules.queueFilename != "game-center-pending-box2d-1.json",
+                   "Both modes must start with fresh records and pending scores")
+        try expect(CompetitionRules.riderPreferenceKey == "rider.box2d-1", "Keep the player's rider preference")
+
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("CrocoCrossCompetition-" + UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
         let store = LocalStore(rootURL: root)
-        let legacyFilename = "game-center-pending.json"
-        try store.save([Score(rulesVersion: "native-5", score: 12345)], to: legacyFilename)
+        let legacyFilename = "game-center-pending-box2d-1.json"
+        try store.save([Score(rulesVersion: "box2d-1", score: 12345)], to: legacyFilename)
         let legacyBytes = try Data(contentsOf: root.appendingPathComponent(legacyFilename))
         try expect(try store.load([Score].self, from: CompetitionRules.queueFilename) == nil,
                    "The new engine must start with an empty queue, not import the old one")

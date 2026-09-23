@@ -1,4 +1,4 @@
-# Physics — Box2D / box2d-1
+# Physics — Box2D / box2d-2
 
 CrocoCross now uses **Box2D 3.1.1** for all integration, collisions and joints. There is no parallel custom contact solver. SpriteKit only draws snapshots. See the [accepted migration plan](BOX2D-MIGRATION.md) and [validation record](VALIDATION.md).
 
@@ -37,9 +37,11 @@ Game positions remain Double values. Box2D's local Float origin shifts on either
 
 ## Crash and competition lifecycle
 
+At the Weekly finish, the result and +1,000 bonus are final immediately. The bike releases drive/brake inputs and continues at 0.5× for a five-second celebration (at most 300 fixed physics steps). The same contact rule can detach the rider after the line, but it emits no crash event and cannot change lives, score, flips, distance, finish status or the recorded race time. A crossing on the same step as a confirmed impact is a finish. Neither the enlarged flag nor the translucent vertical checker guide has a collision body. Confetti, color and audio are presentation only.
+
 During Weekly terminal crash presentation, an audio-sized budget of additional physics steps (600 maximum) show the fall without changing score, clock or lives. Weekly terminal falls and Endless recovery play at half speed (0.5×); the terminal score card normally waits 3.6 seconds, or 0.3 seconds with Reduce Motion. A warm, desaturated scene filter accompanies the fall. Endless recovery advances its timer and then constructs a fresh rig at the last stable checkpoint. The third lost Endless life freezes terminal physics and hides the rig; a full-color explosion runs on real scenic time for 1.8 seconds, followed by the result card when the approximately 2.35-second Fuel Explosion audio finishes (no GTA cue). These are minimum visual durations: the app lets the death clip finish. Recovery waits before its final respawn step while detached-body physics keeps moving. These extra presentation steps do not advance the recovery countdown, game clock, distance, score or lives. Normal results, leaving the run and restarting release the old world.
 
-The engine/course identifier is `box2d-1`. New records and pending-score storage have their own namespace, and Game Center uses `.v2` board IDs. Old records, rider preferences and pending submissions are retained separately and never retagged. New rankings require matching configured boards; offline play remains available.
+The development engine/course identifier is `box2d-2`: this revision shortens Weekly to 2,600 m and resets both modes without changing the physical parameters above. New records and pending-score storage have their own namespace, and Game Center uses `.v3` board IDs. Previous scores are not imported; rider preferences remain. New rankings require matching configured boards; offline play remains available. Activation is deferred until the owner authorizes the [next release](NEXT-RELEASE.md).
 
 ## Calibration evidence
 

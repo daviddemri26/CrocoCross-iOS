@@ -17,7 +17,7 @@ Use the **Rider** and **World** selectors, then start **Weekly Challenge** or **
 
 Land with the slope. Flips count only after a safe landing.
 
-The weekly course is 4,000 m with one life and no time limit. It changes every Monday at 00:00 UTC. Endless gives you three lives. Both Endless and weekly practice work offline.
+The weekly course is 2,600 m with one life and no time limit. It changes every Monday at 00:00 UTC. If you crash before the finish, your points are displayed as an unvalidated score and do not count toward your Weekly record or rankings. Endless gives you three lives. Both Endless and weekly practice work offline.
 
 ## Practice and online scores
 
@@ -29,7 +29,7 @@ Game Center controls your public profile and leaderboard visibility. For global 
 
 ## Pausing, leaving a ride and sound
 
-Tap **Pause** to stop your ride, then choose **Keep riding** to resume. A temporary system interruption or a change to the play window can also pause the ride in memory. **Restart** begins a new ride immediately, without confirmation.
+Tap **Pause** to stop your ride, then choose **Keep riding** at the bottom of the pause card to resume. A temporary system interruption or a change to the play window can also pause the ride in memory. **Restart** begins a new ride immediately, without confirmation.
 
 Returning **Home** or sending CrocoCross to the background abandons the current ride. Reopening the app starts at Home; there is no Continue option. Your settings, personal records and eligible pending online scores remain saved.
 

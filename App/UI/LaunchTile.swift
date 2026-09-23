@@ -53,7 +53,7 @@ struct LaunchTile: View {
                             .accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 0) {
                             if weekly {
-                                Text("4,000 m")
+                                Text("\(GameSession.weeklyDistanceText) m")
                                     .font(.system(size: 11, weight: .black, design: .monospaced))
                                     .padding(.horizontal, 9).padding(.vertical, 6)
                                     .background(CrocoTheme.ink.opacity(0.09), in: Capsule())
@@ -79,7 +79,7 @@ struct LaunchTile: View {
         }
         .buttonStyle(LaunchTilePressStyle())
         .foregroundStyle(CrocoTheme.ink)
-        .accessibilityLabel(weekly ? "Weekly, 4,000 metres" : "Endless")
+        .accessibilityLabel(weekly ? "Weekly, \(GameSession.weeklyDistanceText) metres" : "Endless")
         .accessibilityIdentifier(weekly ? "startWeekly" : "startEndless")
     }
 }

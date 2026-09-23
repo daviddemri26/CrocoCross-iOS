@@ -4,11 +4,11 @@ import XCTest
 
 final class PhysicsTests: XCTestCase {
     func testPinnedBackendAndFixedStepContract() {
-        XCTAssertEqual(GameSimulation.engineVersion, "box2d-1")
+        XCTAssertEqual(GameSimulation.engineVersion, "box2d-2")
         XCTAssertEqual(GameSimulation.backendVersion, "3.1.1")
         XCTAssertEqual(GameSimulation.timeStep, 1.0 / 120)
         XCTAssertEqual(PhysicsConfiguration.substeps, 4)
-        XCTAssertEqual(GameSimulation.weeklyDistance, 4_000)
+        XCTAssertEqual(GameSimulation.weeklyDistance, 2_600)
     }
 
     func testCompleteRigHasFiveBodiesAndCorrectMassAndCenter() {
@@ -205,11 +205,16 @@ final class PhysicsTests: XCTestCase {
         let marker = GameSimulation(state: state, configuration: flatConfiguration)
         marker.step(input: .neutral)
         XCTAssertEqual(marker.state.distance, 100, accuracy: 0.0001)
-        state.bike.position.x = start + 4_000 - 0.04; state.bike.velocity.x = 12; state.distance = 3_999.96
+        state.bike.position.x = start + 2_599; state.distance = 2_599
+        let unfinished = GameSimulation(state: state, configuration: flatConfiguration)
+        XCTAssertFalse(unfinished.step(input: .neutral).contains(.finished))
+        XCTAssertEqual(unfinished.state.status, .active)
+        XCTAssertLessThan(unfinished.state.score, 27_000, "No finish bonus before the line")
+        state.bike.position.x = start + 2_600 - 0.04; state.bike.velocity.x = 12; state.distance = 2_599.96
         let finish = GameSimulation(state: state, configuration: flatConfiguration)
         XCTAssertEqual(finish.step(input: .neutral).filter { $0 == .finished }.count, 1)
-        XCTAssertEqual(finish.state.status, .finished); XCTAssertEqual(finish.state.distance, 4_000)
-        XCTAssertEqual(finish.state.score, 41_000); XCTAssertTrue(finish.step(input: .neutral).isEmpty)
+        XCTAssertEqual(finish.state.status, .finished); XCTAssertEqual(finish.state.distance, 2_600)
+        XCTAssertEqual(finish.state.score, 27_000); XCTAssertTrue(finish.step(input: .neutral).isEmpty)
     }
 
     func testWeeklyCourseRemainsCompletableWithNoTimeLimit() {
@@ -221,9 +226,9 @@ final class PhysicsTests: XCTestCase {
                 if sim.state.status != .active { break }
             }
             XCTAssertEqual(sim.state.status, .finished)
-            XCTAssertEqual(sim.state.distance, 4_000); XCTAssertEqual(sim.state.lives, 1)
-            XCTAssertGreaterThan(sim.state.elapsed, 150); XCTAssertGreaterThanOrEqual(sim.state.score, 41_000)
-            XCTAssertGreaterThan(sim.diagnostics.rebaseCount, 5)
+            XCTAssertEqual(sim.state.distance, 2_600); XCTAssertEqual(sim.state.lives, 1)
+            XCTAssertGreaterThan(sim.state.elapsed, 150); XCTAssertGreaterThanOrEqual(sim.state.score, 27_000)
+            XCTAssertGreaterThanOrEqual(sim.diagnostics.rebaseCount, 5, "The shorter course still crosses five 512 m origin shifts")
         }
     }
 

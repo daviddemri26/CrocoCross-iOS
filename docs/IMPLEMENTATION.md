@@ -2,11 +2,13 @@
 
 Updated 2026-09-12 from David's execution instructions; supersedes the initial daily/phone-only plan.
 
+September 20 amendment: prepare the next release with a 2,600 m Weekly finish, explicit failed-score guidance, Keep riding at the bottom of Pause, and a full Weekly/Endless reset under `box2d-2` / v3 boards. Accumulate changes locally until the owner authorizes release; see [NEXT-RELEASE.md](NEXT-RELEASE.md).
+
 September 16 amendment: replace the custom solver with Box2D 3.1.1 and separate the motorcycle from the articulated pilot. The first preview enables Rocco only, keeps all nine worlds, and starts new local records and v2 Game Center boards. Other riders remain disabled until adapted. See [BOX2D-MIGRATION.md](BOX2D-MIGRATION.md) for implementation and validation status.
 
 1. Create an independent native game, preserve the continuing web/Sites project.
 2. Use SwiftUI, SpriteKit, AVFAudio, GameKit and an independently testable Swift simulation backed by Box2D. SpriteKit renders the physical snapshots.
-3. Replace the daily event with a weekly 4,000-metre challenge, one life. Roll over Monday 00:00 UTC. Remove the obsolete 150-second cap; completion time remains a ranking metric.
+3. Replace the daily event with a weekly 2,600-metre challenge, one life. Roll over Monday 00:00 UTC. Remove the obsolete 150-second cap; completion time remains a ranking metric.
 4. Make riding more engaging and more demanding through rear traction, inertia and suspension. The front lifts from contact force/weight transfer, not a scripted wheelie. Landings may recover when the contact forces allow it. Tuning is code-owned; no workshop UI.
 5. Keep the original visual identity, improve native animations, parallax, biome surface textures, beneath-terrain life and subtle rider movement.
 6. Support portrait on compact iPhone; wide layout on iPad landscape and an open foldable. Use available scene bounds and safe areas, never a model-name detector or UIScreen.main.

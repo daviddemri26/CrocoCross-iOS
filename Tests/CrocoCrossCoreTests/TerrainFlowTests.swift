@@ -9,7 +9,7 @@ final class TerrainFlowTests: XCTestCase {
         for seed in seeds {
             let terrain = TerrainGenerator(seed: seed)
             let start = TerrainGenerator.entryLength
-            let end = start + 4_000
+            let end = start + GameSimulation.weeklyDistance
             var descending = 0, climbing = 0, sampleCount = 0
             var descendingRun = 0.0, shortestReception = Double.infinity
             var followingCrest = false, wasClimbing = false, receptions = 0
@@ -38,7 +38,8 @@ final class TerrainFlowTests: XCTestCase {
             XCTAssertGreaterThan(Double(climbing) / Double(sampleCount), 0.10, "Real ramps must remain among the descents.")
             XCTAssertLessThan(maximumSlope, 0.95, "Approaches and receptions must avoid walls.")
             XCTAssertLessThan(maximumCompressionCurvature, 0.25, "Valleys must turn the bike gradually, without a sharp suspension load.")
-            XCTAssertGreaterThan(receptions, 110)
+            XCTAssertGreaterThan(Double(receptions) / GameSimulation.weeklyDistance * 1_000, 27.5,
+                                 "Keep the same minimum reception density on the shorter course")
             XCTAssertGreaterThan(shortestReception, 12, "Each crest needs a sustained downhill reception before the next climb.")
             XCTAssertEqual(terrain.height(at: start + 60 * TerrainGenerator.sectionLength) - terrain.height(at: start),
                            -60 * TerrainGenerator.sectionLength * TerrainGenerator.descentGrade, accuracy: 0.000001)

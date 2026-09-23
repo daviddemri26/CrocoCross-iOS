@@ -10,6 +10,8 @@ final class GameScene: SKScene {
     var onFrame: ((Double) -> Void)?
     var isPreview = false
     var isCrashPaused = false
+    var finishCelebrationElapsed: Double?
+    private var finishStartScale: CGFloat = 0
     private var crashElapsed: Double = 0
     private var crashStartScale: CGFloat = 0
 
@@ -21,7 +23,8 @@ final class GameScene: SKScene {
     private let foreground = ForegroundSceneryNode()
     private let bike = BikeNode()
     private let effects = RideEffectsNode()
-    private let finish = SKNode()
+    private let finish = FinishLineNode()
+    private let celebration = FinishCelebrationNode()
     private let dust = SKEmitterNode()
     private var lastTime: TimeInterval?
     private var frameDuration = 1.0 / 60
@@ -66,8 +69,9 @@ final class GameScene: SKScene {
         configureDust()
         addChild(dust)
         finish.zPosition = 3
-        makeFinish()
         addChild(finish)
+        celebration.zPosition = 14
+        addChild(celebration)
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
@@ -95,6 +99,8 @@ final class GameScene: SKScene {
         }
         let finalExplosion = !isPreview && state.mode == .endless && state.status == .crashed
         presentingCrash = !isPreview && (state.status == .recovering || state.status == .crashed)
+        let victoryFall = !isPreview && state.status == .finished && !state.rider.isAttached
+        let followingRider = presentingCrash || victoryFall
         bike.isHidden = finalExplosion
         effects.zPosition = finalExplosion ? 12 : 8
         let world = GameCatalog.world(worldID)
@@ -124,21 +130,24 @@ final class GameScene: SKScene {
             let progress = reducedMotion ? 0 : min(1, crashElapsed / 3.2)
             let smooth = progress * progress * (3 - 2 * progress)
             desiredScale = max(23, crashStartScale) * (1 + CGFloat(smooth) * 0.38)
+        } else if state.status == .finished && finishStartScale > 0 {
+            // Keep the winning jump's framing as the bike coasts and slows down.
+            desiredScale = finishStartScale
         }
         if reset || renderScale == 0 { renderScale = desiredScale }
         else { renderScale += (desiredScale - renderScale) * min(1, frameDuration * 2.8) }
         let ppm = renderScale
         let playAnchor = (landscape ? CGFloat(0.30) : 0.28) - speedFraction * (landscape ? 0.06 : 0.04)
         let previewCentre = widePreview ? Self.homePanelWidth + previewContentWidth / 2 : size.width / 2
-        let horizontalFraction: CGFloat = isPreview ? previewCentre / size.width : presentingCrash ? 0.5 : playAnchor
-        let followedX = presentingCrash && !finalExplosion ? state.rider.torso.position.x : state.bike.position.x
+        let horizontalFraction: CGFloat = isPreview ? previewCentre / size.width : followingRider ? 0.5 : playAnchor
+        let followedX = followingRider && !finalExplosion ? state.rider.torso.position.x : state.bike.position.x
         let desiredX = followedX - Double(size.width * horizontalFraction / ppm)
         let ahead = terrain(state.bike.position.x + (landscape ? 5 : 3))
         let near = terrain(state.bike.position.x)
-        let highestBody = presentingCrash ? max(state.bike.position.y, state.rider.torso.position.y) : state.bike.position.y
+        let highestBody = followingRider ? max(state.bike.position.y, state.rider.torso.position.y) : state.bike.position.y
         let followedHeight = max(near * 0.6 + ahead * 0.4, highestBody - (landscape ? 2.4 : 3.2))
         let verticalFraction: CGFloat = isPreview ? previewVerticalFraction : (landscape ? 0.40 : 0.39)
-        let desiredY = presentingCrash && !finalExplosion
+        let desiredY = followingRider && !finalExplosion
             ? state.rider.torso.position.y - Double(size.height * 0.50 / ppm)
             : (isPreview ? near : followedHeight) - Double(size.height * verticalFraction / ppm)
         if reset {
@@ -166,7 +175,7 @@ final class GameScene: SKScene {
         // during large jumps. The common translation keeps every wheel attached.
         bike.position = .zero
         bike.display(state, rider: GameCatalog.rider(characterID), pointsPerMetre: ppm, project: project, terrain: terrain, reducedMotion: reducedMotion, seconds: scenicTime, isPreview: isPreview)
-        if !isPreview && !presentingCrash {
+        if !isPreview && !followingRider {
             let ceiling = size.height - min(size.height * 0.20, landscape ? 80 : 120)
             let excess = max(0, bike.visibleFrame.maxY - ceiling)
             if excess > 0 {
@@ -204,8 +213,17 @@ final class GameScene: SKScene {
         let courseOrigin = PhysicsConfiguration.courseStartX
         let finishX = courseOrigin + PhysicsConfiguration.weeklyDistance
         finish.isHidden = isPreview || state.mode != .weekly || abs(finishX - cameraX) > Double(size.width / ppm) + 4
-        finish.position = CGPoint(x: CGFloat(finishX - left) * ppm, y: ground(finishX))
-        finish.setScale(ppm / 64)
+        if !finish.isHidden {
+            finish.display(x: CGFloat(finishX - left) * ppm, groundY: ground(finishX),
+                           viewportHeight: size.height, ppm: ppm)
+        }
+        celebration.display(elapsed: finishCelebrationElapsed, size: size, reducedMotion: reducedMotion)
+    }
+
+    func playFinish() {
+        finishStartScale = renderScale
+        dust.particleBirthRate = 0
+        dust.resetSimulation()
     }
 
     /// Intensity is normalized to 0...1. The session owns the matching audio event.
@@ -246,6 +264,9 @@ final class GameScene: SKScene {
     /// Existing crash bodies are replaced by the simulation's fresh starting snapshot.
     func clearTransientEffects() {
         effects.clear()
+        finishCelebrationElapsed = nil
+        finishStartScale = 0
+        celebration.isHidden = true
         restoreBikeAfterRespawn()
         bike.resetAnimation()
         dust.particleBirthRate = 0
@@ -343,20 +364,4 @@ final class GameScene: SKScene {
         dust.numParticlesToEmit = 0
     }
 
-    private func makeFinish() {
-        let pole = SKShapeNode(rectOf: CGSize(width: 0.055 * 64, height: 2.4 * 64))
-        pole.fillColor = .hex(0xF5F0DA)
-        pole.strokeColor = .clear
-        pole.position.y = 1.2 * 64
-        finish.addChild(pole)
-        for row in 0..<3 {
-            for column in 0..<5 {
-                let square = SKShapeNode(rectOf: CGSize(width: 0.16 * 64, height: 0.16 * 64))
-                square.strokeColor = .clear
-                square.fillColor = (row + column).isMultiple(of: 2) ? .white : .hex(0x152C27)
-                square.position = CGPoint(x: (0.11 + CGFloat(column) * 0.16) * 64, y: (2.25 - CGFloat(row) * 0.16) * 64)
-                finish.addChild(square)
-            }
-        }
-    }
 }

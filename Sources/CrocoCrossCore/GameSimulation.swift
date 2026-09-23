@@ -7,6 +7,9 @@ public final class GameSimulation {
     public static let backendVersion = PhysicsConfiguration.backendVersion
     public static let weeklyDistance = PhysicsConfiguration.weeklyDistance
     public static let timeStep = PhysicsConfiguration.timeStep
+    public static let finishPresentationDuration = 5.0
+    public static let finishPresentationSpeed = 0.5
+    public static let finishPresentationSteps = 300
     public static func flipBonus(for count: Int) -> Int {
         guard count > 0 else { return 0 }
         return 1_000 * ((1 << min(count, 16)) - 1)
@@ -78,11 +81,7 @@ public final class GameSimulation {
         // A compressed suspension can let the skid plate graze the ground.
         // Impact force alone is never a crash: require an overturned chassis or
         // actual rider-ground contact. Judge orientation against the local slope.
-        let groundAngle = atan(terrain.slope(at: state.bike.position.x))
-        let tippedOver = abs(wrapped(state.bike.angle - groundAngle)) > .pi * 75 / 180
-        let riderDown = diagnostics.riderContact &&
-            abs(wrapped(state.bike.angle - groundAngle)) > .pi / 4
-        let hit = riderDown || (diagnostics.chassisContact && tippedOver)
+        let hit = hasCrashContact
         crashContactTicks = hit ? crashContactTicks + 1 : 0
         let traveled = max(0, state.bike.position.x - PhysicsConfiguration.courseStartX)
         state.distance = max(state.distance, state.mode == .weekly ? min(Self.weeklyDistance, traveled) : traveled)
@@ -91,7 +90,8 @@ public final class GameSimulation {
             abs(state.bike.angularVelocity) < 0.75 && state.bike.position.x > checkpointX + 12 {
             checkpointX = state.bike.position.x
         }
-        if shieldTicks == 0 && crashContactTicks >= 3 {
+        let finishing = state.mode == .weekly && state.distance >= Self.weeklyDistance
+        if !finishing && shieldTicks == 0 && crashContactTicks >= 3 {
             state.lives -= 1; stunt.clear()
             state.status = state.lives > 0 ? .recovering : .crashed
             recoveryTicks = state.lives > 0 ? 216 : 0
@@ -99,7 +99,6 @@ public final class GameSimulation {
             physics.detach(); copySnapshot()
             events.append(.crashed)
         } else {
-            let finishing = state.mode == .weekly && state.distance >= Self.weeklyDistance
             let safe = grounded && !hit && cos(state.bike.angle) >= cos(Double.pi * 75 / 180)
             let landed = stunt.advance(delta: wrapped(state.bike.angle - previous.angle), orientation: state.bike.angle,
                                        airborne: !grounded, safeContact: safe, terminal: finishing)
@@ -107,20 +106,58 @@ public final class GameSimulation {
                 state.flips += landed; stuntScore += Self.flipBonus(for: landed)
                 events.append(.flip(landed))
             }
-            if finishing { state.status = .finished; events.append(.finished) }
+            if finishing {
+                state.status = .finished
+                presentationTicks = 0
+                physics.coast()
+                copySnapshot()
+                events.append(.finished)
+            }
         }
         state.score = Int(floor(state.distance * 10)) + stuntScore + (state.status == .finished ? 1_000 : 0)
         return events
     }
 
-    /// A bounded detached-body animation. Game time, recovery countdown and score stay fixed.
+    /// Bounded post-result physics. Game time, recovery countdown and score stay fixed.
     /// The caller may extend presentation to match audio, with a hard ten-second limit at 0.5×.
     public func stepPresentation(maximumSteps: Int = 216) {
-        guard state.status == .crashed || state.status == .recovering,
-              presentationTicks < min(600, max(0, maximumSteps)) else { return }
+        let won = state.status == .finished
+        guard won || state.status == .crashed || state.status == .recovering,
+              presentationTicks < min(won ? Self.finishPresentationSteps : 600, max(0, maximumSteps)) else { return }
         presentationTicks += 1
         physics.advance(input: .neutral); copySnapshot()
+        if won && state.rider.isAttached {
+            crashContactTicks = hasCrashContact ? crashContactTicks + 1 : 0
+            if crashContactTicks >= 3 {
+                // A fall beyond the line uses the same physical ragdoll, without
+                // a crash event, lost life, new points or a different outcome.
+                physics.detach(); copySnapshot()
+            }
+        }
     }
+
+    private var hasCrashContact: Bool {
+        let relativeAngle = abs(wrapped(state.bike.angle - atan(terrain.slope(at: state.bike.position.x))))
+        return (diagnostics.riderContact && relativeAngle > .pi / 4) ||
+            (diagnostics.chassisContact && relativeAngle > .pi * 75 / 180)
+    }
+
+    #if DEBUG
+    /// Near-finish UI fixture. The app additionally requires its offline UI-testing flag.
+    public static func finishFixtureForTesting(airborne: Bool) -> GameSimulation {
+        let configuration = PhysicsConfiguration()
+        let terrain = TerrainGenerator(seed: 42, style: configuration.terrainStyle)
+        var state = SimulationState(mode: .weekly, seed: 42)
+        let x = PhysicsConfiguration.courseStartX + weeklyDistance - 10
+        state.bike.position = .init(x: x, y: terrain.height(at: x) + (airborne ? 7 : configuration.restingRideHeight))
+        state.bike.angle = airborne ? .pi : atan(terrain.slope(at: x))
+        state.bike.velocity = .init(x: 16, y: airborne ? 0 : terrain.slope(at: x) * 16)
+        state.distance = weeklyDistance - 10
+        state.tick = 24_000
+        state.score = Int(state.distance * 10)
+        return GameSimulation(state: state, configuration: configuration)
+    }
+    #endif
 
     private func copySnapshot() {
         state.bike = physics.bike; state.rider = physics.rider

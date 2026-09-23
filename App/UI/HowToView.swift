@@ -31,7 +31,7 @@ struct HowToView: View {
                     }
                 }
                 HStack(alignment: .top, spacing: 12) {
-                    modeCard("WEEKLY", icon: "flag.checkered", text: "4,000 m · 1 life\nNew trail every Monday.\nFinish bonus: +1,000.")
+                    modeCard("WEEKLY", icon: "flag.checkered", text: "\(GameSession.weeklyDistanceText) m · 1 life\nNew trail every Monday.\nFinish bonus: +1,000.")
                     modeCard("ENDLESS", icon: "infinity", text: "3 lives · No finish line\nGet back up. Go further.\nBoth modes work offline.")
                 }
             }.padding(18).frame(maxWidth: 620).frame(maxWidth: .infinity)

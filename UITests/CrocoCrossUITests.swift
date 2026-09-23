@@ -24,6 +24,7 @@ final class CrocoCrossUITests: XCTestCase {
 
     @MainActor func testHomeModesAndSettingsSections() throws {
         let app = launch()
+        XCTAssertEqual(app.buttons["startWeekly"].label, "Weekly, 2,600 metres")
         let weekly = app.buttons["startWeekly"].frame
         let endless = app.buttons["startEndless"].frame
         XCTAssertEqual(weekly.width, weekly.height, accuracy: 2)
@@ -110,6 +111,9 @@ final class CrocoCrossUITests: XCTestCase {
         Thread.sleep(forTimeInterval: 0.25)
         XCTAssertEqual(try displayedDistance(app), pausedDistance, "Manual pause must freeze this ride")
         XCTAssertEqual(app.staticTexts["score"].label, pausedScore)
+        for id in ["restart", "pauseSettings", "home"] {
+            XCTAssertGreaterThan(app.buttons["resume"].frame.minY, app.buttons[id].frame.maxY)
+        }
         capture("weekly-paused")
         app.buttons["resume"].tap()
         waitForPlaying(app)
@@ -147,15 +151,16 @@ final class CrocoCrossUITests: XCTestCase {
         waitForHome(app)
         app.buttons["worlds"].tap()
         XCTAssertTrue(app.buttons["select-canyon"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["select-japan"].exists)
-        XCTAssertFalse(app.buttons["select-clouds"].exists)
+        XCTAssertTrue(app.buttons["select-japan"].exists)
+        XCTAssertFalse(app.buttons["select-japan"].isEnabled)
         assertBottomClose(app)
         Thread.sleep(forTimeInterval: 0.3)
         capture("world-selection")
         app.buttons["closePanel"].tap()
         app.buttons["riders"].tap()
         XCTAssertTrue(app.buttons["select-croco"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["select-shiba"].exists, "Deferred riders must not use the unfinished articulated rig")
+        XCTAssertTrue(app.buttons["select-shiba"].exists)
+        XCTAssertFalse(app.buttons["select-shiba"].isEnabled, "A teaser cannot unlock an unfinished rider")
         assertBottomClose(app)
         app.buttons["select-croco"].tap()
         waitForHome(app)
@@ -190,7 +195,8 @@ final class CrocoCrossUITests: XCTestCase {
         app.buttons["closePanel"].tap()
         app.buttons["worlds"].tap()
         XCTAssertTrue(app.buttons["select-canyon"].exists)
-        XCTAssertFalse(app.buttons["select-japan"].exists)
+        XCTAssertTrue(app.buttons["select-japan"].exists)
+        XCTAssertFalse(app.buttons["select-japan"].isEnabled)
         capture("worlds-canyon-only")
         app.buttons["closePanel"].tap()
         app.buttons["help"].tap()
@@ -292,6 +298,7 @@ final class CrocoCrossUITests: XCTestCase {
                        app.staticTexts["resultHeading"].frame.midX, accuracy: 3)
         XCTAssertTrue(app.staticTexts["distancePoints"].exists)
         XCTAssertTrue(app.staticTexts["flipPoints"].exists)
+        XCTAssertFalse(app.staticTexts["unvalidatedScoreMessage"].exists)
         XCTAssertEqual(lives.value as? String, "0 of 3 remaining")
         let finalScore = app.staticTexts["finalScore"].label
         Thread.sleep(forTimeInterval: 0.3)
@@ -309,6 +316,11 @@ final class CrocoCrossUITests: XCTestCase {
         app.buttons["startWeekly"].tap()
         try assertFreshRun(app, mode: "WEEKLY")
         reachCrashResults(app)
+        XCTAssertEqual(app.staticTexts["unvalidatedScoreMessage"].label,
+                       "Reach the finish line to validate your score.")
+        XCTAssertTrue(app.staticTexts["TOTAL SCORE"].exists)
+        XCTAssertLessThan(app.staticTexts["finalScore"].frame.height, app.staticTexts["resultHeading"].frame.height)
+        XCTAssertFalse(app.staticTexts["NEW BEST"].exists)
         for id in ["rideAgain", "resultsRankings", "home"] {
             let action = app.buttons[id]
             if !action.isHittable { app.swipeUp() }
@@ -334,6 +346,36 @@ final class CrocoCrossUITests: XCTestCase {
         try assertFreshRun(app, mode: "WEEKLY")
         app.buttons["pause"].tap()
         waitForPaused(app)
+    }
+
+    @MainActor func testWeeklyFinishCelebrationAndAirborneFall() throws {
+        for airborne in [false, true] {
+            let app = launch(extraArguments: ["-finish-preview"] + (airborne ? ["-finish-preview-airborne"] : []))
+            app.buttons["startWeekly"].tap()
+            let celebration = app.descendants(matching: .any).matching(identifier: "finishCelebration").firstMatch
+            XCTAssertTrue(celebration.waitForExistence(timeout: 6))
+            let crossedAt = Date()
+            let score = app.staticTexts["score"].label
+            XCTAssertEqual(try displayedDistance(app), 2_600)
+            XCTAssertFalse(app.buttons["rideAgain"].exists)
+            capture(airborne ? "finish-airborne-confetti" : "finish-ground-confetti")
+            Thread.sleep(forTimeInterval: 2)
+            XCTAssertTrue(celebration.exists, "The victory must keep coasting before its result card")
+            XCTAssertFalse(app.buttons["rideAgain"].exists)
+            XCTAssertEqual(app.staticTexts["score"].label, score)
+            capture(airborne ? "finish-airborne-fall" : "finish-ground-coasting")
+            XCTAssertTrue(app.buttons["rideAgain"].waitForExistence(timeout: 6))
+            XCTAssertGreaterThanOrEqual(Date().timeIntervalSince(crossedAt), 4.0)
+            XCTAssertTrue(app.staticTexts["FINISH!"].exists)
+            XCTAssertFalse(app.staticTexts["GAME OVER"].exists)
+            XCTAssertFalse(app.staticTexts["unvalidatedScoreMessage"].exists)
+            XCTAssertEqual(app.staticTexts["finalScore"].label.filter(\.isNumber), score.filter(\.isNumber))
+            let lives = app.descendants(matching: .any).matching(identifier: "lives").firstMatch
+            XCTAssertEqual(lives.value as? String, "1 of 1 remaining")
+            capture(airborne ? "finish-airborne-victory" : "finish-ground-victory")
+            app.buttons["home"].tap()
+            waitForHome(app)
+        }
     }
 
     @MainActor func testMusicModeAndTrackSurviveRelaunch() throws {
@@ -510,6 +552,49 @@ final class CrocoCrossUITests: XCTestCase {
         XCTAssertEqual(app.buttons["riders"].label, "Rider: Rocco")
         XCTAssertEqual(app.buttons["worlds"].label, "World: Canyon")
         capture("immediate-selection-persisted")
+    }
+
+    @MainActor func testLockedCatalogCannotChangeSelection() throws {
+        let app = launch(extraArguments: ["-world", "japan", "-rider.box2d-1", "shiba"])
+        XCTAssertEqual(app.buttons["riders"].label, "Rider: Rocco")
+        XCTAssertEqual(app.buttons["worlds"].label, "World: Canyon")
+        let catalogs: [(String, String, [String])] = [
+            ("riders", "Rider: Rocco", ["croco", "shiba", "eagle", "tiger", "polar", "flamingo", "toucan", "raccoon", "axolotl"]),
+            ("worlds", "World: Canyon", ["canyon", "japan", "highway", "jungle", "arctic", "mine", "sanfrancisco", "paris", "clouds"]),
+        ]
+        for (panel, selectedLabel, ids) in catalogs {
+            app.buttons[panel].tap()
+            XCTAssertTrue(app.buttons["select-\(ids[0])"].waitForExistence(timeout: 5))
+            capture("\(panel)-locked-top")
+            for (index, id) in ids.enumerated() {
+                let card = app.buttons["select-\(id)"]
+                reveal(card, in: app)
+                XCTAssertEqual(card.isEnabled, index == 0, "Only the existing selection may be played")
+                if index > 0 {
+                    XCTAssertTrue(card.label.hasSuffix(", Locked"))
+                    XCTAssertEqual(card.value as? String, "Requirements coming soon.")
+                }
+                if index == 1 || index == ids.count - 1 {
+                    card.tap()
+                    XCTAssertTrue(app.buttons["closePanel"].exists, "Tapping a locked preview must not select or dismiss")
+                }
+            }
+            capture("\(panel)-locked-bottom")
+            app.buttons["closePanel"].tap()
+            waitForHome(app)
+            XCTAssertEqual(app.buttons[panel].label, selectedLabel)
+            app.buttons[panel].tap()
+            let available = app.buttons["select-\(ids[0])"]
+            XCTAssertTrue(available.waitForExistence(timeout: 5))
+            available.tap()
+            waitForHome(app)
+            XCTAssertEqual(app.buttons[panel].label, selectedLabel)
+        }
+        app.terminate()
+        app.launch()
+        waitForHome(app)
+        XCTAssertEqual(app.buttons["riders"].label, "Rider: Rocco")
+        XCTAssertEqual(app.buttons["worlds"].label, "World: Canyon")
     }
 
     @MainActor private func assertBottomClose(

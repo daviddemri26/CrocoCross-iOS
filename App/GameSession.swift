@@ -9,6 +9,11 @@ final class GameSession {
     var phase: Phase = .home
     var mode: RunMode = .weekly
     var score = 0
+    static var weeklyDistanceText: String {
+        Int(GameSimulation.weeklyDistance).formatted(.number.locale(Locale(identifier: "en_US")))
+    }
+    var weeklyProgress: Double { min(1, max(0, distance / GameSimulation.weeklyDistance)) }
+    var weeklyProgressPercent: Int { Int(weeklyProgress * 100) }
     var distance: Double = 0
     var elapsed: Double = 0
     var speed: Double = 0
@@ -22,6 +27,7 @@ final class GameSession {
     var recovering = false
     var showingFinalExplosion: Bool { phase == .results && !finished && mode == .endless }
     var showingCrash: Bool { (phase == .playing && recovering) || (phase == .results && !finished && !showingFinalExplosion) }
+    var showingFinishCelebration: Bool { phase == .results && finished && !resultsVisible }
     var ranked = false
     var pedalReset = 0
     var eventText: String?
@@ -91,6 +97,14 @@ final class GameSession {
         ranked = wasRankedAtStart
         let seed = challenge?.seed ?? UInt32.random(in: 1...UInt32.max)
         simulation = GameSimulation(mode: mode, seed: seed)
+        #if DEBUG
+        let arguments = ProcessInfo.processInfo.arguments
+        if mode == .weekly && arguments.contains("-ui-testing") && arguments.contains("-finish-preview") {
+            simulation = .finishFixtureForTesting(airborne: arguments.contains("-finish-preview-airborne"))
+            wasRankedAtStart = false
+            ranked = false
+        }
+        #endif
         previousState = simulation.state
         accumulator = 0
         crashPresentationSteps = 0
@@ -246,11 +260,11 @@ final class GameSession {
                 }
                 audio.update(bike: simulation.state.bike)
             }
-        } else if phase == .results && !resultsVisible && !finished && !showingFinalExplosion && !interrupted &&
+        } else if phase == .results && !resultsVisible && !showingFinalExplosion && !interrupted &&
                     crashPresentationSteps < crashPresentationStepLimit {
-            // The result is already final. Only detached-body presentation advances.
+            // Score, time and outcome are final; only coasting/falling bodies advance.
             if rawDelta <= 0.25 {
-                accumulator += dt * 0.5
+                accumulator += dt * GameSimulation.finishPresentationSpeed
                 var steps = 0
                 while accumulator >= GameSimulation.timeStep && steps < 12 &&
                         crashPresentationSteps < crashPresentationStepLimit {
@@ -269,6 +283,8 @@ final class GameSession {
         if phase == .results && !interrupted && !resultsVisible && frameTime >= resultsAt &&
             deathHoldRemaining <= 0 && !audio.deathSoundPending { resultsVisible = true }
         scene.isCrashPaused = phase == .paused || interrupted
+        scene.finishCelebrationElapsed = showingFinishCelebration
+            ? max(0, GameSimulation.finishPresentationDuration - (resultsAt - frameTime)) : nil
         scene.isPreview = phase == .home
         if phase == .home {
             scene.display(
@@ -283,7 +299,7 @@ final class GameSession {
 
     /// Blend only presentation coordinates; scoring and contact always use fixed-step state.
     private func renderedState() -> SimulationState {
-        let physicsIsAdvancing = phase == .playing || (phase == .results && !finished && !showingFinalExplosion &&
+        let physicsIsAdvancing = phase == .playing || (phase == .results && !resultsVisible && !showingFinalExplosion &&
             crashPresentationSteps < crashPresentationStepLimit)
         guard physicsIsAdvancing, !interrupted, previousState.status == simulation.state.status,
             abs(previousState.bike.position.x - simulation.state.bike.position.x) < 2
@@ -338,6 +354,10 @@ final class GameSession {
             if simulation.state.status == .crashed { endRun() }
         case .finished:
             finished = true
+            eventText = nil
+            eventPoints = 0
+            crashPresentationStepLimit = GameSimulation.finishPresentationSteps
+            scene.playFinish()
             endRun()
         case .landed(let impact):
             let x = simulation.state.bike.position.x
@@ -374,8 +394,9 @@ final class GameSession {
         newRecord = score > recordToBeat && (mode == .endless || finished)
         resultsVisible = false
         crashPresentationSteps = 0
-        // Let the physical fall play before showing the score card.
-        let baseDuration = finished || reducedMotion ? 0.3 : showingFinalExplosion ? 1.8 : 3.6
+        // Victory is already saved while its five-second celebration plays.
+        let baseDuration = finished ? GameSimulation.finishPresentationDuration
+            : reducedMotion ? 0.3 : showingFinalExplosion ? 1.8 : 3.6
         resultsAt = frameTime + max(baseDuration, deathHoldRemaining)
         audio.setPaused(true)
         submitProgress()

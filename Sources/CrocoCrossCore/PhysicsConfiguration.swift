@@ -2,13 +2,14 @@ import Foundation
 
 /// Physical units are metres, kilograms, seconds and radians. Rendering never changes these values.
 public struct PhysicsConfiguration: Codable, Equatable, Sendable {
-    public static let engineVersion = "box2d-1"
+    // Rules revision: 2,600 m Weekly and fresh records; physical tuning is unchanged.
+    public static let engineVersion = "box2d-2"
     public static let backendVersion = "3.1.1"
     public static let simulationFrequency = 120
     public static let timeStep = 1.0 / Double(simulationFrequency)
     public static let substeps: Int32 = 4
     public static let courseStartX = 3.0
-    public static let weeklyDistance = 4_000.0
+    public static let weeklyDistance = 2_600.0
     public enum TerrainStyle: String, Codable, Sendable { case hills, flat }
     public var terrainStyle: TerrainStyle = .hills
     /// Total mass and nominal total pitch inertia, including the rider and wheels.

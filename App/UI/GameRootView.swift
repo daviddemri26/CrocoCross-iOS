@@ -43,6 +43,18 @@ struct GameRootView: View {
                     home(wide: wide, height: geometry.size.height)
                 } else {
                     playOverlay(wide: geometry.size.width > geometry.size.height, height: geometry.size.height)
+                    if session.showingFinishCelebration {
+                        VStack {
+                            Spacer().frame(height: geometry.size.height * 0.24)
+                            Label("FINISH!", systemImage: "flag.checkered")
+                                .font(.custom("AvenirNextCondensed-HeavyItalic", size: 28))
+                                .foregroundStyle(CrocoTheme.lime)
+                                .padding(.horizontal, 22).padding(.vertical, 10)
+                                .background(CrocoTheme.ink.opacity(0.85), in: Capsule())
+                                .accessibilityIdentifier("finishCelebration")
+                            Spacer()
+                        }.allowsHitTesting(false)
+                    }
                     if session.phase == .paused { pauseOverlay }
                     if session.phase == .results && session.resultsVisible {
                         resultsOverlay.transition(.opacity.combined(with: .scale(scale: 0.94)))
@@ -283,9 +295,9 @@ struct GameRootView: View {
                     GeometryReader { geo in
                         Capsule().fill(CrocoTheme.ink.opacity(0.6))
                         Capsule().fill(CrocoTheme.lime).frame(
-                            width: geo.size.width * min(1, max(0, session.distance / 4_000)))
+                            width: geo.size.width * session.weeklyProgress)
                     }.frame(height: 4).accessibilityLabel("Course progress").accessibilityValue(
-                        "\(Int(min(100, session.distance / 40))) percent")
+                        "\(session.weeklyProgressPercent) percent")
                 }
                 Spacer()
             }.padding(.horizontal, wide ? 28 : 16).padding(.top, 12).padding(.bottom, wide ? 88 : 160).allowsHitTesting(false)
@@ -341,13 +353,12 @@ struct GameRootView: View {
     private var pauseOverlay: some View {
         modal {
             Text("PAUSED").font(.system(size: 27, weight: .black, design: .rounded)).italic()
-            primaryButton("Keep riding", icon: "play.fill", id: "resume") { session.resume() }
             HStack(spacing: 10) {
                 menuAction("Restart", icon: "arrow.counterclockwise", id: "restart") { session.start(session.mode) }
                 menuAction("Settings", icon: "slider.horizontal.3", id: "pauseSettings") { panel = .settings }
                 menuAction("Home", icon: "house.fill", id: "home") { session.goHome() }
             }
-
+            primaryButton("Keep riding", icon: "play.fill", id: "resume") { session.resume() }
         }
     }
 
@@ -377,10 +388,18 @@ struct GameRootView: View {
                         .foregroundStyle(CrocoTheme.ink).padding(.horizontal, 10).padding(.vertical, 5)
                         .background(CrocoTheme.orange, in: Capsule())
                 }
-                ScoreCounter(score: session.score, reducedMotion: reducedMotion)
+                ScoreCounter(score: session.score, reducedMotion: reducedMotion,
+                             fontSize: session.mode == .weekly && !session.finished ? 42 : 72)
                     .frame(maxWidth: .infinity)
                 Text("TOTAL SCORE").font(.custom("AvenirNextCondensed-HeavyItalic", size: 18))
                     .tracking(2).foregroundStyle(CrocoTheme.muted)
+                if session.mode == .weekly && !session.finished {
+                    Text("Reach the finish line to validate your score.")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(.white).multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 6).accessibilityIdentifier("unvalidatedScoreMessage")
+                }
             }.frame(maxWidth: .infinity)
             HStack(spacing: 10) {
                 resultStat("DISTANCE", value: "\((Double(session.distancePoints) / 10).formatted(.number.precision(.fractionLength(1)))) m",
@@ -392,7 +411,7 @@ struct GameRootView: View {
                 Label(timeString(session.elapsed), systemImage: "stopwatch")
                 Spacer()
                 if session.finished { Text("FINISH +\(session.finishPoints.formatted())") }
-                else if session.mode == .weekly { Text("\(Int(min(100, session.distance / 40)))% OF 4,000 m") }
+                else if session.mode == .weekly { Text("\(session.weeklyProgressPercent)% OF \(GameSession.weeklyDistanceText) m") }
             }.font(.system(size: 11, weight: .bold, design: .monospaced)).foregroundStyle(CrocoTheme.muted)
             HStack(spacing: 10) {
                 menuAction("Rankings", icon: "trophy.fill", id: "resultsRankings") { panel = .rankings }
@@ -453,11 +472,12 @@ struct GameRootView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 145), spacing: 14)], spacing: 14) {
-                        ForEach(GameCatalog.playableRiders) { rider in
-                            catalogCard(
-                                id: rider.id, name: rider.name, asset: rider.assetName,
-                                selected: session.characterID == rider.id, rider: true
+                        ForEach(GameCatalog.riders) { rider in
+                            CatalogCard(
+                                id: rider.id, name: rider.name, subtitle: rider.subtitle, asset: rider.assetName,
+                                availability: rider.availability, selected: session.characterID == rider.id, rider: true
                             ) {
+                                guard rider.availability.isUnlocked else { return }
                                 session.characterID = rider.id
                                 panel = nil
                             }
@@ -468,11 +488,12 @@ struct GameRootView: View {
         case .worlds:
             ScrollView {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 155), spacing: 14)], spacing: 14) {
-                    ForEach(GameCatalog.playableWorlds) { world in
-                        catalogCard(
-                            id: world.id, name: world.name, asset: world.assetName,
-                            selected: session.worldID == world.id
+                    ForEach(GameCatalog.worlds) { world in
+                        CatalogCard(
+                            id: world.id, name: world.name, subtitle: world.subtitle, asset: world.assetName,
+                            availability: world.availability, selected: session.worldID == world.id
                         ) {
+                            guard world.isPlayable else { return }
                             session.worldID = world.id
                             panel = nil
                         }
@@ -483,42 +504,6 @@ struct GameRootView: View {
         case .rankings: RankingsPanel(session: session)
         case .help: HowToView()
         }
-    }
-
-    private func catalogCard(
-        id: String, name: String, asset: String, selected: Bool, rider: Bool = false, action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 0) {
-                ZStack(alignment: .topTrailing) {
-                    Group {
-                        if rider {
-                            RiderArtworkView(riderID: id, animated: selected).frame(height: 116)
-                        } else if let image = GameAssets.image(named: asset) {
-                            GeometryReader { geometry in
-                                Image(uiImage: image).resizable().scaledToFill()
-                                    .frame(width: geometry.size.width, height: 116).clipped()
-                            }.frame(height: 116)
-                        }
-                    }.frame(maxWidth: .infinity).background(.white.opacity(0.025))
-                    Image(systemName: selected ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 22, weight: .bold)).foregroundStyle(
-                            selected ? CrocoTheme.lime : .white.opacity(0.6)
-                        )
-                        .background(CrocoTheme.ink.opacity(0.8), in: Circle()).padding(9)
-                }
-                Text(name).font(.system(size: 14, weight: .bold, design: .rounded))
-                    .lineLimit(1).minimumScaleFactor(0.6).layoutPriority(1).frame(
-                        maxWidth: .infinity, alignment: .leading
-                    )
-                    .padding(.horizontal, 12).frame(height: 45)
-            }.background(.white.opacity(selected ? 0.10 : 0.035), in: RoundedRectangle(cornerRadius: 18))
-                .clipShape(RoundedRectangle(cornerRadius: 18))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18).stroke(
-                        selected ? CrocoTheme.lime : .white.opacity(0.12), lineWidth: selected ? 2 : 1))
-        }.foregroundStyle(.white).accessibilityIdentifier("select-\(id)")
-            .accessibilityLabel(name).accessibilityAddTraits(selected ? [.isSelected] : [])
     }
 
     private func panelTitle(_ item: GamePanel) -> String {
@@ -538,9 +523,10 @@ struct GameRootView: View {
 private struct ScoreCounter: View {
     let score: Int
     let reducedMotion: Bool
+    let fontSize: CGFloat
     @State private var shown = 0
     var body: some View {
-        Text(shown.formatted()).font(.custom("AvenirNextCondensed-HeavyItalic", size: 72))
+        Text(shown.formatted()).font(.custom("AvenirNextCondensed-HeavyItalic", size: fontSize))
             .foregroundStyle(CrocoTheme.lime).monospacedDigit().contentTransition(.numericText())
             .lineLimit(1).minimumScaleFactor(0.55).accessibilityIdentifier("finalScore").accessibilityLabel(
                 "\(score.formatted()) points"
