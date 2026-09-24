@@ -1,22 +1,25 @@
-# CrocoCross 1.1.0 (18) preparation handoff
+# CrocoCross 1.1.0 (18) handoff
 
-Signed-in checks on **September 23, 2026** confirmed **1.0.0 (17), Ready for Distribution**, and the owner-created **1.1.0 draft**, **À finaliser avant soumission**. Description, promotional text, keywords, What's New and App Review notes are saved in that draft. Its release setting remains **Automatic**; manual release is a recommendation, not an applied change. TestFlight has only 1.0.0 (17), uploaded September 16 and marked Ready to Submit. The earlier September 24 TestFlight recheck showed only build 17. Xcode subsequently confirmed the 1.1.0 (18) upload at 07:24:44 UTC; Apple processing has started. Historical `review/store-status.json` retains the September 17 state without rewriting that evidence.
+Verified on **September 24, 2026 at 00:32 America/Los_Angeles**: TestFlight **1.1.0 (18)** is processed (**Terminé**, **Prêt à soumettre**). Build 18 is selected and saved for version 1.1.0; the Save button is disabled. The existing **iOS review draft contains exactly five items: app 1.1.0 (18) and the four v3 leaderboards**, with no achievements. Its dialog confirms the items will be reviewed with version 1.1.0 on iOS. **The final Envoyer pour vérification button has not been clicked.**
 
-## Completed preparation
+## Prepared and verified
 
-- The final local **1.1.0 (18) archive and Apple Distribution IPA export passed** signature, bundle-identifier, entitlement and package checks on September 24. The 199 recorded source fingerprints were unchanged; **629 package checks** passed. Evidence: `artifacts/qa/release-1.1.0/final-ipa-metadata.json`. The earlier signing failure is resolved. Xcode confirmed the **1.1.0 (18) upload at 2026-09-24 07:24:44 UTC** (`Uploaded CrocoCross`, `EXPORT SUCCEEDED`, exit 0). **Apple processing has started**; readiness for build selection is not yet confirmed. This separate upload export used the same verified source archive; its uploaded bytes are not asserted to match the local IPA SHA-256.
-- Earlier evidence: **97 core tests passed**, as did Release `AppStoreCaptureTests` on **iPhone 17 Pro Max and iPad Pro 13-inch (M5)**. The refreshed package passed **584 checks**. Logs are under `artifacts/qa/release-1.1.0/`.
-- All **10 replacement screenshots** are now uploaded to the 1.1.0 draft and verified after processing: five iPhone 6.9-inch and five iPad 13-inch images, ordered Weekly, Endless, Home, Controls, Audio. The processed thumbnails and current visuals were checked on September 24.
-- Current English metadata and review instructions cover Kenji, Japan, 2,600 m Weekly, 40 local achievements, records, controls and flexible falls.
-- Four v3 boards are created/localized, including Japan `endless.japan.route_1.score.v3`, and are ready for review in one iOS draft created September 24 at 00:14 local time. That draft contains exactly the four boards, no achievements and no app version; it has not been sent. All 40 local achievements and reviewed badges remain complete. Remote entry was stopped after seven complete achievements; no partial record remains. Preserve them and defer the remaining 33. Achievement synchronization remains disabled.
+The final local archive and Apple Distribution export passed signature, identifier, entitlement and **629 package checks**; 199 source fingerprints were unchanged. Evidence is in `artifacts/qa/release-1.1.0/final-ipa-metadata.json`. Xcode upload succeeded at **2026-09-24T07:24:44Z** (`artifacts/app-store-1.1.0-final/upload.log`). The upload used a separate export from the same archive; the local IPA SHA-256 is not asserted as the uploaded-byte hash. Earlier evidence records **97 passing core tests** and Release Store-capture tests on iPhone 17 Pro Max and iPad Pro 13-inch (M5).
 
-## Remaining gates
+The current description, promotional text, keywords, What’s New and review notes are saved. All **10 replacement screenshots** are processed and visually reviewed in the 1.1.0 draft: five iPhone 6.9-inch and five iPad 13-inch, ordered Weekly, Endless, Home, Controls, Audio.
 
-1. Wait for Apple processing to finish, verify build 18 is selectable, then select it for version 1.1.0. Upload succeeded at 07:24:44 UTC; readiness for selection is not yet confirmed.
-2. The ten remote screenshots are processed and reviewed. Complete any outstanding physical-device gameplay, audio, interruption, control and account/declaration checks; automated captures do not replace them.
-3. Add app version 1.1.0 to the existing four-board iOS draft after the build is available, then verify the combined draft. Final submission remains a separate action. Confirm review/activation and read-back of the boards. Weekly score/time share **2026-09-28 00:00 UTC**, seven-day duration and immediate restart. Game Center creates later occurrences automatically; no advance week creation or app history UI is required. Genuine score/rank round-trip testing has not been attempted; keep that readiness gate false until evidence exists.
-4. **Remote achievements are deferred for this candidate.** Keep `CrocoGameCenterAchievementsEnabled` absent/false. Preserve the seven saved records; do not continue entry, edit or delete them. All 40 local achievements still work, and completing the remote catalog is not a current release requirement.
-5. Review the draft's release setting, private review contact, agreements, age rating, territory restrictions, privacy/export declarations and public support/marketing/privacy content. The Automatic setting does not authorize submission or release.
-The owner authorized local candidate/archive/export preparation and committing/pushing reviewed changes to GitHub main. The binary upload is confirmed and Apple processing has started. **Do not infer processing completion or perform the final App Review submission from this handoff.** TestFlight, App Review and public release remain distinct steps. A website-source push on main can trigger the existing GitHub Pages publication workflow.
+The draft retains **Automatic** release. The live baseline remains 1.0.0 (17), Ready for Distribution; September 17 files under `review/` are historical evidence.
 
-Private Apple contacts and signed IPA/archive files remain outside public Git. No demo account is required; Game Center authentication is optional. [Machine-readable readiness](release-readiness.json).
+## Remaining before final submission
+
+- The App Review phone and email fields are blank. Permission to reuse the prepared private contact file is pending. Keep its contents out of Git.
+- Real Game Center score/rank round-trip testing has not been attempted. Keep `sandboxGameCenterRoundTripPassed=false`; association of the boards does not prove gameplay read-back.
+- Review outstanding physical-device, account/declaration and public-page checks, then make the final submission decision separately. **No final Envoyer pour vérification action has been performed.**
+
+## Game Center scope
+
+The draft includes Weekly Score v3, Weekly Time v3, Endless Canyon v3 and Endless Japan v3, including `endless.japan.route_1.score.v3`. Both Weekly boards begin **2026-09-28 00:00 UTC**, with seven-day duration and immediate restart. They are configured once; Game Center creates later occurrences automatically. The app has no weekly history UI.
+
+All **40 achievements / 1,000 points** work locally. Game Center achievement synchronization is **deferred and disabled** (`CrocoGameCenterAchievementsEnabled` absent/false). Seven complete remote records are preserved but are not included in the review draft: first backflip, first frontflip, double, triple, 10 total rotations, 1 km and first Weekly finish. There are no partial records to complete. The other 33 remote entries remain deferred; do not create, edit or delete more achievements.
+
+The local-only achievement mode deliberately exempts remote achievement configuration/testing from release gates; leaderboard score testing remains a separate requirement. No demo account is required. Signed archives/IPAs and private contacts stay outside public Git. [Machine-readable readiness](release-readiness.json).

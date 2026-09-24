@@ -35,7 +35,7 @@
   "privacyEmail": "privacy@lafayette-consulting.us",
   "appStoreConnectID": "6812979862",
   "appStoreConnectURL": "https://appstoreconnect.apple.com/apps/6812979862/distribution/ios/version/inflight",
-  "preparationStatus": "Final local 1.1.0 (18) archive and Apple Distribution IPA verified; ten replacement screenshots processed and reviewed. A separate Xcode export from the same verified archive uploaded build 18 successfully at 2026-09-24T07:24:44Z. Apple processing has started; build selection and app association with the four-board draft are pending. Achievements remain local-only.",
+  "preparationStatus": "Verified September 24 at 00:32 local: build 1.1.0 (18) processed, selected and saved; same iOS review draft contains app plus four v3 leaderboards, five items total and no achievements. Ten replacement screenshots processed/reviewed. No final App Review submission; private contact fields and genuine score round-trip test remain outstanding.",
   "remotePublicationAuthorized": false,
   "releaseSettingScope": "Automatic retained in the 1.1.0 draft on September 23, 2026; no change made",
   "lastVerifiedStoreVersion": {
@@ -46,8 +46,8 @@
   },
   "candidateStoreDraft": {
     "version": "1.1.0",
-    "statusLabel": "À finaliser avant soumission",
-    "verifiedOn": "2026-09-23",
+    "statusLabel": "Included in iOS review draft; not submitted",
+    "verifiedOn": "2026-09-24",
     "release": "Automatic",
     "metadataSaved": [
       "description",
@@ -57,7 +57,13 @@
       "appReviewNotes"
     ],
     "screenshots": "Ten replacement screenshots processed and visually reviewed: five iPhone 6.9-inch and five iPad 13-inch, ordered Weekly/Endless/Home/Controls/Audio",
-    "screenshotsVerifiedOn": "2026-09-24"
+    "screenshotsVerifiedOn": "2026-09-24",
+    "selectedBuild": "18",
+    "buildSelectionSaved": true,
+    "reviewDraftItemCount": 5,
+    "reviewDraftContainsAppAndFourLeaderboards": true,
+    "reviewDraftContainsAchievements": false,
+    "submittedForReview": false
   },
   "localCandidateArchive": {
     "version": "1.1.0",
@@ -102,22 +108,32 @@
   },
   "lastVerifiedTestFlight": {
     "verifiedOn": "2026-09-24",
-    "onlyVersion": "1.0.0",
-    "onlyBuild": "17",
-    "uploadedOn": "2026-09-16",
-    "status": "Ready to Submit",
+    "verifiedAtLocal": "2026-09-24 00:32 America/Los_Angeles",
+    "latestVersion": "1.1.0",
+    "latestBuild": "18",
+    "uploadedOn": "2026-09-24",
+    "uploadStatus": "Terminé",
+    "status": "Prêt à soumettre",
     "candidateBuild18Uploaded": true,
-    "candidateBuild18UploadStatus": "accepted-processing",
-    "subsequentUploadEvidence": "Xcode upload.log: Uploaded CrocoCross / EXPORT SUCCEEDED at 2026-09-24T07:24:44Z; not yet a refreshed TestFlight selectable-build result."
+    "candidateBuild18Selected": true,
+    "candidateBuildSelectionSaved": true
   },
   "binaryUpload": {
     "version": "1.1.0",
     "build": "18",
     "uploaded": true,
     "completedAtUTC": "2026-09-24T07:24:44Z",
-    "appleProcessing": true,
-    "readyForSelection": false,
+    "appleProcessing": false,
+    "readyForSelection": true,
     "submittedForReview": false,
-    "evidence": "artifacts/app-store-1.1.0-final/upload.log"
+    "evidence": "artifacts/app-store-1.1.0-final/upload.log",
+    "processingStatus": "completed",
+    "selectedForVersion": "1.1.0",
+    "selectionSaved": true
+  },
+  "appReviewContact": {
+    "phoneFieldFilled": false,
+    "emailFieldFilled": false,
+    "reusePrivateFilePermission": "pending"
   }
 }
