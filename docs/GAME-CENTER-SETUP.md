@@ -1,11 +1,12 @@
 # CrocoCross — native Game Center setup
 
-## Next-version preparation — September 20, 2026
+## Current remote preparation — September 24, 2026
 
-The owner reports version 1.0.0 (17) awaiting Apple review. Accumulate local changes until the owner explicitly authorizes the next release; do not archive, upload, submit or change live Game Center configuration during preparation. [Next-release tracking](NEXT-RELEASE.md) is authoritative for the new 2,600 m course and complete leaderboard reset.
+The owner authorized creating the new Game Center components. Four v3 boards are now created and localized in App Store Connect: `weekly.score.v3`, `weekly.time.v3`, `endless.score.v3` and **`endless.japan.route_1.score.v3`**, all under `com.daviddemri.crococross`. The Japan remote ID uses an underscore; its local route/storage namespace remains `box2d-2.japan.route-1`. Following explicit confirmation, all four were added to **one iOS draft submission**, created September 24 at 00:14 local time. Its expanded list contains exactly Weekly Score v3, Weekly Time v3, Endless Canyon v3 and Endless Japan v3, with no achievements. Their status is **Prêt pour la vérification**. App version 1.1.0 is not yet included and the final send button was not used. App-version association, review/activation and genuine score read-back remain separate checks. Apple distinguishes adding components to a draft from the final submission: [Submit Game Center components](https://developer.apple.com/help/app-store-connect/manage-submissions-to-app-review/submit-game-center-components).
 
-The next version uses fresh `weekly.score.v3`, `weekly.time.v3` and `endless.score.v3` boards under `com.daviddemri.crococross`, and local rules namespace `box2d-2`. Japan Mountains adds an independent Endless board, `endless.japan.route-1.score.v3`. These boards are only referenced locally so far; their creation, review and activation are pending. The v2 setup documented below is the first-version baseline, not the configuration to reuse for the next release.
+The two recurring Weekly boards share **2026-09-28 00:00 UTC** as their first start, with seven-day duration and immediate seven-day restart. Configure them once; Game Center creates future occurrences automatically. The app presents the current week, with no advance week creation or history UI.
 
+The owner stopped further achievement entry after seven complete records were saved. Preserve them with no edits or deletion; the other remote achievements are deferred. All **40 achievements work locally**, and `CrocoGameCenterAchievementsEnabled` remains absent/false. See [achievement status](ACHIEVEMENTS-GAME-CENTER.md) and [current release gates](RELEASE.md). The v2 setup below remains historical first-version documentation.
 ## Current Weekly personal records — September 23, 2026
 
 The Rankings UI reads two independent entries for the authenticated player: Weekly points and Weekly time. `GameCenterService.weeklyScoreRecord` and `weeklyTimeRecord` are optional `WeeklyPlayerRecord(score: Int, rank: Int)` values. `weeklyRecordsLoading` covers pending reads; `weeklyRecordsChallengeIdentifier` identifies their confirmed occurrence. An absent entry or failed read remains `nil`, and one unavailable board does not discard a successful result from the other. A Game Center rank is displayed with that same remote entry's score, never attached to a newer unsent local best.
@@ -27,7 +28,7 @@ Weekly stays on Canyon route 1: every player receives the exact same 2,600 m cou
 | Weekly Score | `com.daviddemri.crococross.weekly.score.v3` | Recurring | High to low |
 | Weekly Time | `com.daviddemri.crococross.weekly.time.v3` | Recurring | Low to high |
 | Endless — Canyon | `com.daviddemri.crococross.endless.score.v3` | Classic | High to low |
-| Endless — Japan Mountains | `com.daviddemri.crococross.endless.japan.route-1.score.v3` | Classic | High to low |
+| Endless — Japan Mountains | `com.daviddemri.crococross.endless.japan.route_1.score.v3` | Classic | High to low |
 
 Both Endless boards use integer points and Best Score. Keep Canyon's existing v3 identifier and `bestEndless.box2d-2` local key. Japan uses `bestEndless.box2d-2.japan.route-1`; future terrain revisions require a separately registered board and local key. Do not combine Japan scores into the Canyon leaderboard.
 
@@ -36,7 +37,7 @@ New pending submissions freeze the rules version, world, terrain revision, board
 After explicit release authorization, complete and record this setup:
 
 1. Inspect App Store Connect and create or verify the four exact v3 identifiers above; retain the v2 historical boards. Configure matching future Monday UTC occurrences for the two Weekly boards.
-2. Add the English world labels above, attach the new components to the intended release and verify their review/activation state. This checklist is preparation only; no remote configuration has been changed for the Japan work.
+2. Add the English world labels above, attach the new components to the intended release and verify their review/activation state. The four board definitions now exist; this checklist does not establish version association, review/activation or gameplay read-back.
 3. With the Japan board absent in a test environment, confirm Canyon Endless and Weekly still become eligible, while Japan runs stay local.
 4. Play real Endless runs in both worlds. Verify each result and best-score replacement on its own board; confirm a world switch does not replace the other world's local best. Do not fabricate production entries.
 5. Queue a result while offline, change the home-screen world and reconnect with the original account. Confirm upload uses the frozen original world/route board. Repeat an account switch to confirm the pending score remains with its original owner.

@@ -22,8 +22,17 @@ enum CompetitionRules {
         "com.daviddemri.crococross.\(suffix).\(leaderboardVersion)"
     }
 
+    /// App Store Connect remote IDs permit ASCII letters, digits, periods and
+    /// underscores. Local course/record namespaces intentionally retain hyphens.
+    static func isValidGameCenterIdentifier(_ identifier: String) -> Bool {
+        !identifier.isEmpty && identifier.utf8.allSatisfy {
+            (65...90).contains($0) || (97...122).contains($0) || (48...57).contains($0) || $0 == 46 || $0 == 95
+        }
+    }
+
     static func isCurrentLeaderboard(_ identifier: String) -> Bool {
-        ["weekly.score", "weekly.time", "endless.score", "endless.japan.route-1.score"]
+        guard isValidGameCenterIdentifier(identifier) else { return false }
+        return ["weekly.score", "weekly.time", "endless.score", "endless.japan.route_1.score"]
             .contains { leaderboardID($0) == identifier }
     }
 
@@ -31,7 +40,7 @@ enum CompetitionRules {
     static func endlessLeaderboardID(for course: CourseIdentity) -> String? {
         switch course {
         case .canyon: leaderboardID("endless.score")
-        case .japan: leaderboardID("endless.japan.route-1.score")
+        case .japan: leaderboardID("endless.japan.route_1.score")
         default: nil
         }
     }
@@ -43,7 +52,7 @@ enum CompetitionRules {
     static func acceptsSubmission(rulesVersion: String, leaderboardID: String,
                                   weeklyBoardIDs: Set<String>, endlessBoardID: String,
                                   challengeIdentifier: String?, course: CourseIdentity? = nil,
-                                  japanEndlessBoardID: String = leaderboardID("endless.japan.route-1.score")) -> Bool {
+                                  japanEndlessBoardID: String = leaderboardID("endless.japan.route_1.score")) -> Bool {
         guard rulesVersion == version, isCurrentLeaderboard(leaderboardID) else { return false }
         // Saves from before world routing omitted the course and are Canyon-only by definition.
         let course = course ?? .canyon

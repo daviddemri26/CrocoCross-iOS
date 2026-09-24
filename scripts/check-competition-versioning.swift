@@ -20,7 +20,27 @@ import Foundation
         let weeklyScore = CompetitionRules.leaderboardID("weekly.score")
         let weeklyTime = CompetitionRules.leaderboardID("weekly.time")
         let endless = CompetitionRules.leaderboardID("endless.score")
-        let japan = CompetitionRules.leaderboardID("endless.japan.route-1.score")
+        let japan = CompetitionRules.leaderboardID("endless.japan.route_1.score")
+        let configuredBoards = ["CrocoWeeklyScoreLeaderboardID": weeklyScore,
+                                "CrocoWeeklyTimeLeaderboardID": weeklyTime,
+                                "CrocoEndlessScoreLeaderboardID": endless,
+                                "CrocoJapanEndlessScoreLeaderboardID": japan]
+        let appInfo = try PropertyListSerialization.propertyList(
+            from: Data(contentsOf: URL(fileURLWithPath: "App/Info.plist")), format: nil) as! [String: Any]
+        for (key, identifier) in configuredBoards {
+            try expect(CompetitionRules.isValidGameCenterIdentifier(identifier), "Remote IDs use App Store Connect's character set")
+            try expect(appInfo[key] as? String == identifier, "Configured and routed board IDs must agree: \(key)")
+        }
+        for invalid in ["", "board-with-hyphen", "board with space", "board/route", "board\n", "board.é", "board.山"] {
+            try expect(!CompetitionRules.isValidGameCenterIdentifier(invalid), "Invalid remote identifier rejected: \(invalid)")
+        }
+        try expect(CompetitionRules.isValidGameCenterIdentifier("Board_09.score.v3"), "ASCII cases, digits, underscores and dots remain valid")
+        try expect(CompetitionRules.CourseIdentity.japan.identifier == "japan.route-1",
+                   "Fixing the remote board must not rename the internal route or stored records")
+        try expect(japan == "com.daviddemri.crococross.endless.japan.route_1.score.v3",
+                   "Japan uses Apple's accepted underscore remote identifier")
+        try expect(!CompetitionRules.isCurrentLeaderboard(japan.replacingOccurrences(of: "route_1", with: "route-1")),
+                   "The invalid uncreated Japan board cannot receive queued scores")
         let week = "box2d-2.weekly.1789344000"
         func accepted(_ board: String, _ challenge: String?, version: String = "box2d-2",
                       course: CompetitionRules.CourseIdentity? = nil) -> Bool {
@@ -116,6 +136,6 @@ import Foundation
                    "The current queue must round-trip")
         try expect(try Data(contentsOf: root.appendingPathComponent(legacyFilename)) == legacyBytes,
                    "Saving a current result must preserve the exact legacy queue")
-        print("PASS: competition version isolation, independent world/revision boards and records, Weekly Canyon-only routing, frozen queued course identities, legacy Canyon compatibility and byte-for-byte legacy queue preservation.")
+        print("PASS: valid remote identifier characters and plist agreement, competition version isolation, independent world/revision boards and records, Weekly Canyon-only routing, frozen queued course identities, legacy Canyon compatibility and byte-for-byte legacy queue preservation.")
     }
 }

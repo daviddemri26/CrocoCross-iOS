@@ -23,7 +23,7 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
                 weeklyScore: identifier("CrocoWeeklyScoreLeaderboardID", "weekly.score"),
                 weeklyTime: identifier("CrocoWeeklyTimeLeaderboardID", "weekly.time"),
                 endlessScore: identifier("CrocoEndlessScoreLeaderboardID", "endless.score"),
-                japanEndlessScore: identifier("CrocoJapanEndlessScoreLeaderboardID", "endless.japan.route-1.score")
+                japanEndlessScore: identifier("CrocoJapanEndlessScoreLeaderboardID", "endless.japan.route_1.score")
             )
         }
 
@@ -31,7 +31,7 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
             weeklyScore == CompetitionRules.leaderboardID("weekly.score") &&
             weeklyTime == CompetitionRules.leaderboardID("weekly.time") &&
             endlessScore == CompetitionRules.leaderboardID("endless.score") &&
-            japanEndlessScore == CompetitionRules.leaderboardID("endless.japan.route-1.score")
+            japanEndlessScore == CompetitionRules.leaderboardID("endless.japan.route_1.score")
         }
 
         func endlessScore(for course: CompetitionRules.CourseIdentity) -> String? {

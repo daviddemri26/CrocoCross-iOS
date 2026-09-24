@@ -2,7 +2,7 @@
   "version": "1.1.0",
   "build": "18",
   "verifiedOn": "2026-09-23",
-  "status": "blocked-distribution-signing-and-game-center",
+  "status": "uploaded-apple-processing-pending-selection-and-leaderboard-validation",
   "baseline": "1.0.0 (17), Ready for Distribution; verified in the signed-in Apple account",
   "submissionGates": {
     "appleVersionAndBuildVerified": true,
@@ -10,7 +10,8 @@
     "fortyAchievementsConfiguredAndAssociated": false,
     "gameCenterArtworkComplete": true,
     "releaseScreenshotsReviewed": true,
-    "sandboxGameCenterRoundTripPassed": false
+    "sandboxGameCenterRoundTripPassed": false,
+    "sandboxAchievementRoundTripPassed": false
   },
   "appleVerification": {
     "storeVersion": "1.0.0",
@@ -23,10 +24,75 @@
     "latestTestFlightVersion": "1.0.0",
     "latestTestFlightBuild": "17",
     "latestTestFlightUploadDate": "2026-09-16",
-    "candidateBuildUploaded": false,
-    "evidence": "Signed-in App Store Connect and TestFlight inspection on September 23, 2026; build 18 availability verified, not uploaded"
+    "candidateBuildUploaded": true,
+    "evidence": "Signed-in App Store Connect checks confirmed saved draft metadata and ten processed/reviewed screenshots. The earlier September 24 TestFlight check showed only build 17. Subsequent Xcode upload of 1.1.0 (18) succeeded at 07:24:44 UTC; Apple processing started.",
+    "candidateBuildUploadStatus": "accepted-processing",
+    "testFlightVerifiedOn": "2026-09-24",
+    "candidateBuildUploadedAtUTC": "2026-09-24T07:24:44Z",
+    "candidateBuildProcessing": true,
+    "candidateBuildReadyForSelection": false
   },
-  "localCandidate": {
+  "remoteScreenshotsUpdated": true,
+  "notes": [
+    "The seven complete remote achievements are preserved; further entry was stopped by the owner. Remote achievement synchronization is deferred for this candidate, with CrocoGameCenterAchievementsEnabled absent/false.",
+    "The complete local 40-achievement catalog and reviewed images remain available. Deferred remote achievement configuration and round-trip checks do not block the local-only achievement release.",
+    "Four v3 leaderboards are created/localized and ready for review in one iOS draft containing only those four boards. App 1.1.0 is not yet included and no final submission was made. App-version association and real score read-back must be verified independently. Japan uses endless.japan.route_1.score.v3.",
+    "Weekly boards are configured once from 2026-09-28T00:00:00Z, with seven-day duration and immediate restart. Game Center creates later occurrences; no advance week creation or app history UI is required.",
+    "The earlier export signing issue was resolved. The final local 1.1.0 (18) archive and Apple Distribution IPA export passed signature, identifier and package checks on September 24; evidence: artifacts/qa/release-1.1.0/final-ipa-metadata.json. Binary upload succeeded at 2026-09-24T07:24:44Z using the same verified source archive. Apple processing started; readiness for build selection and App Review submission are not established.",
+    "Ten replacement screenshots are processed and visually verified in the 1.1.0 draft: five iPhone 6.9-inch and five iPad 13-inch, ordered Weekly/Endless/Home/Controls/Audio. App 1.1.0 still needs to join the existing four-board iOS draft after binary processing.",
+    "Signed-in Apple verification was refreshed September 24; TestFlight had only build 17 before the subsequently successful upload of build 18. Automatic release remained selected; no App Review submission or public release is established by this update."
+  ],
+  "updatedOn": "2026-09-24",
+  "achievementReleaseMode": "local-only",
+  "remoteAchievementSyncEnabled": false,
+  "remoteAchievementConfiguration": {
+    "status": "partial-deferred",
+    "entryStoppedOn": "2026-09-24",
+    "savedCount": 7,
+    "savedIDs": [
+      "com.daviddemri.crococross.achievement.stunt.backflip.first",
+      "com.daviddemri.crococross.achievement.stunt.frontflip.first",
+      "com.daviddemri.crococross.achievement.stunt.double.landed",
+      "com.daviddemri.crococross.achievement.stunt.triple.landed",
+      "com.daviddemri.crococross.achievement.stunt.total.10",
+      "com.daviddemri.crococross.achievement.endless.distance.1000",
+      "com.daviddemri.crococross.achievement.weekly.finish.1"
+    ],
+    "partialCount": 0,
+    "remainingCount": 33,
+    "submittedForReview": false,
+    "instruction": "Preserve saved records; no further creation, edits or deletion. All 40 achievements remain available locally."
+  },
+  "remoteLeaderboardConfiguration": {
+    "status": "ready-for-review-in-one-ios-draft",
+    "createdCount": 4,
+    "ids": [
+      "com.daviddemri.crococross.weekly.score.v3",
+      "com.daviddemri.crococross.weekly.time.v3",
+      "com.daviddemri.crococross.endless.score.v3",
+      "com.daviddemri.crococross.endless.japan.route_1.score.v3"
+    ],
+    "weeklyFirstStartUTC": "2026-09-28T00:00:00Z",
+    "weeklyDurationSeconds": 604800,
+    "weeklyRestartSeconds": 604800,
+    "versionAssociationConfirmed": false,
+    "scoreReadBackConfirmed": false,
+    "draftPlatform": "iOS",
+    "draftCreatedLocal": "2026-09-24 00:14 America/Los_Angeles",
+    "draftItemCount": 4,
+    "draftContainsOnlyLeaderboards": true,
+    "appVersionIncluded": false,
+    "submittedForReview": false,
+    "draftItems": [
+      "Weekly Score v3",
+      "Weekly Time v3",
+      "Endless Canyon v3",
+      "Endless Japan v3"
+    ],
+    "componentStatus": "Prêt pour la vérification",
+    "scoreReadBackStatus": "not-attempted"
+  },
+  "priorCandidateEvidence": {
     "archiveSucceeded": true,
     "codeSignatureVerified": true,
     "ipaExportSucceeded": false,
@@ -42,15 +108,81 @@
     "packageChecksPassed": 584,
     "reviewedAchievementImages": 40,
     "reviewedStoreScreenshots": 10,
-    "evidenceDirectory": "artifacts/qa/release-1.1.0/"
+    "evidenceDirectory": "artifacts/qa/release-1.1.0/",
+    "scope": "Earlier September 23 candidate only; not evidence of the latest source archive/export or audit.",
+    "initialExportFailureResolved": true
   },
-  "remoteGameCenterEnabled": false,
-  "remoteScreenshotsUpdated": false,
-  "notes": [
-    "The 1.1.0 draft metadata is saved; the draft still contains its inherited 1.0.0 screenshots. Replacement screenshots and achievement images are reviewed local assets only.",
-    "The successful local archive is separate from the failed IPA export. Reconnect Xcode and provide distribution signing before retrying local export.",
-    "No new remote leaderboard or achievement was created. CrocoGameCenterAchievementsEnabled remains absent/false.",
-    "Configure the two Weekly recurring boards once: matching Monday 00:00 UTC starts, seven-day duration and immediate seven-day restart. No advance weekly creation or app history UI is required.",
-    "No candidate binary upload, App Review submission or public release performed. Automatic release remains selected; recommending manual release did not change it."
-  ]
+  "localCandidate": {
+    "version": "1.1.0",
+    "build": "18",
+    "status": "archive-export-and-local-package-validation-passed",
+    "verifiedAtUTC": "2026-09-24T07:14:06.454658+00:00",
+    "finalArchiveVerified": true,
+    "finalExportVerified": true,
+    "finalAuditComplete": false,
+    "finalAuditScope": "Local package, source fingerprints and signatures verified; remote screenshot replacement separately verified. App/build association and real Game Center score read-back remain unconfirmed.",
+    "archivePath": "artifacts/app-store-1.1.0-final/CrocoCross.xcarchive",
+    "ipaPath": "artifacts/app-store-1.1.0-final/export/CrocoCross.ipa",
+    "ipaBytes": 219296507,
+    "ipaSHA256": "aa7c87cafcbed9b682cc44fc18b8e294105e7395c2d4a2a1df03e094afb4f03d",
+    "archiveStrictCodeSignatureVerified": true,
+    "ipaStrictCodeSignatureVerified": true,
+    "signingAuthorities": [
+      "Apple Distribution: David Demri (57XAAX65VC)",
+      "Apple Worldwide Developer Relations Certification Authority",
+      "Apple Root CA"
+    ],
+    "teamID": "57XAAX65VC",
+    "gameCenterEntitlement": true,
+    "getTaskAllow": false,
+    "distributionProfileHasDeviceList": false,
+    "distributionProfileExpiresUTC": "2027-06-11T16:46:32Z",
+    "leaderboards": {
+      "CrocoEndlessScoreLeaderboardID": "com.daviddemri.crococross.endless.score.v3",
+      "CrocoWeeklyTimeLeaderboardID": "com.daviddemri.crococross.weekly.time.v3",
+      "CrocoJapanEndlessScoreLeaderboardID": "com.daviddemri.crococross.endless.japan.route_1.score.v3",
+      "CrocoWeeklyScoreLeaderboardID": "com.daviddemri.crococross.weekly.score.v3"
+    },
+    "achievementReportingEnabled": false,
+    "sourceFingerprintsCount": 199,
+    "sourceFingerprintsUnchanged": true,
+    "packageChecksPassed": 629,
+    "competitionRulesChecksPassed": true,
+    "evidence": "artifacts/qa/release-1.1.0/final-ipa-metadata.json",
+    "exportDestination": "export",
+    "uploaded": true,
+    "submittedForReview": false,
+    "uploadArtifactScope": "Upload used a separate Xcode upload export of the same verified source archive. The local export IPA SHA-256 is not claimed as the uploaded byte hash."
+  },
+  "remoteScreenshotVerification": {
+    "verifiedOn": "2026-09-24",
+    "version": "1.1.0",
+    "locale": "en-US",
+    "iphone6_9Count": 5,
+    "ipad13Count": 5,
+    "allProcessed": true,
+    "visualReviewPassed": true,
+    "order": [
+      "01-weekly-ride",
+      "02-endless-ride",
+      "03-home",
+      "04-controls",
+      "05-audio"
+    ]
+  },
+  "binaryUpload": {
+    "version": "1.1.0",
+    "build": "18",
+    "uploaded": true,
+    "completedAtUTC": "2026-09-24T07:24:44Z",
+    "commandExitCode": 0,
+    "result": "EXPORT SUCCEEDED; Uploaded CrocoCross",
+    "appleProcessing": true,
+    "readyForSelection": false,
+    "submittedForReview": false,
+    "sourceArchivePath": "artifacts/app-store-1.1.0-final/CrocoCross.xcarchive",
+    "evidence": "artifacts/app-store-1.1.0-final/upload.log",
+    "uploadedBytesMatchLocalIPAHashVerified": false,
+    "artifactScope": "Upload used a separate Xcode upload export of the same verified source archive. The local export IPA SHA-256 is not claimed as the uploaded byte hash."
+  }
 }

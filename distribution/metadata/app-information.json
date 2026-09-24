@@ -35,7 +35,7 @@
   "privacyEmail": "privacy@lafayette-consulting.us",
   "appStoreConnectID": "6812979862",
   "appStoreConnectURL": "https://appstoreconnect.apple.com/apps/6812979862/distribution/ios/version/inflight",
-  "preparationStatus": "1.1.0 draft and saved metadata verified; signed local 1.1.0 (18) archive verified; IPA export failed; build 18 not uploaded",
+  "preparationStatus": "Final local 1.1.0 (18) archive and Apple Distribution IPA verified; ten replacement screenshots processed and reviewed. A separate Xcode export from the same verified archive uploaded build 18 successfully at 2026-09-24T07:24:44Z. Apple processing has started; build selection and app association with the four-board draft are pending. Achievements remain local-only.",
   "remotePublicationAuthorized": false,
   "releaseSettingScope": "Automatic retained in the 1.1.0 draft on September 23, 2026; no change made",
   "lastVerifiedStoreVersion": {
@@ -56,29 +56,68 @@
       "whatsNew",
       "appReviewNotes"
     ],
-    "screenshots": "Inherited 1.0.0 set; reviewed replacement images are local only"
+    "screenshots": "Ten replacement screenshots processed and visually reviewed: five iPhone 6.9-inch and five iPad 13-inch, ordered Weekly/Endless/Home/Controls/Audio",
+    "screenshotsVerifiedOn": "2026-09-24"
   },
   "localCandidateArchive": {
     "version": "1.1.0",
     "build": "18",
     "status": "succeeded",
-    "uploaded": false,
-    "codeSignatureVerified": true
+    "verifiedAtUTC": "2026-09-24T07:14:06.454658+00:00",
+    "archivePath": "artifacts/app-store-1.1.0-final/CrocoCross.xcarchive",
+    "uploaded": true,
+    "codeSignatureVerified": true,
+    "sourceFingerprintsCount": 199,
+    "sourceFingerprintsUnchanged": true,
+    "evidence": "artifacts/qa/release-1.1.0/final-ipa-metadata.json",
+    "uploadedAtUTC": "2026-09-24T07:24:44Z"
   },
   "recommendedReleaseSetting": "Manual, subject to an explicit launch decision; not applied",
   "localCandidateExport": {
-    "status": "failed",
-    "errors": [
-      "No Accounts",
-      "No signing certificate \"iOS Distribution\" found"
-    ]
+    "version": "1.1.0",
+    "build": "18",
+    "status": "succeeded",
+    "verifiedAtUTC": "2026-09-24T07:14:06.454658+00:00",
+    "destination": "export",
+    "ipaPath": "artifacts/app-store-1.1.0-final/export/CrocoCross.ipa",
+    "ipaBytes": 219296507,
+    "ipaSHA256": "aa7c87cafcbed9b682cc44fc18b8e294105e7395c2d4a2a1df03e094afb4f03d",
+    "codeSignatureVerified": true,
+    "signingAuthorities": [
+      "Apple Distribution: David Demri (57XAAX65VC)",
+      "Apple Worldwide Developer Relations Certification Authority",
+      "Apple Root CA"
+    ],
+    "teamID": "57XAAX65VC",
+    "getTaskAllow": false,
+    "gameCenterEntitlement": true,
+    "distributionProfileHasDeviceList": false,
+    "distributionProfileExpiresUTC": "2027-06-11T16:46:32Z",
+    "achievementReportingEnabled": false,
+    "uploaded": false,
+    "submittedForReview": false,
+    "initialExportFailureResolved": true,
+    "evidence": "artifacts/qa/release-1.1.0/final-ipa-metadata.json",
+    "uploadArtifactScope": "This local exported IPA hash is retained as local evidence only; a separate export from the same archive was uploaded, with no uploaded-byte hash match asserted."
   },
   "lastVerifiedTestFlight": {
-    "verifiedOn": "2026-09-23",
+    "verifiedOn": "2026-09-24",
     "onlyVersion": "1.0.0",
     "onlyBuild": "17",
     "uploadedOn": "2026-09-16",
     "status": "Ready to Submit",
-    "candidateBuild18Uploaded": false
+    "candidateBuild18Uploaded": true,
+    "candidateBuild18UploadStatus": "accepted-processing",
+    "subsequentUploadEvidence": "Xcode upload.log: Uploaded CrocoCross / EXPORT SUCCEEDED at 2026-09-24T07:24:44Z; not yet a refreshed TestFlight selectable-build result."
+  },
+  "binaryUpload": {
+    "version": "1.1.0",
+    "build": "18",
+    "uploaded": true,
+    "completedAtUTC": "2026-09-24T07:24:44Z",
+    "appleProcessing": true,
+    "readyForSelection": false,
+    "submittedForReview": false,
+    "evidence": "artifacts/app-store-1.1.0-final/upload.log"
   }
 }
