@@ -10,7 +10,7 @@ public struct PhysicsConfiguration: Codable, Equatable, Sendable {
     public static let substeps: Int32 = 4
     public static let courseStartX = 3.0
     public static let weeklyDistance = 2_600.0
-    public enum TerrainStyle: String, Codable, Sendable { case hills, flat }
+    public enum TerrainStyle: String, Codable, Sendable { case hills, flat, japanMountains }
     public var terrainStyle: TerrainStyle = .hills
     /// Total mass and nominal total pitch inertia, including the rider and wheels.
     public var mass: Double = 150

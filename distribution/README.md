@@ -1,63 +1,47 @@
-# CrocoCross — App Store package 1.0.0 (17)
+# CrocoCross — App Store candidate 1.1.0 (18)
 
-English is the only app and Store language. Rocco and Canyon are the only playable character and world.
+This folder contains the prepared **1.1.0 (18)** candidate. Signed-in checks on **September 23, 2026** confirmed **1.0.0 (17), Ready for Distribution**, and the owner-created **1.1.0 draft**, **À finaliser avant soumission**. Current description, promotional text, keywords, What's New and review notes were saved in that draft. It retains **Automatic** release; a recommendation for manual release has not changed that setting. TestFlight contains only 1.0.0 (17), uploaded September 16. Build 18 has not been uploaded, submitted or released. The app and Store language are English.
 
-## Delivery files
+The local signed Release **1.1.0 (18) archive succeeded and its code signature was verified**. Local IPA export failed with `No Accounts` and `No signing certificate "iOS Distribution" found`; reconnecting the Xcode account and making distribution signing available remain required.
 
-| Folder | Use |
+## Delivery status
+
+| Material | Status |
 |---|---|
-| `screenshots/upload/en-US/iphone-6.9/` | Five Store screenshots, ordered 01–05, 1320 × 2868 pixels |
-| `screenshots/upload/en-US/ipad-13/` | Five landscape iPad screenshots, 2752 × 2064 pixels |
-| `screenshots/raw/` | Real captures without marketing headings; alternative to the upload set |
-| `icons/` | Twelve opaque icon sizes, including the 1024 × 1024 marketing icon |
-| `metadata/en-US/` | One text file per Store or TestFlight field |
-| `metadata/app-information.json` | App identity, URLs, price and categories |
-| `review/` | App Review notes, privacy/age declarations and Game Center configuration |
-| `private/app-review-contact.txt` | Owner-provided private Apple contact, excluded from public Git |
-| `config/` | Export settings, app plist, privacy manifest and entitlements |
-| `web/` | English support, privacy and marketing pages |
-| `validation.json` and `VALIDATION.md` | Package checks and release evidence |
+| `metadata/en-US/` | Current candidate text; description, promo, keywords and What's New saved in the Store draft |
+| `metadata/app-information.json` | Candidate identity and separately scoped live/local status |
+| `review/app-review-notes.txt` | Review-ready gameplay instructions saved in the Store draft |
+| `screenshots/upload/en-US/iphone-6.9/` | Five refreshed 1320 × 2868 images, visually reviewed locally |
+| `screenshots/upload/en-US/ipad-13/` | Five refreshed 2752 × 2064 images, visually reviewed locally |
+| `screenshots/raw/` | Current Release simulator capture evidence |
+| `game-center/achievements/` | 40 opaque 1024 × 1024 badges, manifest and reviewed contact sheet; no remote upload |
+| `icons/` | Opaque icon set, including the 1024 × 1024 marketing image |
+| `config/` | Candidate export/bundle snapshots; verify again after successful distribution export |
+| `web/` | Public-page sources; publication and live content are a separate check |
+| `review/store-status.json`, `review/game-center.json`, `review/declarations.md` | September 17 historical 1.0.0 evidence |
+| `validation.json`, `VALIDATION.md` | Refreshed candidate package: 584 checks passed |
+| `release-readiness.json` | Current gates; online configuration and distribution export remain incomplete |
 
-Use one screenshot set per device. The contact sheets named `preview-*.jpg` are for review, not upload. Screenshots contain real gameplay, without fabricated scores. App preview video is optional and is not included.
+**The Store draft still contains inherited 1.0.0 screenshots.** Reviewed local images have not been uploaded. Candidate evidence under `artifacts/qa/release-1.1.0/` includes 97 passing core tests, passing Release Store-capture tests on iPhone 17 Pro Max and iPad Pro 13-inch (M5), the successful archive, and the failed export log.
 
-## App identity
+The candidate adds Kenji and Japan Mountains as earned unlocks, a 2,600 m shared Weekly route, 40 local achievements, per-week/per-world records, revised controls and more flexible falls. Other planned riders/worlds remain unavailable. There are no ads or purchases.
 
-- App: **CrocoCross**, iOS for iPhone and iPad, minimum iOS/iPadOS 18.
-- [App Store Connect](https://appstoreconnect.apple.com/apps/6812979862/distribution/ios/version/inflight): **6812979862**.
-- Bundle: **com.daviddemri.crococross**. SKU: **CROCOCROSS-IOS-001**.
-- Version **1.0.0**, build **17**. Primary language: **English (U.S.)** only.
-- Seller: **David Demri**. Copyright: **2026 Lafayette Consulting**.
-- Free, no ads, no in-app purchases. Games: Racing / Sports.
-- Native Mac and Vision targets are disabled. Their separate Store availability settings are also off.
+## Identity
 
-## Public URLs
+CrocoCross · app **6812979862** · bundle `com.daviddemri.crococross` · SKU `CROCOCROSS-IOS-001` · team `57XAAX65VC`. Candidate **1.1.0 (18)**, iPhone+iPad, minimum iOS/iPadOS 18. Seller: David Demri; copyright: 2026 Lafayette Consulting. Free; Games/Racing/Sports. Confirm agreements, age rating, territories and declarations before submission.
 
-- [Support](https://daviddemri26.github.io/CrocoCross-iOS/support.html)
-- [Privacy](https://daviddemri26.github.io/CrocoCross-iOS/privacy.html)
-- [Marketing](https://daviddemri26.github.io/CrocoCross-iOS/)
+Existing URLs: [Support](https://daviddemri26.github.io/CrocoCross-iOS/support.html), [Privacy](https://daviddemri26.github.io/CrocoCross-iOS/privacy.html), [Marketing](https://daviddemri26.github.io/CrocoCross-iOS/). Their publication/current contents are not reverified by this package update. Private review contact stays outside public Git.
 
-Support and privacy contacts reuse the publisher details from SweetKeyboard Pro. The private review telephone is not published on the site or in Git.
+## Remaining Game Center work
 
-## Apple preparation and final handoff
+Four v3 boards are prepared in code: Weekly points, Weekly centiseconds, Canyon Endless points and Japan Endless points. No new board has been created remotely. Configure the two Weekly recurring boards once with matching Monday 00:00 UTC starts, seven-day duration and immediate seven-day restart. Game Center creates later occurrences automatically; there is no advance weekly creation or app history UI.
 
-The CrocoCross record has been created. The owner connected the Apple Developer account in Xcode, and the App Store export succeeded. The earlier account/provisioning blocker is resolved. Build 17 has been uploaded, processed and selected. Detailed live status is recorded in `review/store-status.json`; see `HANDOFF.md` for the remaining owner actions.
+**40 achievements / 1,000 points** have a catalog, JSON/CSV metadata and reviewed artwork. Remote localizations, upload, configuration, association and real score/achievement read-back remain pending. `CrocoGameCenterAchievementsEnabled` stays absent/false until configured and validated. Local play and achievements remain available.
 
-The final action to **submit to App Review** and the eventual **release** remain with the owner. The first submission goes through Apple's review before the app can be publicly released. See [Apple's submission workflow](https://developer.apple.com/help/app-store-connect/manage-submissions-to-app-review/submit-an-app/).
+See [Game Center setup](../docs/GAME-CENTER-SETUP.md), [achievement metadata](../docs/ACHIEVEMENTS-GAME-CENTER.md) and [release gates](../docs/RELEASE.md).
 
-Game Center uses the three leaderboards in `review/game-center.json`. Both weekly boards must share a Monday 00:00 UTC anchor and a 604800-second duration/recurrence. A real score upload and read-back is separate from creating the configuration.
+## Authorized preparation
 
-The development-signed archive and the exported distribution build are stored locally in `artifacts/app-store-release/`, outside public Git. The archive was built with Xcode 26.6 and the iOS 26.5 SDK.
+The owner authorized local candidate/archive/export preparation and committing/pushing reviewed source to GitHub main. Binary upload, App Review submission, public release and remote Game Center configuration remain separate actions. The existing Pages workflow publishes `distribution/web` changes on main; a website push is not a local-only edit.
 
-## Reproduction
-
-From the project root:
-
-```sh
-python3 scripts/generate-project.py
-bash scripts/archive-app-store.sh /tmp/crococross-appstore-release
-python3 scripts/check-app-store-package.py
-```
-
-The archive script does not upload. `config/ExportOptions-AppStore.plist` uses `destination=export` to produce a local IPA. A separately prepared upload configuration was used only after the owner authorized preparing the live Store record. Image generation uses Pillow and `scripts/prepare-store-images.py`; real UI captures are implemented in `UITests/AppStoreCaptureTests.swift`.
-
-[Apple screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications)
+`scripts/archive-app-store.sh` creates a local archive; export uses `destination=export`. A successful local archive/export is distinct from upload or Apple processing. Artifacts and signing material stay outside public Git. [Current handoff](HANDOFF.md).

@@ -1,0 +1,67 @@
+name: Manual App Store package
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: 'Unused App Store build number (verify in App Store Connect first)'
+        type: string
+        required: true
+        default: '18'
+      upload:
+        description: 'Upload to App Store Connect after export (does not submit or release)'
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-store-package
+  cancel-in-progress: false
+
+jobs:
+  package:
+    if: github.ref == 'refs/heads/main'
+    runs-on: macos-26
+    timeout-minutes: 60
+    environment: app-store
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - name: Check out the selected main commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4, verified against actions/checkout
+        with:
+          persist-credentials: false
+      - name: Check project and package
+        run: |
+          xcodebuild -version
+          python3 scripts/generate-project.py
+          git diff --exit-code -- CrocoCross.xcodeproj
+          python3 scripts/check-app-store-package.py
+      - name: Test game rules and physics
+        run: swift test --disable-sandbox
+      - name: Archive, sign and export
+        env:
+          APP_STORE_BUILD_NUMBER: ${{ inputs.build_number }}
+          APP_STORE_UPLOAD: ${{ inputs.upload }}
+          APP_STORE_RELEASE_ENABLED: ${{ vars.APP_STORE_RELEASE_ENABLED }}
+          APPLE_DISTRIBUTION_P12_BASE64: ${{ secrets.APPLE_DISTRIBUTION_P12_BASE64 }}
+          APPLE_DISTRIBUTION_P12_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_P12_PASSWORD }}
+          APP_STORE_PROFILE_BASE64: ${{ secrets.APP_STORE_PROFILE_BASE64 }}
+          ASC_PRIVATE_KEY_BASE64: ${{ inputs.upload && secrets.ASC_PRIVATE_KEY_BASE64 || '' }}
+          ASC_KEY_ID: ${{ inputs.upload && secrets.ASC_KEY_ID || '' }}
+          ASC_ISSUER_ID: ${{ inputs.upload && secrets.ASC_ISSUER_ID || '' }}
+        run: bash scripts/app-store-ci.sh
+      - name: Remove temporary signing material
+        if: always()
+        run: bash scripts/app-store-ci.sh cleanup
+      - name: Save package and build evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4, verified against actions/upload-artifact
+        with:
+          name: app-store-${{ inputs.build_number }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/crococross-release/
+          if-no-files-found: ignore
+          retention-days: 7

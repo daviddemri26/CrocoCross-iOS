@@ -1,0 +1,28 @@
+[
+  {
+    "name": "japan-panorama",
+    "source": "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-141a0018-20f7-4d3d-9107-d146f9fa343a.png",
+    "destination": "App/Resources/GameAssets/japan-panorama.png",
+    "dimensions": [
+      2172,
+      724
+    ],
+    "mode": "RGB",
+    "sha256": "e0b18d464e853e3a097de5df7bb072371aebd4745ef16e45776ceb6b517e08c7",
+    "generator": "built-in image_gen",
+    "prompt": "japan-panorama.txt"
+  },
+  {
+    "name": "japan-torii",
+    "source": "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-ec0296a6-de88-416c-8a2f-7e8bfea35a81.png",
+    "destination": "App/Resources/GameAssets/Scenery/japan/ground-3.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "mode": "RGBA",
+    "sha256": "16e8ad0e46e22bb8e4c67b53ed2d3c9527e1ea2a4e686a521adc4da68c6da3ce",
+    "generator": "built-in image_gen",
+    "prompt": "japan-torii.txt"
+  }
+]

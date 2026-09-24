@@ -1,11 +1,13 @@
-CrocoCross is a native side-view motorcycle game for iPhone and iPad. No app account, demo credentials, purchase or subscription is required. The interface is in English. Rocco and Canyon are the playable character and world in version 1.0.
+CrocoCross is a native side-view motorcycle game for iPhone and iPad. The interface is in English. No separate app account, demo credentials, purchase or subscription is required.
 
-To play: select Weekly for a 4,000 m course with one life, or Endless for an unlimited trail with three lives. Hold the right grip to accelerate/lean back; hold the left lever to brake/lean forward. Short presses provide finer control. Flips score only on safe landing. Open How to for illustrated instructions and scoring.
+Start with Rocco and Canyon. Choose Weekly for a shared 2,600 m course with one life, or Endless for a fresh open-ended trail with three lives. Hold the right control area to accelerate and lean back; hold the left to brake and lean forward. Controls settle beneath the initial touch. Short presses provide finer control. How to explains the controls and scoring.
 
-Game Center is optional. The two modes can be played locally without authentication. Game Center uses the app-scoped player identifier and official Apple leaderboards only. Before a weekly leaderboard occurrence is available, the weekly course is playable locally. Weekly leaderboard entries require a full 4,000 m finish from an eligible start. No demo login is required.
+Flips count only after a safe landing. Kenji unlocks after 50 safely landed backflips, and Japan Mountains after 50 safely landed frontflips. Progress persists across rides, including after a fall. Tap the ready catalog card to claim an unlock. Other planned catalog entries remain unavailable.
 
-Audio: Home has a sound toggle. Settings opens Audio, with separate music, engine and effects volumes. The app has no background-audio entitlement. Returning Home or leaving the app abandons the run; relaunch opens Home, preserving local records and preferences.
+Achievements shows 40 local achievements. Double and triple jumps require two or three rotations safely landed in one jump. Forward and backward rotations contribute to shared cumulative totals. Rankings shows separate Weekly score and time records; its Endless link opens per-world records in the world catalog. Completed Weekly course records require reaching the finish.
 
-Cartoon rider falls and a final-life explosion contain no blood or gore. The optional slow-motion fall effect respects Reduce Motion. Artwork, music and the original rider-fall sound are provided by their author David Demri. The separately licensed Mixkit explosion sound and Box2D MIT license are credited in Settings > About.
+Game Center is optional. Both modes remain playable locally without authentication. An eligible Weekly run requires a confirmed active competition at the start and a full finish before points/time can be submitted. Endless rankings are separate for Canyon and Japan. Game Center uses Apple's sign-in and app-scoped player identity; no additional login is required.
 
-The three v2 Game Center leaderboards are configured. Both weekly boards start September 21, 2026 at 00:00 UTC and repeat every seven days. Weekly practice remains playable before that first occurrence.
+Home has a sound toggle. Settings > Audio provides separate music, engine and effects volumes. The app has no background-audio entitlement. Returning Home abandons the current run while preserving local records, achievements, unlock progress and preferences.
+
+Cartoon falls and the final-life explosion contain no blood or gore. Reduce Motion limits decorative effects. Third-party licenses and credits are available in Settings > About.

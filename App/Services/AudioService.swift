@@ -364,6 +364,17 @@ final class AudioService: NSObject, AVAudioPlayerDelegate {
         }
     }
 
+    /// The same original victory cue honors mute, Effects volume, silent mode and haptic preferences.
+    func playUnlockCelebration() {
+        guard !suspended, !interrupted, !routeNeedsUserResume else { return }
+        if !isMuted, effectsVolume > 0 {
+            // Home may not have prepared its engine when music is disabled.
+            try? prepareAudio()
+            playEffect(victoryBuffer)
+        }
+        if hapticsEnabled { UINotificationFeedbackGenerator().notificationOccurred(.success) }
+    }
+
     private func loadDeathSounds() {
         deathPlayers = DeathSoundCatalog.filenames.compactMap { filename in
             guard let url = bundle.url(forResource: filename, withExtension: DeathSoundCatalog.fileExtension, subdirectory: "GameAssets/DeathSounds"),

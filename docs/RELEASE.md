@@ -1,55 +1,47 @@
 # Release configuration and gates
 
-## Next-version preparation — September 20, 2026
+## Current candidate: 1.1.0 (18)
 
-The owner reports version 1.0.0 (17) awaiting Apple review. Accumulate local changes until the owner explicitly authorizes the next release; do not archive, upload, submit or change live Game Center configuration during preparation. [Next-release tracking](NEXT-RELEASE.md) is authoritative for the new 2,600 m course and complete leaderboard reset.
+Version **1.1.0**, build **18**, is the prepared update. Signed-in App Store Connect checks on **September 23, 2026** confirmed **1.0.0 (17), Ready for Distribution**, and the owner-created **1.1.0 draft**, shown as **À finaliser avant soumission**. The draft retains **Automatic** release; no release-setting change was made. Manual release remains the recommended choice for a controlled launch, not the observed setting. Description, promotional text, keywords, What's New and App Review notes were saved successfully in that draft.
 
-The next version uses fresh `weekly.score.v3`, `weekly.time.v3` and `endless.score.v3` boards under `com.daviddemri.crococross`, and local rules namespace `box2d-2`. These new boards are only referenced locally so far; their creation, review and activation are pending. The v2 setup documented below is the first-version baseline, not the configuration to reuse for the next release.
+TestFlight contains only **1.0.0 (17)**, uploaded September 16 and marked **Ready to Submit**; build 18 has not been uploaded. The local Release **1.1.0 (18) archive succeeded and its code signature was verified**. IPA export was attempted and **failed** with `No Accounts` and `No signing certificate "iOS Distribution" found`. Reconnect the Xcode account and make the distribution certificate available before retrying the authorized local export.
+David has authorized preparing the candidate, a local signed archive/export, and committing/pushing the reviewed changes to GitHub main. This does **not** authorize automatic binary upload, submission to App Review, public release, or live Game Center configuration. Keep those operations separate. The dated entries in [NEXT-RELEASE.md](NEXT-RELEASE.md) retain the history of earlier preparation restrictions.
 
+## Identity and local configuration
 
-## Apple identity
+- CrocoCross · `com.daviddemri.crococross` · App Store Connect app `6812979862`.
+- Team `57XAAX65VC`; iPhone and iPad, iOS/iPadOS 18 or later. Mac and Vision targets remain disabled.
+- Free, no ads, no purchases, no separate CrocoCross account and no background-audio entitlement.
+- Keep version/build settings in `scripts/generate-project.py`, the generated project and package metadata consistent. Automatic export build-number management is disabled.
+- The app declares the Game Center entitlement, OS-only exempt encryption, no tracking, and the documented UserDefaults/SystemBootTime privacy reasons. Recheck the final signed bundle, not only these source files.
+- The opaque 1024-pixel icon and bundled Box2D/license credits are present. Apple currently requires Xcode 26 or later and the iOS 26 SDK or later for uploads; recheck at upload time. [Apple SDK requirements](https://developer.apple.com/news/upcoming-requirements/).
 
-- Display name: CrocoCross
-- Bundle ID: `com.daviddemri.crococross`
-- Development team: `57XAAX65VC` (public certificate metadata verified locally)
-- Current Store candidate version/build: 1.0.0/17
-- Target families: iPhone+iPad; iOS18+
-- Box2D 3.1.1 is compiled into the native app; its MIT license is bundled and accessible in About. No advertisements, purchases or background audio entitlement.
+## Game Center activation still pending
 
-App Store Connect record **6812979862** was created under David Demri's account. Build **17** was exported with distribution signing, uploaded successfully, processed by Apple and selected for version **1.0.0**. The final App Review submission and manual public release remain owner actions. See `distribution/review/store-status.json` for the current handoff.
+The update uses four fresh Best Score boards. Their identifiers are prepared locally; this repository does not establish that they exist or are live in App Store Connect.
 
-## Game Center
-
-Configure **Best Score** and submit these with the first app version:
-
-| ID | Type | Format | Sort |
+| Identifier suffix under `com.daviddemri.crococross.` | Type | Value | Ordering |
 |---|---|---|---|
-| com.daviddemri.crococross.weekly.score.v2 | Recurring7days | Integer points | High to low |
-| com.daviddemri.crococross.weekly.time.v2 | Recurring7days | Elapsed time in centiseconds | Low to high |
-| com.daviddemri.crococross.endless.score.v2 | Classic | Integer points | High to low |
+| `weekly.score.v3` | Recurring | Points | High to low |
+| `weekly.time.v3` | Recurring | Centiseconds | Low to high |
+| `endless.score.v3` | Classic | Canyon points | High to low |
+| `endless.japan.route-1.score.v3` | Classic | Japan points | High to low |
 
-These boards belong to the fresh `box2d-1` rules. Until their configuration is confirmed, play stays local; a configured identifier alone does not authorize a ranked start.
+Configure the two Weekly recurring leaderboards once, with the same Monday 00:00 UTC first start, a seven-day duration and an immediate seven-day restart (604,800 seconds). Game Center creates subsequent occurrences automatically; do not create boards or individual weeks in advance. The app presents the current week only and has no history UI. Choose a future first start when configuration is authorized. A ranked Weekly start requires confirmed matching schedules; completing the 2,600 m course is required to submit points/time. Until confirmation, local play remains available. Keep old v2 components as historical records and review their visibility in the new version. See [Game Center setup](GAME-CENTER-SETUP.md).
 
-Both weekly boards must start on the same Monday at 00:00 UTC, with a duration and restart interval of 604,800 seconds. The native service validates each board's start, duration, and `nextStartDate - startDate`, and requires matching occurrences before permitting a ranked weekly start. A seven-day duration with a longer restart interval is rejected. Apple exposes the next occurrence's beginning through [`GKLeaderboard.nextStartDate`](https://developer.apple.com/documentation/gamekit/gkleaderboard/nextstartdate).
+The **40 achievements / 1,000 points** work locally. Remote synchronization is disabled because `CrocoGameCenterAchievementsEnabled` is absent/false. The catalog, JSON/CSV metadata proposals and **40 distinct, reviewed 1024 × 1024 achievement images** are prepared locally. Their Game Center localizations, upload, configuration and version association are still pending. Configure and validate them before enabling the flag in the candidate. Do not advertise remote achievement synchronization while it remains disabled. See [achievement configuration](ACHIEVEMENTS-GAME-CENTER.md).
 
-Choose a Monday that is still in the future when creating the leaderboards: Apple does not allow the initial start date to be in the past. The two boards created on September 17, 2026 share the anchor `2026-09-21T00:00:00Z` (displayed as September 20, 17:00 UTC-7 in App Store Connect). Schedule beta competition testing after that first occurrence begins; until then, weekly practice and the classic Endless board remain available. Recompute the future Monday if configuration happens later, verify the actual returned dates, and use separate test accounts. [Apple's recurring-leaderboard setup walkthrough](https://developer.apple.com/videos/play/wwdc2021/10067/).
+Required online evidence remains outstanding: real eligible Weekly score/time and each world's Endless score submitted and read back for the original player, matching Weekly occurrence/global ranks, retry and account-switch behavior, and remote achievement restoration. Fake gateways and offline UI fixtures cannot establish this.
 
-Required live proof: sign in, load matching week, finish a real run, submit points/time, read entries back for the same player and occurrence; repeat with another player. Test retry, sign-out/account change and expired-week behavior. Never fabricate leaderboard entries for testing.
+## Store material and validation
 
-## Store materials
+The English copy in `distribution/metadata/en-US/` covers Kenji, Japan Mountains, 2,600 m Weekly, 40 achievements, controls and rider falls; the description, promotional text, keywords, What's New and App Review notes are saved in the 1.1.0 draft. [STORE-LISTING.md](STORE-LISTING.md) records that boundary. Fresh iPhone and iPad screenshot sets are prepared locally and both contact sheets have been visually reviewed. **The remote draft still contains its inherited 1.0.0 screenshots**; the new images have not been uploaded.
 
-- 1024px opaque icon included.
-- Capture actual iPhone and iPad screens from the validated release build.
-- Create a concise description covering the weekly 4,000 m challenge, Endless, Rocco, Canyon and touch controls. The eight other riders are disabled during this preview and will return progressively; do not advertise them as playable.
-- Dedicated support/privacy pages and owner contacts are prepared in `distribution/`; see its README for live publication and signing status.
-- Complete age rating, encryption/export questions, EU trader information where applicable, and privacy disclosures based on actual Game Center data flows. The privacy manifest is not a substitute for the App Store privacy questionnaire.
-- Asset publication authorized by David Demri on September 12, 2026; original artwork/music authorship and rights confirmation are recorded in [SOURCE-PROVENANCE.md](SOURCE-PROVENANCE.md).
-- Recheck Apple's SDK requirements on submission day.
-- TestFlight internal beta, then external beta/review if needed; record feedback fixes.
-- Submit the final candidate and Game Center components; choose manual release.
+Candidate evidence under `artifacts/qa/release-1.1.0/`: **97 core tests passed**, Release `AppStoreCaptureTests` passed on **iPhone 17 Pro Max and iPad Pro 13-inch (M5)**, and the local signed archive succeeded. The refreshed distribution validator passed **584 checks**. Automated captures and their visual review do not establish physical-device gameplay or live Game Center behavior. The export failure remains recorded separately in `export.log`.
+Update the support/marketing/privacy content before publication, including unlock progression and optional achievement synchronization/first-account attribution. This task has not published those pages. Recheck privacy disclosures, calculated age rating, export compliance, rights and territory restrictions against the final version. Keep the owner-provided private review contact out of Git. Historical remote evidence remains in `distribution/review/store-status.json` and related September 17 records; it must not be presented as a fresh verification.
 
-## Platform-specific validation
+Final gates: reviewed source commit and passing CI/package checks; candidate-specific Release validation; physical iPhone/iPad gameplay, audio, interruptions and controls; archive/export signature and bundled settings; refreshed Store screenshots; signed-in App Store Connect state; configured online features or explicitly deferred remote functionality. Installation/launch alone does not prove human gameplay or live Game Center behavior.
 
-Physical iPhone: sustained play/performance, heat, interruptions, headphones/Bluetooth, silent switch, lock/unlock and multitouch. iPad: landscape, resizing, safe areas, menus. Duo: Xcode27.1+ DeviceHub poses and physical testing when available. Do not infer these from a generic successful build.
+## Automation boundary
 
-Support/privacy hosting, live Game Center configuration, TestFlight distribution and public release are separate operations; no local script performs them automatically.
+The existing GitHub workflow runs tests and a simulator build. Signing/archive/upload automation can be prepared separately with protected credentials and a manual trigger; no App Store deployment workflow is claimed operational here. GitHub Pages publishes `distribution/web` changes pushed to main, so website changes require a deliberate publication decision. A local archive/export remains distinct from upload, TestFlight distribution, App Review and public release.

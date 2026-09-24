@@ -31,7 +31,7 @@ Exemple Rocco, build 11 : ancrage épaule sur le buste `(465/1635, 535/962)`, ha
 
 ## Mouvement et vérification
 
-La présentation reste indépendante des forces physiques. Pour Rocco attaché, conserver la taille raccordée, le buste limité à environ ±20° par rapport à la moto et les mouvements relatifs filtrés. Une rotation complète de la moto reste possible. Après une chute, les corps physiques détachés reprennent la pose.
+La présentation reste indépendante des forces physiques. Pour Rocco attaché, conserver la taille raccordée, le buste limité à environ ±20° par rapport à la moto et les mouvements relatifs filtrés. Une rotation complète de la moto reste possible. Après une chute, les corps physiques détachés reprennent la pose. Les bras et les jambes libérés utilisent `DetachedLimbMotion` : inertie et amortissement cosmétiques, angles initialisés depuis la pose attachée, coudes/genoux limités et pivots toujours raccordés. L’horloge vient des pas physiques interpolés de `GameSession` (ralenti et pause inclus), jamais du temps du décor ou des coordonnées écran. La conduite, les collisions et la trajectoire des corps Box2D restent inchangées.
 
 Avant de réactiver un personnage :
 
@@ -44,3 +44,17 @@ Avant de réactiver un personnage :
 Les autres personnages restent désactivés jusqu'à leur adaptation et leur validation. Le guide ne justifie pas de changer la conduite pour réparer un raccord visuel.
 
 Build 12 : la prise de Rocco est calibrée à `(1000/1634, 190/962)` sur la moto et `(1020/1536, 785/1024)` dans la paume. Le point `contact` coïncide avec `distal`, la calibration et l’orientation de l’avant-bras. Sa longueur jusqu’à la prise est 0,28 m. Un contrôle natif suit les deux paumes par rapport à leurs poignées pendant 180 images et dans les poses de réception/cabrage.
+
+## Corrections anatomiques de Kenji — à réutiliser pour les prochains personnages
+
+Consignes explicites de David, 22 septembre 2026 :
+
+- **Préserver ce qui est validé.** Pour Kenji, la tête, le buste, le biceps, l'avant-bras et la main sur le guidon sont approuvés. Une correction du bassin ou de la botte ne doit pas déplacer silencieusement cette partie haute. Conserver le même point de taille dans l'espace lors du remplacement d'un calque.
+- **Bassin strictement de profil.** Dessiner une seule fesse/hanche vue de côté. Ne pas montrer deux fesses comme dans une vue de dos ou un short vu de trois quarts arrière. Le premier bassin de Kenji donnait la bonne direction de profil ; la version à deux lobes a été rejetée.
+- **Pas de jambe dans le bassin.** Le calque bassin/queue ne contient ni morceau de cuisse, ni moignon cylindrique, ni prolongement de jambe. La cuisse séparée rentre profondément dans la hanche, bien en arrière, près de l'attache de la queue. Le chevauchement doit former un seul volume, sans raccord rapporté.
+- **Taille et queue.** Soigner la continuité buste/fessier. La queue doit rester visible derrière le personnage, naturellement rattachée et dégagée du buste. Le raccord taille/bassin ne doit pas ressembler à deux dessins collés.
+- **Transparence réelle et propre.** Contrôler les contours sur fonds clairs et sombres. Un canal alpha présent ne suffit pas : aucun halo brun, bleu ou noir autour de la queue, du pelage ou des vêtements. Ajuster le dessin et les couleurs du pelage, conserver les sources générées intactes et noter les variantes rejetées.
+- **Entrée du tibia dans la botte.** Le pivot de cheville est dans l'ouverture supérieure de la botte, jamais dans sa pointe, son avant ou un simple disque décoratif latéral. Le tibia doit rentrer par le dessus avec un chevauchement peint. Une rotation maîtrisée de la botte est possible pour respecter l'anatomie, en gardant l'appui sur le repose-pied.
+- **Mesures et regard visuel.** Une erreur numérique nulle sur l'appui ne prouve pas que l'anatomie est correcte. Vérifier aussi l'axe tibia/ouverture, l'insertion du haut de cuisse, le contour de la fesse et la visibilité de la queue en pose neutre, cabrage, réception, rotation et chute, en gros plan et à l'échelle du jeu.
+
+Ces consignes complètent les règles de Rocco ci-dessus et doivent guider chaque futur personnage. Ne pas recopier ses coordonnées, ses masques ou son épaississement musculaire sur un autre animal.

@@ -31,8 +31,8 @@ struct HowToView: View {
                     }
                 }
                 HStack(alignment: .top, spacing: 12) {
-                    modeCard("WEEKLY", icon: "flag.checkered", text: "\(GameSession.weeklyDistanceText) m · 1 life\nNew trail every Monday.\nFinish bonus: +1,000.")
-                    modeCard("ENDLESS", icon: "infinity", text: "3 lives · No finish line\nGet back up. Go further.\nBoth modes work offline.")
+                    modeCard("WEEKLY", icon: "flag.checkered", text: "\(GameSession.weeklyDistanceText) m · 1 life\nCanyon for now. The exact same course for every player all week.\nA new shared course every Monday.\nFinish bonus: +1,000.")
+                    modeCard("ENDLESS", icon: "infinity", text: "3 lives · No finish line\nA new random course on every ride, in your chosen world.\nSeparate records and Game Center leaderboards for each world.\nBoth modes work offline.")
                 }
             }.padding(18).frame(maxWidth: 620).frame(maxWidth: .infinity)
         }.background(CrocoTheme.ink).accessibilityIdentifier("howToContent")
@@ -46,8 +46,8 @@ struct HowToView: View {
             Text(right ? "GO + LEAN BACK" : "BRAKE + LEAN FORWARD")
                 .font(.custom("AvenirNextCondensed-HeavyItalic", size: 19)).fixedSize(horizontal: false, vertical: true)
                 .foregroundStyle(right ? CrocoTheme.lime : CrocoTheme.orange)
-            Text(right ? "Hold the right grip to accelerate. In the air, rotate backward." : "Hold the left lever to brake. In the air, rotate forward.")
-            Text("Short taps = finer control.").font(.caption.bold()).foregroundStyle(.white)
+            Text(right ? "Hold anywhere in the lower-right control area to accelerate. In the air, rotate backward." : "Hold anywhere in the lower-left control area to brake. In the air, rotate forward.")
+            Text("The button settles under your thumb until you lift. Short taps give finer control.").font(.caption.bold()).foregroundStyle(.white)
         }.font(.subheadline).foregroundStyle(CrocoTheme.muted)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .padding(14).background(.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 20))

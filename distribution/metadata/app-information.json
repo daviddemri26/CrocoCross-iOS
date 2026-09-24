@@ -2,8 +2,8 @@
   "name": "CrocoCross",
   "bundleID": "com.daviddemri.crococross",
   "sku": "CROCOCROSS-IOS-001",
-  "version": "1.0.0",
-  "build": "17",
+  "version": "1.1.0",
+  "build": "18",
   "primaryLanguage": "en-US",
   "metadataLocalizations": [
     "en-US"
@@ -22,7 +22,7 @@
   "price": "Free",
   "inAppPurchases": false,
   "ads": false,
-  "release": "Manual",
+  "release": "Automatic",
   "minimumOS": "18.0",
   "platforms": [
     "iPhone",
@@ -34,5 +34,51 @@
   "supportEmail": "support@lafayette-consulting.us",
   "privacyEmail": "privacy@lafayette-consulting.us",
   "appStoreConnectID": "6812979862",
-  "appStoreConnectURL": "https://appstoreconnect.apple.com/apps/6812979862/distribution/ios/version/inflight"
+  "appStoreConnectURL": "https://appstoreconnect.apple.com/apps/6812979862/distribution/ios/version/inflight",
+  "preparationStatus": "1.1.0 draft and saved metadata verified; signed local 1.1.0 (18) archive verified; IPA export failed; build 18 not uploaded",
+  "remotePublicationAuthorized": false,
+  "releaseSettingScope": "Automatic retained in the 1.1.0 draft on September 23, 2026; no change made",
+  "lastVerifiedStoreVersion": {
+    "verifiedOn": "2026-09-23",
+    "version": "1.0.0",
+    "build": "17",
+    "status": "Ready for Distribution"
+  },
+  "candidateStoreDraft": {
+    "version": "1.1.0",
+    "statusLabel": "À finaliser avant soumission",
+    "verifiedOn": "2026-09-23",
+    "release": "Automatic",
+    "metadataSaved": [
+      "description",
+      "promotionalText",
+      "keywords",
+      "whatsNew",
+      "appReviewNotes"
+    ],
+    "screenshots": "Inherited 1.0.0 set; reviewed replacement images are local only"
+  },
+  "localCandidateArchive": {
+    "version": "1.1.0",
+    "build": "18",
+    "status": "succeeded",
+    "uploaded": false,
+    "codeSignatureVerified": true
+  },
+  "recommendedReleaseSetting": "Manual, subject to an explicit launch decision; not applied",
+  "localCandidateExport": {
+    "status": "failed",
+    "errors": [
+      "No Accounts",
+      "No signing certificate \"iOS Distribution\" found"
+    ]
+  },
+  "lastVerifiedTestFlight": {
+    "verifiedOn": "2026-09-23",
+    "onlyVersion": "1.0.0",
+    "onlyBuild": "17",
+    "uploadedOn": "2026-09-16",
+    "status": "Ready to Submit",
+    "candidateBuild18Uploaded": false
+  }
 }

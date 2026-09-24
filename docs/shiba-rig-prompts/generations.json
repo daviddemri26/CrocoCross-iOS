@@ -1,0 +1,148 @@
+[
+  {
+    "part": "bike",
+    "prompt": "Use case: precise-object-edit. Asset: shiba-bike.png, an isolated transparent PNG component for a polished side-view 2D motorcycle game. Reference 1 gives Kenji's blue white black superbike identity; reference 2 illustrates the separate CHASSIS-only game asset structure and painterly bold outlined game style. Draw ONLY Kenji's blue white aerodynamic superbike CHASSIS facing right in clean side profile, rich crisp cartoon painted detail harmonized with reference 2, blue white fairings and black seat, handlebar with clearly visible grip, engine, near footpeg. Preserve superbike silhouette, not motocross. Absolutely NO rider, NO wheels or tyres, NO front fork, NO rear swingarm, NO brake discs, NO ground, NO shadow, NO background. Complete chassis volumes behind formerly occluded rider. Slight simplification of tiny mechanical noise. No text or logos. Leave empty transparent wheel cavities for independent moving wheels. Isolated single component, generous transparent margin, entirely within canvas. TRUE transparent alpha background.",
+    "reference": [
+      "/Users/daviddemri/_docs/projects2026/CrocoCross2 iOS/App/Resources/GameAssets/shiba-yamaha.png",
+      "/Users/daviddemri/_docs/projects2026/CrocoCross2 iOS/App/Resources/GameAssets/RoccoRig/rocco-bike.png"
+    ],
+    "source": "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-acae4165-5e89-4101-9bc0-4e4d6a2a476d.png"
+  },
+  {
+    "part": "torso",
+    "prompt": "Use case: precise-object-edit. Asset: shiba-torso.png, one transparent game sprite for Kenji. Reference 1 identity: happy confident orange cream Shiba Inu in blue white black superbike suit and blue white helmet with visible upright ears. Reference 2 style and isolated torso component example, not anatomy to copy. Draw ONLY head/helmet/neck and sleeveless torso ending at waist, facing RIGHT, three-quarter-side profile as original Kenji, leaning slightly forward for riding. Big expressive brown eye, smiling canine muzzle, warm fur, crisp bold dark outlines, painterly highlights, clean blue white black racing suit matching original, strong readable silhouette. NO arms, no hands, no pelvis, no legs, no tail, no motorcycle. Shoulder socket lies inside the torso silhouette, NO projecting extra shoulder ball or attached upper arm. Complete rounded waist overlap behind future belt. Transparent background with no glow no shadow, single isolated part centered with generous margins. No text, logos or watermark. Match Rocco illustration polish while staying distinctly Shiba.",
+    "reference": [
+      "/Users/daviddemri/_docs/projects2026/CrocoCross2 iOS/App/Resources/GameAssets/shiba-yamaha.png",
+      "/Users/daviddemri/_docs/projects2026/CrocoCross2 iOS/App/Resources/GameAssets/RoccoRig/rocco-torso.png"
+    ],
+    "source": "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-c88946af-d231-44c9-9486-e84f89c82e2d.png"
+  },
+  {
+    "part": "pelvis",
+    "prompt": "Use case: precise-object-edit. Asset: shiba-pelvis.png transparent articulated game sprite. Reference 1 is Kenji the orange cream Shiba wearing blue white black motorcycle leathers. Reference 2 shows isolated pelvis/tail concept and painted outline style, do NOT copy crocodile anatomy. Draw ONLY compact seated PELVIS/HIPS in blue white black suit with his beautiful fluffy orange-and-cream curled Shiba tail rising behind on the LEFT. Facing RIGHT. Waist at top right, rounded buttock at lower left and hip volume under waist; small pelvis piece not a full thigh. No head, torso, arms, legs, knees, motorcycle, wheels. No leg extension and NO extra joint cylinder: future thigh will overlap this rounded pelvis at hip. Tail must feel naturally attached to rear of suit, curl recognizable and attractive at small scale. Crisp dark ink outline, painterly finish, lighting from upper left coherent with Rocco. Complete hidden rounded hip contours for rotation overlap. True transparent alpha background, no shadow/glow/text/logos, component fully inside canvas.",
+    "reference": [
+      "/Users/daviddemri/_docs/projects2026/CrocoCross2 iOS/App/Resources/GameAssets/shiba-yamaha.png",
+      "/Users/daviddemri/_docs/projects2026/CrocoCross2 iOS/App/Resources/GameAssets/RoccoRig/rocco-pelvis.png"
+    ],
+    "source": "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-db5fb269-4d7d-4742-9515-27a1379e6671.png"
+  },
+  {
+    "part": "upper-arm",
+    "prompt": "Use case: precise-object-edit. Create one isolated transparent PNG articulated game sprite for Kenji the Shiba. Match supplied finalized torso reference exactly: cobalt royal blue, white angular stripes, black leather undersuit, painterly rich detail and crisp dark outlines, light from upper left. No text, logos, background, ground shadow or glow. All outside pixels must be transparent; clean cutout boundary. Single part fully contained in canvas. Hidden ends must have generous rounded painted overlap for articulation; no loose pieces. Draw ONLY a single upper arm from rounded shoulder cap to elbow, blue/white racing suit sleeve with black panel and small silver protective pad over shoulder. Long axis diagonal top-left shoulder to bottom-right elbow. Include full shoulder volume and biceps, tapered narrow elbow. NO forearm, hand, torso, head. Shoulder joint lies well INSIDE the rounded top volume, not at extreme edge. Length about 2.5 times average thickness. End elbow in rounded black leather volume, no circular cut faces.",
+    "reference": [
+      "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-c88946af-d231-44c9-9486-e84f89c82e2d.png"
+    ],
+    "source": "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-6b0d7621-9f06-47f1-93a8-19bc5d2f2ce0.png"
+  },
+  {
+    "part": "forearm",
+    "prompt": "Use case: precise-object-edit. Create one isolated transparent PNG articulated game sprite for Kenji the Shiba. Match supplied finalized torso reference exactly: cobalt royal blue, white angular stripes, black leather undersuit, painterly rich detail and crisp dark outlines, light from upper left. No text, logos, background, ground shadow or glow. All outside pixels must be transparent; clean cutout boundary. Single part fully contained in canvas. Hidden ends must have generous rounded painted overlap for articulation; no loose pieces. Draw ONLY one forearm INCLUDING attached blue white black motorcycle glove. Elbow on left upper side, glove on right lower side; fairly straight long axis diagonal down-right. Gloved hand is a natural closed grip around an absent handlebar, knuckles above and palm grip centre in curled hand. Do not include handlebar, upper arm or torso. Rounded black overlap at elbow. Broad blue gauntlet, white stripe, silver knuckle protectors. Main forearm length from elbow to palm approx three times thickness. Do not draw detached finger pieces.",
+    "reference": [
+      "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-c88946af-d231-44c9-9486-e84f89c82e2d.png"
+    ],
+    "source": "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-fad95875-1b1a-4f21-a3c6-53ffeec3ee3a.png"
+  },
+  {
+    "part": "thigh",
+    "prompt": "Use case: precise-object-edit. Create one isolated transparent PNG articulated game sprite for Kenji the Shiba. Match supplied finalized torso reference exactly: cobalt royal blue, white angular stripes, black leather undersuit, painterly rich detail and crisp dark outlines, light from upper left. No text, logos, background, ground shadow or glow. All outside pixels must be transparent; clean cutout boundary. Single part fully contained in canvas. Hidden ends must have generous rounded painted overlap for articulation; no loose pieces. Draw ONLY one upper leg/thigh in blue white black racing leathers, rounded upper buttock/hip overlap at top-left to black-and-silver knee protector at bottom-right. Strong full proximal volume narrowing toward knee. A single smoothly shaped thigh, no additional hip cylinder, no pelvis belt, no tail, no shin or boot. Slight natural curve but not bent at an extra joint. Complete rounded contour behind both pivots, vivid blue suit with bold white angular panel matching references.",
+    "reference": [
+      "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-c88946af-d231-44c9-9486-e84f89c82e2d.png",
+      "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-db5fb269-4d7d-4742-9515-27a1379e6671.png"
+    ],
+    "source": "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-a4ac99b2-aede-4429-976e-a027a1f8571c.png"
+  },
+  {
+    "part": "pelvis-v2",
+    "prompt": "Use case: background-extraction. EDIT TARGET is this isolated blue white Shiba pelvis and curled orange/cream tail. Preserve exactly all drawing, colors, shape and size. Remove EVERY diffuse black brown blue background halo and exterior glow around it, leaving true fully transparent alpha directly outside the crisp outlined object edge. No backdrop and no drop shadow. Do not redraw subject. The target is one clean transparent sprite usable over a bright white game sky without any dark cloudy patch around it.",
+    "reference": [
+      "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-db5fb269-4d7d-4742-9515-27a1379e6671.png"
+    ],
+    "source": "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-3a716afd-460d-4cf9-ac1b-89f36cf9d42b.png"
+  },
+  {
+    "part": "calf",
+    "prompt": "Use case: precise-object-edit. Single isolated transparent PNG component for Kenji's articulated 2D game sprite. Match supplied reference polished bold outlined painterly game art, cobalt blue white black racing design, light upper left. No text/logos, NO diffuse exterior glow, no ground shadow, no background of any kind. Every pixel beyond outlined component is fully transparent. Keep entire component centered within transparent margins. Draw ONLY a single lower-leg CALF segment from KNEE to ANKLE in blue white black racing leathers. Upper knee at upper-left, lower ankle at lower-right, straight diagonal limb. Knee includes rounded black padded overlap but NO separate giant circular cap, ankle is rounded narrow leather overlap. No thigh, NO boot, NO foot. Single tapering shin protection panel, athletic proportions, length about 3 times average width.",
+    "reference": [
+      "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-c88946af-d231-44c9-9486-e84f89c82e2d.png"
+    ],
+    "source": "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-7393d91d-0748-49b6-8864-5d1819cbd637.png"
+  },
+  {
+    "part": "boot",
+    "prompt": "Use case: precise-object-edit. Single isolated transparent PNG component for Kenji's articulated 2D game sprite. Match supplied reference polished bold outlined painterly game art, cobalt blue white black racing design, light upper left. No text/logos, NO diffuse exterior glow, no ground shadow, no background of any kind. Every pixel beyond outlined component is fully transparent. Keep entire component centered within transparent margins. Draw ONLY one separate short motorcycle BOOT in perfect side profile facing RIGHT. Blue white black racing boot matching torso outfit. Low ankle opening is rounded for overlap with separate calf; boot extends forward right to toe, sole nearly horizontal, slight raised toe. Compact sporty ankle boot, not tall knee boot. Complete sole, heel, ankle and toe. No calf no leg, no support surface. A single component.",
+    "reference": [
+      "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-c88946af-d231-44c9-9486-e84f89c82e2d.png"
+    ],
+    "source": "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-6c78c218-401d-487e-8381-6051921ad03f.png"
+  },
+  {
+    "part": "fork",
+    "prompt": "Use case: precise-object-edit. Single isolated transparent PNG component for Kenji's articulated 2D game sprite. Match supplied reference polished bold outlined painterly game art, cobalt blue white black racing design, light upper left. No text/logos, NO diffuse exterior glow, no ground shadow, no background of any kind. Every pixel beyond outlined component is fully transparent. Keep entire component centered within transparent margins. Draw ONLY one isolated superbike FRONT FORK assembly, upper steering joint at top-left and axle fitting at bottom-right. Two overlapping parallel slender gold anodized telescopic tubes and dark silver lower fork casting, painted integrated near-side small brake caliper at lower tip. Strong slender continuous mechanical silhouette. No wheel, no tyre, no brake disc, NO fender, NO motorcycle chassis, NO rider. Visible precise axle hole in lower tip. Upper end can overlap behind chassis.",
+    "reference": [
+      "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-acae4165-5e89-4101-9bc0-4e4d6a2a476d.png"
+    ],
+    "source": "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-a5a532ed-087b-4db6-9b5f-b20d7d5f3ce1.png"
+  },
+  {
+    "part": "swingarm",
+    "prompt": "Use case: precise-object-edit. Single isolated transparent PNG component for Kenji's articulated 2D game sprite. Match supplied reference polished bold outlined painterly game art, cobalt blue white black racing design, light upper left. No text/logos, NO diffuse exterior glow, no ground shadow, no background of any kind. Every pixel beyond outlined component is fully transparent. Keep entire component centered within transparent margins. Draw ONLY one isolated REAR SWINGARM for blue superbike. Long slim brushed silver/black triangular motorcycle suspension arm, chassis pivot hole on the LEFT and rear axle hole on the RIGHT. Side view, long axis mostly horizontal, slight taper, subtle blue detail. Strong clean machined surfaces, full shapes around holes. No wheel, no tyre, no chain, no chassis, no rider, no fender. Single mechanical part to rotate between two joints.",
+    "reference": [
+      "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-acae4165-5e89-4101-9bc0-4e4d6a2a476d.png"
+    ],
+    "source": "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-061f8303-dff2-4a3d-a02b-ce1be88c89b6.png"
+  },
+  {
+    "part": "wheel",
+    "prompt": "Use case: precise-object-edit. Single isolated transparent PNG component for Kenji's articulated 2D game sprite. Match supplied reference polished bold outlined painterly game art, cobalt blue white black racing design, light upper left. No text/logos, NO diffuse exterior glow, no ground shadow, no background of any kind. Every pixel beyond outlined component is fully transparent. Keep entire component centered within transparent margins. Draw ONLY a single motorcycle road WHEEL in exact orthographic side-on view, a perfect CIRCLE, not an ellipse. Black rounded sporty street tyre with subtle tread, rich cobalt blue six narrow spoke cast-alloy rim, compact silver hub at centre. True transparent holes BETWEEN all spokes, no black filled disc behind. NO brake rotor/disc, NO fork, NO axle arm, no brake caliper, NO fender, no extra mechanical parts. Clean round wheel centered in square canvas, uniform physical circular silhouette. This wheel will rotate as one sprite.",
+    "reference": [
+      "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-acae4165-5e89-4101-9bc0-4e4d6a2a476d.png"
+    ],
+    "source": "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-2e8da792-2df0-4b21-9230-fd27081ef78c.png"
+  },
+  {
+    "part": "pelvis-v3",
+    "prompt": "Create a clean transparent game sprite: ONLY the small rounded hips/pelvis with a short fluffy curled Shiba dog tail attached behind it on the left. Compact blue white black racing leather shorts, waist band top, softly rounded buttock bottom; NO thigh stump or circular leg cut face. Orange cream curled tail. Facing right. Use supplied Kenji torso only as blue/white costume and bold painted cartoon style reference; do not draw its torso or head. No legs, no arms, no motorcycle. IMPORTANT clean hard silhouette with transparent background directly at edge: ZERO colored glow, ZERO dark fog, ZERO shadow, ZERO backdrop. All empty space alpha zero. Rounded hip volume designed to be overlaid by a separate thigh. High quality hand-painted game illustration, one isolated component. No text/logos.",
+    "reference": [
+      "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-c88946af-d231-44c9-9486-e84f89c82e2d.png"
+    ],
+    "source": "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-3c4643e3-9076-4b09-8282-7e195483ff51.png"
+  },
+  {
+    "part": "calf-v2",
+    "prompt": "One clean cutout PNG with transparent background. A single LOWER LEG SEGMENT, knee to ankle without foot or boot, in cobalt blue white black racing leathers matching reference torso. Diagonal from top-left knee to bottom-right narrow ankle. Painterly bold crisp outlined 2D mobile-game art. Fully painted rounded overlapping ends for animated knee and ankle joint. Keep black flexible knee cap at top small, elegant taper. Only this calf/shin piece, no other anatomy or elements. No lettering or logos. Make the silhouette boundary crisp and all surrounding space fully alpha-zero transparent. No lighting effects outside silhouette, no halo, no vignette.",
+    "reference": [
+      "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-c88946af-d231-44c9-9486-e84f89c82e2d.png"
+    ],
+    "source": "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-015f1c3a-1cd0-4419-b6ce-bdc158844618.png"
+  },
+  {
+    "part": "pelvis-v5",
+    "prompt": "Create one sprite on a TRUE TRANSPARENT background matching this Kenji character's blue white black costume and painted cartoon style. Draw only a SINGLE HIP/BUTTOCK CAP viewed strictly from the LEFT SIDE while the character faces RIGHT, with a curled orange and warm-ivory Shiba tail rising behind to the LEFT. The hip is a small smooth rounded oval/bean side silhouette in blue racing leather: waist belt on its upper edge, rounded butt at lower-left, rounded hip at lower-right. It is NOT a pair of shorts: do not show a crotch, central seam, twin buttocks, leg openings, thighs, cylinders or leg stumps. Nothing projects from below the hip. A separately drawn thigh will overlap the broad side of this hip deeply at its left/rear region next to the tail. The tail is large, well separated from the future torso, and visually dominant over this compact hip cap. No torso/head/arms/legs/boots/motorcycle. Very clean crisp outlined silhouette, studio cutout with absolutely no exterior lighting glow, no gradient, no shadow and no halos. Empty space fully transparent, not black. Side view only, single buttock profile. Tail must not cover the waist belt. No text/logos.",
+    "reference": [
+      "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-c88946af-d231-44c9-9486-e84f89c82e2d.png"
+    ],
+    "source": "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-7a44c2d4-4fce-4ff5-bef7-dbbdacc8417f.png"
+  },
+  {
+    "part": "pelvis-v4",
+    "prompt": "Redraw the FIRST reference's pelvis and curled tail as a production-ready side-view game sprite. Keep its attractive orange/cream curled Shiba tail silhouette and blue/white/black race suit matching reference 2. IMPORTANT ANATOMY: STRICT SIDE PROFILE facing right. Only ONE rounded buttock/hip volume seen from the side, NEVER a rear view or two visible butt cheeks. Compact waist and rounded seated buttock ONLY; REMOVE THE ENTIRE THIGH/LEG EXTENSION shown pointing down-right in reference 1, including its circular cut end. The silhouette below the waist should be a short compact rounded hip shape: a separate upper-thigh sprite will overlap deeply inside the single hip, so do NOT draw any attached thigh, thigh stump, leg tube, kneepad, second leg opening or second buttock. Waist opening at top right, curled tail attached behind on LEFT. Draw a complete rounded hip surface for hidden overlap. Tail cream should stay warm ivory not bright glow; rich orange fur with crisp dark outline. Actual fully transparent alpha background with absolutely NO brown blue or black halo around tail or suit, NO glow, NO cast shadow, NO background fog. Every pixel outside clean silhouette must be alpha zero. No torso/head/arms/bike/text/logos. Polished bold outlined painterly style coherent with supplied torso.",
+    "reference": [
+      "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-db5fb269-4d7d-4742-9515-27a1379e6671.png",
+      "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-c88946af-d231-44c9-9486-e84f89c82e2d.png"
+    ],
+    "source": "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-7e4a0be0-a46b-4e23-8cc1-5642a321edd3.png",
+    "status": "rejected: retained diffuse halo"
+  },
+  {
+    "part": "bike",
+    "variant": "v2-front-fairing-trim",
+    "prompt": "Use case: precise-object-edit.\nEdit target: Image 1, the existing transparent shiba-bike chassis sprite (1634 x 962). Image 2 is ONLY an assembled reference showing the fixed wheels and rider, which must not be included in the output.\nMake a SMALL localized correction to the FRONT FAIRING/NOSE and its front-wheel opening, so that the fixed front wheel no longer looks recessed too far behind the body. Shorten the forward overhang of the front body slightly, moving the headlight/nose leading contour left by about 65 original-image pixels (4% of the canvas), subtly drawing back the lower front belly edge around 40 pixels to leave clean clearance in front of the engine for the unchanged wheel. The small blue front fender painted in this chassis should be gently centered a little farther left over the EXISTING front axle at source (1360,735); do not extend the fender forward. Blend these localized contours naturally into the identical blue-white-black aerodynamic superbike design.\nSTRICT INVARIANTS: preserve the exact 1634x962 transparent canvas, original sprite registration, size, baseline, back half, rear fender, rear seat, fuel tank, engine, exhaust, footpeg, handlebar grip at (1110,305), steering-top attachment at (1220,315), rear swing attachment at (695,666). Everything other than the small front fairing contour adjustment must stay exactly as in Image 1, as close to pixel-identical as possible. Do NOT rescale, translate, rotate, crop or recenter the whole motorcycle. Do NOT redesign or change colors/material/outline/detail style. Do NOT paint wheels, fork, swingarm, rider, limbs, a ground plane, a cast shadow, text or a background.\nOutput ONLY the edited chassis layer as a true transparent RGBA PNG at the SAME dimensions; empty wheel cavities stay transparent. No checkerboard painted into output. This is a restrained alignment correction, not a new motorcycle.",
+    "reference": [
+      "/Users/daviddemri/_docs/projects2026/CrocoCross2 iOS/artifacts/qa/kenji/chassis-japan-2026-09-23/shiba-bike-before.png",
+      "/Users/daviddemri/_docs/projects2026/CrocoCross2 iOS/artifacts/qa/kenji/renderer/shiba/neutral.png"
+    ],
+    "source": "/Users/daviddemri/.codex/generated_images/01a0cc8b-9b75-7dc0-be51-8f38d1adf33b/exec-0889f571-fafd-4883-a91f-d05fee164be8.png",
+    "mode": "built-in image_gen",
+    "note": "Small front contour adjustment; unchanged 1634x962 registration and all physical/joint calibration. Only camera visibleBounds metadata refreshed."
+  }
+]

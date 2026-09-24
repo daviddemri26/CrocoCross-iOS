@@ -25,7 +25,7 @@ font_path='/System/Library/Fonts/Supplemental/Avenir Next Condensed.ttc'
 body_path='/System/Library/Fonts/Supplemental/Avenir Next.ttc'
 def font(size,bold=True):return ImageFont.truetype(font_path if bold else body_path,size,index=9 if bold else 5)
 copy={
-'en-US':[('01-weekly-ride','FIND YOUR FLOW.','Ride the Canyon. Make every landing count.'),('02-endless-ride','GO A LITTLE FURTHER.','Three lives. An endless trail.'),('03-home','MEET ROCCO.','One crocodile. Two ways to ride.'),('04-controls','TWO THUMBS. ALL YOU.','Accelerate. Balance. Land your flips.'),('05-audio','YOUR RIDE. YOUR SOUND.','Original tracks. Separate volumes. One-tap mute.')],
+'en-US':[('01-weekly-ride','FIND YOUR FLOW.','Ride the Canyon. Make every landing count.'),('02-endless-ride','GO A LITTLE FURTHER.','Three lives. An endless trail.'),('03-home','YOUR NEXT ADVENTURE.','Two ways to ride. New goals to unlock.'),('04-controls','TWO THUMBS. ALL YOU.','Accelerate. Balance. Land your flips.'),('05-audio','YOUR RIDE. YOUR SOUND.','Original tracks. Separate volumes. One-tap mute.')],
 }
 for device,dimensions in [('iphone-6.9',(1320,2868)),('ipad-13',(2752,2064))]:
  raw=DIST/'screenshots/raw'/device

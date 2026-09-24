@@ -35,18 +35,40 @@ final class GameSession {
     var resultsVisible = false
     var newRecord = false
     var characterID: String { didSet { defaults.set(characterID, forKey: CompetitionRules.riderPreferenceKey) } }
-    var worldID: String { didSet { defaults.set(worldID, forKey: "world") } }
+    private(set) var worldID: String { didSet { defaults.set(worldID, forKey: "world") } }
     var bestWeekly: Int { didSet { defaults.set(bestWeekly, forKey: CompetitionRules.weeklyRecordKey) } }
-    var bestEndless: Int { didSet { defaults.set(bestEndless, forKey: CompetitionRules.endlessRecordKey) } }
+    private(set) var bestEndless: Int
+    private(set) var runCourse = WorldCoursePlan.weekly
+    var activeWorldName: String { GameCatalog.world(runCourse.worldID).name }
     let scene = GameScene(size: CGSize(width: 390, height: 844))
     let gameCenter = GameCenterService()
     let audio = AudioService()
+    let riderProgression: RiderProgression
+    let worldProgression: WorldProgression
+    let achievements: AchievementProgression
+    let weeklyRecords: WeeklyRecordStore
+    struct AchievementNotice: Identifiable {
+        let id = UUID()
+        let unlocked: [AchievementDefinition]
+    }
+    var achievementNotice: AchievementNotice?
+    @ObservationIgnored private var progressionRunID = UUID()
+    @ObservationIgnored private var achievementRunPlayerID: String?
+    #if DEBUG
+    @ObservationIgnored private var unlockLandingFixtureActive = false
+    @ObservationIgnored private var unlockFixtureDirection = 1.0
+    @ObservationIgnored private var unlockFixtureAngle = 0.0
+    @ObservationIgnored private var unlockFixturePreviousAngle = 0.0
+    #endif
     @ObservationIgnored private let defaults = UserDefaults.standard
     @ObservationIgnored private var simulation = GameSimulation(mode: .endless, seed: 42)
     @ObservationIgnored private let previewSimulation = GameSimulation(mode: .endless, seed: 42)
     @ObservationIgnored private var previousState = SimulationState(mode: .endless, seed: 42)
     @ObservationIgnored private var input = ControlInput.neutral
     @ObservationIgnored private var accumulator: Double = 0
+    @ObservationIgnored private var riderMotionSeconds: Double = 0
+    @ObservationIgnored private var shownRiderMotionSeconds: Double = 0
+    @ObservationIgnored private var recoveryExtraSteps = 0
     @ObservationIgnored private var lastHUD: Double = 0
     @ObservationIgnored private var lastSubmissionTick = 0
     @ObservationIgnored private var resultsAt: Double = 0
@@ -68,35 +90,79 @@ final class GameSession {
     init() {
         let prefs = UserDefaults.standard
         precondition(CompetitionRules.version == GameSimulation.engineVersion)
+        let progression = RiderProgression.forCurrentLaunch()
+        riderProgression = progression
+        let worlds = WorldProgression.forCurrentLaunch()
+        worldProgression = worlds
+        achievements = AchievementProgression.forCurrentLaunch()
+        #if DEBUG
+        let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("-ui-testing") {
+            let index = arguments.firstIndex(of: "-weekly-record-test-id")
+            let testID = index.flatMap { arguments.indices.contains($0 + 1) ? arguments[$0 + 1] : nil } ?? UUID().uuidString
+            weeklyRecords = WeeklyRecordStore(defaults: UserDefaults(suiteName: "CrocoCross.WeeklyRecords.UITests.\(testID)")!)
+        } else { weeklyRecords = WeeklyRecordStore() }
+        #else
+        weeklyRecords = WeeklyRecordStore()
+        #endif
         let preferredRider = prefs.string(forKey: CompetitionRules.riderPreferenceKey) ?? "croco"
-        characterID = GameCatalog.playableRiders.contains(where: { $0.id == preferredRider }) ? preferredRider : "croco"
-        worldID = prefs.string(forKey: "world") ?? "canyon"
+        characterID = GameCatalog.playableRiders(progression: progression).contains(where: { $0.id == preferredRider })
+            ? preferredRider : "croco"
+        let preferredWorld = prefs.string(forKey: "world") ?? "canyon"
+        let selectedWorld = GameCatalog.playableWorlds(progression: worlds).contains(where: { $0.id == preferredWorld })
+            ? preferredWorld : "canyon"
+        worldID = selectedWorld
         bestWeekly = prefs.integer(forKey: CompetitionRules.weeklyRecordKey)
-        bestEndless = prefs.integer(forKey: CompetitionRules.endlessRecordKey)
+        bestEndless = prefs.integer(forKey: GameCatalog.world(selectedWorld).course.endlessRecordKey)
         // Legacy rider selection, records and pending scores remain untouched.
         scene.scaleMode = .resizeFill
         scene.onFrame = { [weak self] dt in self?.frame(dt) }
-        if !GameCatalog.playableWorlds.contains(where: { $0.id == worldID }) { worldID = "canyon" }
+        achievements.importClaimedUnlocks(
+            riderIDs: progression.state.kenjiClaimed ? ["shiba"] : [],
+            worldIDs: worlds.state.japanClaimed ? ["japan"] : [], at: Date())
+        gameCenter.achievementProgressProvider = { [weak self] playerID in
+            self?.achievements.gameCenterProgress(for: playerID) ?? [:]
+        }
+        gameCenter.achievementRemoteProgressHandler = { [weak self] playerID, progress, dates in
+            self?.achievements.mergeRemoteProgress(progress, playerID: playerID, completionDates: dates)
+        }
     }
 
     func start(_ mode: RunMode) {
         audio.stopDeathSound()
         deathHoldRemaining = 0
         recoveryPresentationSteps = 0
-        if !GameCatalog.playableRiders.contains(where: { $0.id == characterID }) { characterID = "croco" }
-        if !GameCatalog.playableWorlds.contains(where: { $0.id == worldID }) { worldID = "canyon" }
+        if !riderAvailability(characterID).isUnlocked { characterID = "croco" }
+        riderProgression.flush()
+        worldProgression.flush()
+        achievements.flush()
+        progressionRunID = UUID()
+        if !worldAvailability(worldID).isUnlocked {
+            worldID = "canyon"
+            bestEndless = defaults.integer(forKey: CompetitionRules.endlessRecordKey)
+        }
+        runCourse = mode == .weekly ? .weekly : GameCatalog.world(worldID).course
         self.mode = mode
-        recordToBeat = mode == .weekly ? bestWeekly : bestEndless
+        recordToBeat = bestEndless
         newRecord = false
         resultsVisible = false
         scene.clearTransientEffects()
         let confirmedWeek = gameCenter.weeklyChallenge.flatMap { $0.contains(Date()) ? $0 : nil }
         challenge = mode == .weekly ? (confirmedWeek ?? .practice(now: Date())) : nil
+        if let challenge {
+            recordToBeat = weeklyRecords.record(for: challenge.identifier).score ?? 0
+            if gameCenter.weeklyRecordsChallengeIdentifier == challenge.identifier,
+               let remote = gameCenter.weeklyScoreRecord { recordToBeat = max(recordToBeat, remote.score) }
+        }
         playerID = gameCenter.currentPlayerID
-        wasRankedAtStart = playerID != nil && (mode == .endless ? gameCenter.endlessLeaderboardConfirmed : confirmedWeek != nil)
+        achievementRunPlayerID = gameCenter.currentPlayerID
+        wasRankedAtStart = runCourse.supportsLeaderboards && playerID != nil
+            && (mode == .endless ? gameCenter.isEndlessLeaderboardConfirmed(for: runCourse) : confirmedWeek != nil)
         ranked = wasRankedAtStart
         let seed = challenge?.seed ?? UInt32.random(in: 1...UInt32.max)
-        simulation = GameSimulation(mode: mode, seed: seed)
+        var configuration = PhysicsConfiguration()
+        configuration.terrainStyle = runCourse.terrainStyle
+        simulation = GameSimulation(mode: mode, seed: seed, configuration: configuration)
         #if DEBUG
         let arguments = ProcessInfo.processInfo.arguments
         if mode == .weekly && arguments.contains("-ui-testing") && arguments.contains("-finish-preview") {
@@ -104,9 +170,23 @@ final class GameSession {
             wasRankedAtStart = false
             ranked = false
         }
+        let frontflipFixture = arguments.contains("-world-unlock-landing-preview")
+        unlockLandingFixtureActive = arguments.contains("-ui-testing")
+            && (arguments.contains("-unlock-landing-preview") || frontflipFixture)
+        if unlockLandingFixtureActive {
+            unlockFixtureDirection = frontflipFixture ? -1 : 1
+            simulation = frontflipFixture ? .frontflipFixtureForTesting(mode: mode) : .backflipFixtureForTesting(mode: mode)
+            unlockFixtureAngle = 0
+            unlockFixturePreviousAngle = simulation.state.bike.angle
+            wasRankedAtStart = false
+            ranked = false
+        }
         #endif
         previousState = simulation.state
         accumulator = 0
+        riderMotionSeconds = 0
+        shownRiderMotionSeconds = 0
+        recoveryExtraSteps = 0
         crashPresentationSteps = 0
         lastSubmissionTick = 0
         clearPedals()
@@ -122,6 +202,41 @@ final class GameSession {
         refreshHUD()
     }
 
+    func riderAvailability(_ id: String) -> CatalogAvailability {
+        GameCatalog.riderAvailability(id, progression: riderProgression)
+    }
+
+    func selectRider(_ id: String) {
+        guard riderAvailability(id).isUnlocked else { return }
+        characterID = id
+    }
+
+    func claimKenji() -> Bool {
+        guard riderProgression.claimKenji() else { return false }
+        announceAchievements(achievements.recordUnlock(kind: .rider, catalogID: "shiba",
+            playerID: gameCenter.currentPlayerID, at: Date()))
+        audio.playUnlockCelebration()
+        return true
+    }
+
+    func worldAvailability(_ id: String) -> CatalogAvailability {
+        GameCatalog.worldAvailability(id, progression: worldProgression)
+    }
+
+    func selectWorld(_ id: String) {
+        guard phase == .home, worldAvailability(id).isUnlocked else { return }
+        worldID = id
+        bestEndless = defaults.integer(forKey: GameCatalog.world(id).course.endlessRecordKey)
+    }
+
+    func claimJapan() -> Bool {
+        guard worldProgression.claimJapan() else { return false }
+        announceAchievements(achievements.recordUnlock(kind: .world, catalogID: "japan",
+            playerID: gameCenter.currentPlayerID, at: Date()))
+        audio.playUnlockCelebration()
+        return true
+    }
+
     func setPedal(right: Bool, pressed: Bool) {
         guard phase == .playing, simulation.state.status == .active else {
             input = .neutral
@@ -134,6 +249,9 @@ final class GameSession {
 
     func pause() {
         guard phase == .playing else { return }
+        riderProgression.flush()
+        worldProgression.flush()
+        achievements.flush()
         phase = .paused
         audio.pauseDeathSound()
         clearPedals()
@@ -158,6 +276,9 @@ final class GameSession {
     }
 
     func goHome() {
+        riderProgression.flush()
+        worldProgression.flush()
+        achievements.flush()
         audio.stopDeathSound()
         deathHoldRemaining = 0
         recoveryPresentationSteps = 0
@@ -175,6 +296,7 @@ final class GameSession {
         wasRankedAtStart = false
         ranked = false
         playerID = nil
+        achievementRunPlayerID = nil
         challenge = nil
         simulation = GameSimulation(mode: mode, seed: 42)
         previousState = simulation.state
@@ -209,9 +331,28 @@ final class GameSession {
 
     func setReducedMotion(_ enabled: Bool) { reducedMotion = enabled }
 
-    func showLeaderboards() {
+    func currentWeeklyChallenge(now: Date = Date()) -> WeeklyChallenge {
+        gameCenter.weeklyChallenge.flatMap { $0.contains(now) ? $0 : nil } ?? .practice(now: now)
+    }
+
+    func bestEndless(for worldID: String) -> Int {
+        if worldID == self.worldID { return bestEndless }
+        return defaults.integer(forKey: GameCatalog.world(worldID).course.endlessRecordKey)
+    }
+
+    func showEndlessLeaderboard(worldID: String) {
         pause()
-        gameCenter.showLeaderboards()
+        gameCenter.showLeaderboards(course: GameCatalog.world(worldID).course)
+    }
+
+    func showWeeklyLeaderboard(time: Bool) {
+        pause()
+        gameCenter.showWeeklyLeaderboard(time: time)
+    }
+
+    func showLeaderboards(endlessForSelectedWorld: Bool = false) {
+        pause()
+        gameCenter.showLeaderboards(course: endlessForSelectedWorld ? GameCatalog.world(worldID).course : nil)
     }
 
     private func frame(_ rawDelta: Double) {
@@ -240,14 +381,19 @@ final class GameSession {
                     if recoveringStep && recoveryPresentationSteps >= 215 &&
                         (deathHoldRemaining > 0 || audio.deathSoundPending) {
                         previousState = simulation.state
-                        simulation.stepPresentation(maximumSteps: crashPresentationStepLimit)
+                        if recoveryExtraSteps < crashPresentationStepLimit {
+                            simulation.stepPresentation(maximumSteps: crashPresentationStepLimit)
+                            riderMotionSeconds += GameSimulation.timeStep
+                            recoveryExtraSteps += 1
+                        }
                         accumulator -= GameSimulation.timeStep
                         steps += 1
                         continue
                     }
                     if recoveringStep { recoveryPresentationSteps += 1 }
                     previousState = simulation.state
-                    let events = simulation.step(input: input)
+                    let events = simulation.step(input: inputForSimulationStep())
+                    riderMotionSeconds += GameSimulation.timeStep
                     awaitingFirstSimulationStep = false
                     for event in events { handle(event) }
                     accumulator -= 1.0 / 120
@@ -270,6 +416,7 @@ final class GameSession {
                         crashPresentationSteps < crashPresentationStepLimit {
                     previousState = simulation.state
                     simulation.stepPresentation(maximumSteps: crashPresentationStepLimit)
+                    riderMotionSeconds += GameSimulation.timeStep
                     crashPresentationSteps += 1
                     accumulator -= GameSimulation.timeStep
                     steps += 1
@@ -282,6 +429,15 @@ final class GameSession {
         }
         if phase == .results && !interrupted && !resultsVisible && frameTime >= resultsAt &&
             deathHoldRemaining <= 0 && !audio.deathSoundPending { resultsVisible = true }
+        if !interrupted && (phase == .playing || (phase == .results && !resultsVisible)) {
+            // Match the body's interpolated pose, including 120 Hz displays at
+            // half speed. Pausing retains the exact last displayed limb pose.
+            let canInterpolate = previousState.status == simulation.state.status &&
+                crashPresentationSteps < crashPresentationStepLimit && recoveryExtraSteps < crashPresentationStepLimit
+            let clock = canInterpolate ? riderMotionSeconds - GameSimulation.timeStep + min(GameSimulation.timeStep, accumulator)
+                                       : riderMotionSeconds
+            shownRiderMotionSeconds = max(shownRiderMotionSeconds, clock)
+        }
         scene.isCrashPaused = phase == .paused || interrupted
         scene.finishCelebrationElapsed = showingFinishCelebration
             ? max(0, GameSimulation.finishPresentationDuration - (resultsAt - frameTime)) : nil
@@ -293,8 +449,28 @@ final class GameSession {
         } else {
             scene.display(
                 state: renderedState(), terrain: simulation.terrainHeight,
-                characterID: characterID, worldID: worldID, reducedMotion: reducedMotion)
+                characterID: characterID, worldID: runCourse.worldID, reducedMotion: reducedMotion,
+                riderMotionSeconds: shownRiderMotionSeconds)
         }
+    }
+
+    private func inputForSimulationStep() -> ControlInput {
+        #if DEBUG
+        if unlockLandingFixtureActive {
+            // The controller from the core physical-flip tests: real Box2D flight and reception,
+            // with no synthetic score or progression event. Never active in normal play or Release.
+            let bike = simulation.state.bike
+            unlockFixtureAngle += atan2(sin(bike.angle - unlockFixturePreviousAngle), cos(bike.angle - unlockFixturePreviousAngle))
+            unlockFixturePreviousAngle = bike.angle
+            let error = Double.pi * 2 - unlockFixtureAngle * unlockFixtureDirection
+            let velocity = bike.angularVelocity * unlockFixtureDirection
+            let stopping = velocity * abs(velocity) / (2 * 4.1)
+            let lean = bike.grounded ? 0 : error > 1.2 ? (error > stopping + 0.06 ? 1.0 : -1.0)
+                : min(1, max(-1, error * 6 - velocity * 2.2))
+            return ControlInput(lean: lean * unlockFixtureDirection)
+        }
+        #endif
+        return input
     }
 
     /// Blend only presentation coordinates; scoring and contact always use fixed-step state.
@@ -328,6 +504,14 @@ final class GameSession {
         audio.handle(event: event, finalExplosion: simulation.state.mode == .endless && simulation.state.status == .crashed)
         switch event {
         case .flip(let count):
+            announceAchievements(achievements.recordSafeLanding(
+                backflips: simulation.landedBackflips, frontflips: simulation.landedFrontflips,
+                runID: progressionRunID, tick: simulation.state.tick,
+                playerID: achievementRunPlayerID, at: Date()))
+            riderProgression.recordLanding(backflips: simulation.landedBackflips,
+                runID: progressionRunID, tick: simulation.state.tick)
+            worldProgression.recordLanding(frontflips: simulation.landedFrontflips,
+                runID: progressionRunID, tick: simulation.state.tick)
             let prefix = count == 2 ? "DOUBLE " : count == 3 ? "TRIPLE " : count > 3 ? "\(count)× " : ""
             eventRotatesForward = simulation.landedFrontflips > 0 && simulation.landedBackflips == 0
             if simulation.landedBackflips > 0 && simulation.landedFrontflips > 0 {
@@ -339,6 +523,7 @@ final class GameSession {
             eventUntil = frameTime + 1.8
         case .crashed:
             recoveryPresentationSteps = 0
+            recoveryExtraSteps = 0
             let terminal = simulation.state.status == .crashed
             let baseDuration = terminal ? (reducedMotion ? 0.3 : mode == .endless ? 1.8 : 3.6) : 3.6
             deathHoldRemaining = max(baseDuration, audio.deathSoundDuration)
@@ -353,6 +538,10 @@ final class GameSession {
             refreshHUD()
             if simulation.state.status == .crashed { endRun() }
         case .finished:
+            if simulation.state.mode == .weekly {
+                announceAchievements(achievements.recordWeeklyFinish(runID: progressionRunID,
+                    playerID: achievementRunPlayerID, at: Date()))
+            }
             finished = true
             eventText = nil
             eventPoints = 0
@@ -385,6 +574,7 @@ final class GameSession {
         flips = state.flips
         speed = hypot(state.bike.velocity.x, state.bike.velocity.y) * 3.6
         recovering = state.status == .recovering
+        if phase == .playing { recordAchievementDistance() }
     }
 
     private func endRun() {
@@ -403,16 +593,47 @@ final class GameSession {
     }
 
     private func submitProgress() {
+        recordAchievementDistance()
+        achievements.flush()
+        syncAchievements()
         let state = simulation.state
         if state.mode == .endless {
-            bestEndless = max(bestEndless, state.score)
+            let best = max(defaults.integer(forKey: runCourse.endlessRecordKey), state.score)
+            defaults.set(best, forKey: runCourse.endlessRecordKey)
+            if worldID == runCourse.worldID { bestEndless = best }
         } else if state.status == .finished {
             bestWeekly = max(bestWeekly, state.score)
+            if let challenge {
+                weeklyRecords.record(score: state.score, elapsed: state.elapsed, challengeIdentifier: challenge.identifier)
+            }
         }
         // Pause followed immediately by backgrounding must not enqueue the same tick twice.
         guard state.tick != lastSubmissionTick else { return }
         lastSubmissionTick = state.tick
-        if wasRankedAtStart { gameCenter.record(state: state, challenge: challenge, playerID: playerID) }
+        if wasRankedAtStart { gameCenter.record(state: state, challenge: challenge, playerID: playerID, course: runCourse) }
+    }
+
+    func showAchievements() {
+        pause()
+        syncAchievements()
+        gameCenter.showAchievements()
+    }
+
+    private func recordAchievementDistance() {
+        guard simulation.state.mode == .endless, simulation.state.tick > 0 else { return }
+        announceAchievements(achievements.recordEndlessDistance(simulation.state.distance,
+            runID: progressionRunID, playerID: achievementRunPlayerID, at: Date()))
+    }
+
+    private func announceAchievements(_ unlocked: [AchievementDefinition]) {
+        guard !unlocked.isEmpty else { return }
+        achievementNotice = AchievementNotice(unlocked: unlocked)
+        syncAchievements()
+    }
+
+    func syncAchievements() {
+        guard let playerID = gameCenter.currentPlayerID else { return }
+        gameCenter.syncAchievements(localProgress: achievements.gameCenterProgress(for: playerID), playerID: playerID)
     }
 
     private func clearPedals() {

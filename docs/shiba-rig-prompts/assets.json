@@ -1,0 +1,68 @@
+[
+  {
+    "file": "shiba-bike.png",
+    "width": 1634,
+    "height": 962,
+    "sha256": "a101c7ae3721a543400bf8dde068923c8c5767183ce7ab1537f8c24af3fa0fed"
+  },
+  {
+    "file": "shiba-boot.png",
+    "width": 1502,
+    "height": 1047,
+    "sha256": "7e5f7d0e47535eab1915968fc445e57483cc75def343c51bb05be753f31d9e7b"
+  },
+  {
+    "file": "shiba-calf.png",
+    "width": 1502,
+    "height": 1047,
+    "sha256": "167da97e77c705ffd678e9c373f58e1a46f87621205e432a06a5aa4282c81799"
+  },
+  {
+    "file": "shiba-forearm.png",
+    "width": 1502,
+    "height": 1047,
+    "sha256": "a65becc783e2ad7da7174081934a75d5ac97c184fbb6d9172872924fb297e5d8"
+  },
+  {
+    "file": "shiba-fork.png",
+    "width": 1122,
+    "height": 1402,
+    "sha256": "900f08b5692d0bf994ae206153e605c897672e6dce839a2f80a0f56e648ba8ff"
+  },
+  {
+    "file": "shiba-pelvis.png",
+    "width": 1502,
+    "height": 1047,
+    "sha256": "feabdc7bf7e06a18694beaa9ca005f783823df4cacdf4f86f811bf3ef43189ed"
+  },
+  {
+    "file": "shiba-swingarm.png",
+    "width": 1780,
+    "height": 884,
+    "sha256": "1de87c859b3eff6e913b559311170988836483943c8f3e1a130d9b62d40386eb"
+  },
+  {
+    "file": "shiba-thigh.png",
+    "width": 1374,
+    "height": 1145,
+    "sha256": "6510c94561cceb6cb76d5088888e55b1588d5ae5673a17bfa1d83dd404c7cc40"
+  },
+  {
+    "file": "shiba-torso.png",
+    "width": 1502,
+    "height": 1047,
+    "sha256": "053b5f703f922e31984cf7400b1e2396606ded83981f7383fd279eddf980ab83"
+  },
+  {
+    "file": "shiba-upper-arm.png",
+    "width": 1278,
+    "height": 1230,
+    "sha256": "b08a71b89261cc67c503af52736ca52d6b173053fe53b3e3177b7a47988eea16"
+  },
+  {
+    "file": "shiba-wheel.png",
+    "width": 1254,
+    "height": 1254,
+    "sha256": "d7880c121302e30821b4353b035895d9d1f01e7c3aa02d6868bfbf3dbe54223b"
+  }
+]

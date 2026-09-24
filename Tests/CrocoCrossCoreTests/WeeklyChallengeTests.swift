@@ -49,6 +49,28 @@ final class WeeklyChallengeTests: XCTestCase {
         }
     }
 
+    func testNextCourseDateUsesLocalTimeAcrossDSTAndAdvancesAtTheUTCBoundary() {
+        let boundary = date("2026-11-02T00:00:00Z")
+        let before = WeeklyChallenge.practice(now: boundary.addingTimeInterval(-1)).end
+        XCTAssertEqual(before, boundary)
+        XCTAssertEqual(WeeklyChallenge.practice(now: boundary).end, date("2026-11-09T00:00:00Z"))
+
+        var local = Calendar(identifier: .gregorian)
+        local.timeZone = TimeZone(identifier: "America/Los_Angeles")!
+        let california = local.dateComponents([.month, .day, .hour, .minute], from: before)
+        XCTAssertEqual(california.month, 11)
+        XCTAssertEqual(california.day, 1)
+        XCTAssertEqual(california.hour, 16, "The next UTC course starts at 4 PM after daylight saving ends.")
+        XCTAssertEqual(california.minute, 0)
+
+        local.timeZone = TimeZone(identifier: "Asia/Kolkata")!
+        let india = local.dateComponents([.month, .day, .hour, .minute], from: before)
+        XCTAssertEqual(india.month, 11)
+        XCTAssertEqual(india.day, 2)
+        XCTAssertEqual(india.hour, 5)
+        XCTAssertEqual(india.minute, 30, "The displayed time must preserve non-hour UTC offsets.")
+    }
+
     func testYearBoundaryAndSerializationPreserveTheOccurrence() throws {
         let challenge = WeeklyChallenge.practice(now: date("2027-01-01T12:00:00Z"))
         XCTAssertEqual(challenge.start, date("2026-12-28T00:00:00Z"))

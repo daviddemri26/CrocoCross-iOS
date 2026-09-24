@@ -3,7 +3,7 @@ import SpriteKit
 import SwiftUI
 
 private enum GamePanel: String, Identifiable {
-    case riders, worlds, settings, help, rankings
+    case riders, worlds, settings, help, rankings, achievements
     var id: String { rawValue }
 }
 
@@ -19,6 +19,11 @@ struct GameRootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reducedMotion
     @State private var panel: GamePanel?
+    @State private var showingKenjiUnlock = false
+    @State private var showingJapanUnlock = false
+    @State private var showingUnlockError = false
+    @State private var unlockErrorMessage: String?
+    private var showingUnlock: Bool { showingKenjiUnlock || showingJapanUnlock }
 
     var body: some View {
         GeometryReader { geometry in
@@ -62,6 +67,22 @@ struct GameRootView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .overlay(alignment: .top) {
+                if let notice = session.achievementNotice {
+                    AchievementToast(notice: notice)
+                        .padding(.horizontal, 20)
+                        .padding(.top, session.phase == .playing ? 142 : 12)
+                        .transition(.opacity)
+                        .task(id: notice.id) {
+                            do { try await Task.sleep(for: .seconds(3)) } catch { return }
+                            if session.achievementNotice?.id == notice.id {
+                                withAnimation(reducedMotion ? nil : .easeOut(duration: 0.18)) {
+                                    session.achievementNotice = nil
+                                }
+                            }
+                        }
+                }
+            }
             .animation(
                 reducedMotion ? nil : .spring(response: 0.4, dampingFraction: 0.86), value: session.resultsVisible
             )
@@ -77,6 +98,8 @@ struct GameRootView: View {
             case .inactive: session.setActive(false)
             case .background:
                 panel = nil
+                showingKenjiUnlock = false
+                showingJapanUnlock = false
                 session.leaveApp()
             @unknown default: session.setActive(false)
             }
@@ -92,8 +115,9 @@ struct GameRootView: View {
             NavigationStack {
                 VStack(spacing: 0) {
                     panelContent(item)
+                        .accessibilityHidden(showingUnlock)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    if item != .settings {
+                    if item != .settings && !showingUnlock {
                         HStack {
                             Spacer()
                             PanelCloseButton { panel = nil }
@@ -106,10 +130,35 @@ struct GameRootView: View {
                     }
                 }
                 .background(CrocoTheme.ink)
+                .overlay {
+                    if showingKenjiUnlock {
+                        KenjiUnlockView {
+                            session.selectRider("shiba")
+                            showingKenjiUnlock = false
+                            panel = nil
+                        } dismiss: {
+                            showingKenjiUnlock = false
+                        }
+                    } else if showingJapanUnlock {
+                        JapanUnlockView {
+                            session.selectWorld("japan")
+                            showingJapanUnlock = false
+                            panel = nil
+                        } dismiss: {
+                            showingJapanUnlock = false
+                        }
+                    }
+                }
                 .navigationTitle(panelTitle(item))
                 .navigationBarTitleDisplayMode(.inline)
             }
             .presentationDetents([.large]).presentationDragIndicator(.visible)
+            .interactiveDismissDisabled(showingUnlock)
+            .alert("Progress not saved", isPresented: $showingUnlockError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(unlockErrorMessage ?? "Please try again.")
+            }
             .tint(CrocoTheme.lime).preferredColorScheme(.dark)
         }
         .statusBarHidden(session.phase == .playing)
@@ -211,15 +260,27 @@ struct GameRootView: View {
     }
 
     private var launchOptions: some View {
-        HStack(spacing: 12) {
-            LaunchTile(weekly: true, reducedMotion: reducedMotion) { session.start(.weekly) }
-            LaunchTile(weekly: false, reducedMotion: reducedMotion) { session.start(.endless) }
+        VStack(spacing: 9) {
+            HStack(spacing: 12) {
+                LaunchTile(weekly: true, reducedMotion: reducedMotion, worldName: "Canyon") { session.start(.weekly) }
+                LaunchTile(weekly: false, reducedMotion: reducedMotion, worldName: GameCatalog.world(session.worldID).name) { session.start(.endless) }
+            }
+            HStack(alignment: .top, spacing: 12) {
+                Text("Same course for everyone.")
+                    .accessibilityIdentifier("weeklyCourseInfo")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text("New random course every ride.")
+                    .accessibilityIdentifier("endlessCourseInfo")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }.font(.system(size: 11, weight: .medium)).foregroundStyle(CrocoTheme.muted)
+                .fixedSize(horizontal: false, vertical: true).padding(.horizontal, 5)
         }
     }
 
     private var utilityBar: some View {
         HStack(spacing: 8) {
             utility("Rankings", icon: "trophy.fill", id: "rankings") { panel = .rankings }
+            utility("Achievements", icon: "medal.fill", id: "achievements") { panel = .achievements }
             utility("Settings", icon: "slider.horizontal.3", id: "settings") { panel = .settings }
             utility("How to", icon: "questionmark.circle", id: "help") { panel = .help }
         }.padding(7).background(CrocoTheme.ink.opacity(0.9), in: RoundedRectangle(cornerRadius: 25))
@@ -232,26 +293,27 @@ struct GameRootView: View {
             VStack(spacing: 6) {
                 Image(systemName: UIImage(systemName: icon) == nil ? (fallback ?? "circle") : icon).font(
                     .system(size: 20, weight: .semibold))
-                Text(title).font(.system(size: 11, weight: .bold))
+                Text(title).font(.system(size: 11, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
             }.frame(maxWidth: .infinity).frame(height: 64).contentShape(Rectangle())
         }.buttonStyle(.plain).foregroundStyle(.white.opacity(0.88)).accessibilityIdentifier(id)
     }
 
     private func playOverlay(wide: Bool, height: CGFloat) -> some View {
         let pedalSize: CGFloat = wide ? 124 : 112
+        let zoneHeight = wide ? min(190, max(144, height * 0.42)) : min(240, max(180, height * 0.30))
         return ZStack(alignment: .bottom) {
             HStack(spacing: 0) {
                 PedalControl(
-                    right: false, enabled: session.phase == .playing && !session.recovering,
+                    right: false, diameter: pedalSize, enabled: session.phase == .playing && !session.recovering,
                     resetToken: session.pedalReset
                 ) { session.setPedal(right: false, pressed: $0) }
-                    .frame(width: pedalSize, height: pedalSize)
-                Spacer(minLength: 64)
+                    .frame(maxWidth: .infinity).frame(height: zoneHeight)
+                Color.clear.frame(width: 64, height: 1).allowsHitTesting(false)
                 PedalControl(
-                    right: true, enabled: session.phase == .playing && !session.recovering,
+                    right: true, diameter: pedalSize, enabled: session.phase == .playing && !session.recovering,
                     resetToken: session.pedalReset
                 ) { session.setPedal(right: true, pressed: $0) }
-                    .frame(width: pedalSize, height: pedalSize)
+                    .frame(maxWidth: .infinity).frame(height: zoneHeight)
             }.padding(.horizontal, wide ? 28 : 16).padding(.bottom, 16)
                 .opacity(session.phase == .playing ? 1 : 0)
                 .allowsHitTesting(session.phase == .playing)
@@ -262,6 +324,9 @@ struct GameRootView: View {
                             Text(session.mode == .weekly ? "WEEKLY" : "ENDLESS")
                                 .font(.system(size: 9, weight: .heavy, design: .monospaced)).tracking(1.5).foregroundStyle(
                                     CrocoTheme.lime)
+                            Text(session.activeWorldName)
+                                .font(.system(size: 9, weight: .semibold)).foregroundStyle(CrocoTheme.muted)
+                                .lineLimit(1).accessibilityIdentifier("activeWorld")
                             Text(session.score.formatted()).font(.custom("AvenirNextCondensed-HeavyItalic", size: 36))
                                 .lineLimit(1).minimumScaleFactor(0.6)
                                 .monospacedDigit().contentTransition(.numericText()).accessibilityIdentifier("score")
@@ -471,15 +536,26 @@ struct GameRootView: View {
         case .riders:
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
+                    if let error = session.riderProgression.saveError {
+                        Text(error).font(.footnote).foregroundStyle(CrocoTheme.orange)
+                    }
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 145), spacing: 14)], spacing: 14) {
                         ForEach(GameCatalog.riders) { rider in
                             CatalogCard(
                                 id: rider.id, name: rider.name, subtitle: rider.subtitle, asset: rider.assetName,
-                                availability: rider.availability, selected: session.characterID == rider.id, rider: true
+                                availability: session.riderAvailability(rider.id), selected: session.characterID == rider.id, rider: true
                             ) {
-                                guard rider.availability.isUnlocked else { return }
-                                session.characterID = rider.id
-                                panel = nil
+                                let availability = session.riderAvailability(rider.id)
+                                if rider.id == "shiba" && availability.isReadyToUnlock {
+                                    if session.claimKenji() { showingKenjiUnlock = true }
+                                    else {
+                                        unlockErrorMessage = session.riderProgression.saveError
+                                        showingUnlockError = true
+                                    }
+                                } else if availability.isUnlocked {
+                                    session.selectRider(rider.id)
+                                    panel = nil
+                                }
                             }
                         }
                     }
@@ -487,21 +563,42 @@ struct GameRootView: View {
             }.background(CrocoTheme.ink)
         case .worlds:
             ScrollView {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 155), spacing: 14)], spacing: 14) {
-                    ForEach(GameCatalog.worlds) { world in
-                        CatalogCard(
-                            id: world.id, name: world.name, subtitle: world.subtitle, asset: world.assetName,
-                            availability: world.availability, selected: session.worldID == world.id
-                        ) {
-                            guard world.isPlayable else { return }
-                            session.worldID = world.id
-                            panel = nil
+                VStack(alignment: .leading, spacing: 18) {
+                    if let error = session.worldProgression.saveError {
+                        Text(error).font(.footnote).foregroundStyle(CrocoTheme.orange)
+                    }
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 155), spacing: 14)], spacing: 14) {
+                        ForEach(GameCatalog.worlds) { world in
+                            CatalogCard(
+                                id: world.id, name: world.name, subtitle: world.subtitle, asset: world.assetName,
+                                availability: session.worldAvailability(world.id), selected: session.worldID == world.id,
+                                recordText: world.course.supportsLeaderboards ? "\(session.bestEndless(for: world.id).formatted()) pts" : nil,
+                                leaderboardAction: world.course.supportsLeaderboards ? {
+                                    if session.gameCenter.isAuthenticated { session.showEndlessLeaderboard(worldID: world.id) }
+                                    else { session.gameCenter.authenticate() }
+                                } : nil,
+                                leaderboardEnabled: !session.gameCenter.isAuthenticated || session.gameCenter.isEndlessLeaderboardConfirmed(for: world.course),
+                                leaderboardStatus: session.gameCenter.isAuthenticated ? "Compare Endless scores in Game Center." : "Connect with Game Center."
+                            ) {
+                                let availability = session.worldAvailability(world.id)
+                                if world.id == "japan" && availability.isReadyToUnlock {
+                                    if session.claimJapan() { showingJapanUnlock = true }
+                                    else {
+                                        unlockErrorMessage = session.worldProgression.saveError
+                                        showingUnlockError = true
+                                    }
+                                } else if availability.isUnlocked {
+                                    session.selectWorld(world.id)
+                                    panel = nil
+                                }
+                            }
                         }
                     }
                 }.padding(18)
             }.background(CrocoTheme.ink)
         case .settings: SettingsPanel(session: session) { panel = nil }
-        case .rankings: RankingsPanel(session: session)
+        case .rankings: RankingsPanel(session: session) { panel = .worlds }
+        case .achievements: AchievementsPanel(session: session)
         case .help: HowToView()
         }
     }
@@ -512,6 +609,7 @@ struct GameRootView: View {
         case .worlds: "Worlds"
         case .settings: "Settings"
         case .rankings: "Rankings"
+        case .achievements: "Achievements"
         case .help: "How to play"
         }
     }

@@ -1,29 +1,23 @@
-# CrocoCross App Store handoff
+# CrocoCross 1.1.0 (18) preparation handoff
 
-Verified September 17, 2026. App **6812979862**, version **1.0.0**, build **17**.
+Signed-in checks on **September 23, 2026** confirmed **1.0.0 (17), Ready for Distribution**, and the owner-created **1.1.0 draft**, **À finaliser avant soumission**. Description, promotional text, keywords, What's New and App Review notes are saved in that draft. Its release setting remains **Automatic**; manual release is a recommendation, not an applied change. TestFlight has only 1.0.0 (17), uploaded September 16 and marked Ready to Submit. Build 18 remains local. Historical `review/store-status.json` retains the September 17 state without rewriting that evidence.
 
-## Prepared
+## Completed preparation
 
-- English (U.S.) only: metadata, ten screenshots, public marketing/support/privacy pages, icon and build.
-- Distribution-signed IPA uploaded successfully and processed by Apple; build 17 selected.
-- Review contact and instructions saved; no app login required.
-- Games > Racing/Sports, calculated 13+ on OS 26+ (12+ on earlier systems; regional exceptions), free pricing.
-- 171 territories. China mainland and Vietnam are excluded because no game license was supplied; Afghanistan and Morocco are excluded by Apple's rating restrictions. Future territories are not enabled automatically.
-- iPhone/iPad distribution; separate Mac and Vision Pro availability disabled.
-- Game Center enabled. Three English v2 leaderboards are in a single iOS draft submission. The two weekly boards start September 21 at 00:00 UTC and recur every seven days.
-- Manual public release selected. Nothing has been sent to App Review or released.
+- Release **1.1.0 (18) archive succeeded**, with code signature verified. IPA export was attempted and **failed**: `No Accounts` / `No signing certificate "iOS Distribution" found`.
+- **97 core tests passed**, as did Release `AppStoreCaptureTests` on **iPhone 17 Pro Max and iPad Pro 13-inch (M5)**. The refreshed package passed **584 checks**. Logs are under `artifacts/qa/release-1.1.0/`.
+- Ten refreshed Store screenshots and both contact sheets are visually reviewed locally. The remote draft still has inherited 1.0.0 screenshots.
+- Current English metadata and review instructions cover Kenji, Japan, 2,600 m Weekly, 40 local achievements, records, controls and flexible falls.
+- Four v3 board IDs and a **40-achievement / 1,000-point** catalog are prepared. All 40 distinct achievement badges are generated and visually reviewed. No new leaderboard or achievement is configured remotely; achievement synchronization remains disabled.
 
-## Final owner action
+## Remaining gates
 
-The [privacy declaration](https://appstoreconnect.apple.com/apps/6812979862/distribution/privacy) is published, as verified in App Store Connect. Version **1.0.0 (17)** has joined the same iOS draft as the three leaderboards. Apple shows **four items ready** and an enabled **Submit for Review** button, with no blocking message.
+1. Reconnect the Xcode account and provide distribution signing, then retry the authorized local IPA export and verify its final bundle/signature. Build 18 has not been uploaded; recheck build availability if preparation is delayed.
+2. Upload the reviewed screenshots when authorized. Review final physical-device gameplay, audio, interruptions and controls; automated captures do not replace that validation.
+3. When remote configuration is authorized, create/associate the four v3 leaderboards and 40 achievements with their reviewed localizations and images. Configure the two Weekly recurring boards once: matching Monday 00:00 UTC first starts, seven-day duration and immediate seven-day restart. Game Center creates future occurrences automatically; no advance week creation or history UI is required.
+4. Validate genuine score/rank read-back, matching Weekly occurrences, account isolation and achievement restoration before enabling `CrocoGameCenterAchievementsEnabled`. Keep all remote readiness gates false until evidence exists.
+5. Review the draft's release setting, private review contact, agreements, age rating, territory restrictions, privacy/export declarations and public support/marketing/privacy content. The Automatic setting does not authorize submission or release.
 
-1. In the open draft, the owner clicks **Submit for Review** (French UI: **Envoyer pour vérification**).
-2. After Apple approves it, the owner performs the manual public release.
+The owner authorized local candidate/archive/export preparation and committing/pushing reviewed changes to GitHub main. **Do not automatically upload, submit for review or publish.** TestFlight, App Review and public release remain distinct steps. A website-source push on main can trigger the existing GitHub Pages publication workflow.
 
-The draft remains open in Chrome. Nothing has been submitted to App Review or publicly released. Live Game Center score upload/read-back has not been tested; creation of the boards is configuration evidence only. Weekly practice works before the first scheduled occurrence.
-
-## Local delivery
-
-The English package ZIP, signed IPA and archive are under `artifacts/app-store-release/` in the native project. They are excluded from public Git. The ZIP contains the private App Review contact, so keep it private. Git and the public website do not include that phone number.
-
-[Apple submission workflow](https://developer.apple.com/help/app-store-connect/manage-submissions-to-app-review/submit-an-app/)
+Private Apple contacts and signed IPA/archive files remain outside public Git. No demo account is required; Game Center authentication is optional. [Machine-readable readiness](release-readiness.json).

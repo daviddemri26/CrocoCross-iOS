@@ -42,7 +42,11 @@ final class ForegroundSceneryNode: SKNode {
             // Sampling the fixed world footprint also prevents footing drift on zoom.
             let support = (0...8).map { ground(x + (Double($0) / 4 - 1) * halfWidth) }.min()!
             let y: CGFloat
-            if let footing = style.footingDepth {
+            if let anchor = style.roadAnchor(at: scene.depth) {
+                // Align the opening, rather than the painted top, with the road.
+                // The centre stays fixed on hills as the large footprint crosses slopes.
+                y = ground(x) - actor.size.height * anchor
+            } else if let footing = style.footingDepth {
                 // Anchor the feet, not the top: a building or mast can rise
                 // above the road and briefly occlude the bike in the foreground.
                 y = support - ppm * (footing + depth)
@@ -51,6 +55,8 @@ final class ForegroundSceneryNode: SKNode {
                 y = support - ppm * (clearance + 0.15 + depth) - actor.size.height
             }
             actor.position = CGPoint(x: screenX * Double(ppm), y: y)
+            // Every foreground prop, including a raised torii, stays in front of the rider.
+            // Transparent openings reveal the bike as it passes behind the gateway.
             actor.zPosition = scene.depth
             actor.zRotation = 0
             actor.alpha = 1

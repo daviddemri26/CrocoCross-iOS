@@ -1,13 +1,24 @@
+import CrocoCrossCore
 import SwiftUI
 
 /// Equal-sized ride modes. All motion is decorative and stops with Reduce Motion.
 struct LaunchTile: View {
     let weekly: Bool
     let reducedMotion: Bool
+    var worldName = "Canyon"
     let action: () -> Void
     private var color: Color { weekly ? CrocoTheme.lime : CrocoTheme.orange }
 
     var body: some View {
+        // Keep the displayed boundary current even when decorative motion is disabled.
+        TimelineView(.everyMinute) { timeline in
+            let nextCourse = WeeklyChallenge.practice(now: timeline.date).end
+            let nextCourseText = nextCourse.formatted(.dateTime.month(.abbreviated).day())
+            tile(nextCourseText: nextCourseText)
+        }
+    }
+
+    private func tile(nextCourseText: String) -> some View {
         Button(action: action) {
             GeometryReader { geometry in
                 let side = geometry.size.width
@@ -47,7 +58,7 @@ struct LaunchTile: View {
                         Image(systemName: weekly ? "flag.checkered" : "infinity")
                             .font(.system(size: side * 0.42, weight: .black))
                             .rotationEffect(.degrees(weekly ? -12 + sway * 4 : -14 + sway * 3))
-                            .offset(x: side * 0.37, y: side * (0.14 + sway * 0.015))
+                            .offset(x: side * 0.37, y: side * (0.08 + sway * 0.015))
                             .foregroundStyle(CrocoTheme.ink.opacity(0.86))
                             .shadow(color: .white.opacity(0.22), radius: 0, x: 2, y: 3)
                             .accessibilityHidden(true)
@@ -59,6 +70,9 @@ struct LaunchTile: View {
                                     .background(CrocoTheme.ink.opacity(0.09), in: Capsule())
                             }
                             Spacer(minLength: 0)
+                            Text(worldName.uppercased())
+                                .font(.system(size: 9, weight: .heavy, design: .monospaced))
+                                .lineLimit(1).minimumScaleFactor(0.7).padding(.bottom, 5)
                             HStack(spacing: 4) {
                                 Text(weekly ? "WEEKLY" : "ENDLESS")
                                     .font(.system(size: side * 0.135, weight: .black, design: .rounded)).italic()
@@ -69,6 +83,17 @@ struct LaunchTile: View {
                                     .frame(width: 26, height: 26)
                                     .background(CrocoTheme.ink.opacity(0.1), in: Circle())
                             }
+                            // Reserve the same footer space so both primary labels stay aligned.
+                            Group {
+                                if weekly {
+                                    Text("Ends \(nextCourseText)")
+                                        .font(.system(size: 9.5, weight: .semibold))
+                                        .lineLimit(1).minimumScaleFactor(0.9)
+                                        .opacity(0.86)
+                                } else {
+                                    Color.clear
+                                }
+                            }.frame(height: 12, alignment: .bottomLeading).padding(.top, 5)
                         }.padding(side * 0.09)
                     }
                 }
@@ -80,6 +105,8 @@ struct LaunchTile: View {
         .buttonStyle(LaunchTilePressStyle())
         .foregroundStyle(CrocoTheme.ink)
         .accessibilityLabel(weekly ? "Weekly, \(GameSession.weeklyDistanceText) metres" : "Endless")
+        .accessibilityValue(worldName)
+        .accessibilityHint(weekly ? "Next course: \(nextCourseText)" : "")
         .accessibilityIdentifier(weekly ? "startWeekly" : "startEndless")
     }
 }

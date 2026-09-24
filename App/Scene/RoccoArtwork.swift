@@ -1,15 +1,14 @@
 import SpriteKit
 import UIKit
 
-/// One source of truth for the separated Rocco sprites. Coordinates use the PNG's
+/// One source of truth for every separated rider rig. Coordinates use the PNG's
 /// top-left origin; pivots and attachment landmarks stay normalized when artwork
 /// is re-exported at another resolution. The renderer never edits the source PNGs.
 @MainActor
-enum RoccoArtwork {
+enum RiderRigArtwork {
     enum Part: String, CaseIterable {
         case bike, torso, pelvis, fork, swingarm, wheel
         case upperArm = "upper-arm", forearm, thigh, calf, boot
-        var assetName: String { "rocco-" + rawValue }
     }
 
     enum Anchor: String {
@@ -34,7 +33,7 @@ enum RoccoArtwork {
         let orientation: Span?
 
         func point(_ anchor: Anchor) -> CGPoint {
-            precondition(landmarks[anchor] != nil, "Missing Rocco landmark: \(part).\(anchor)")
+            precondition(landmarks[anchor] != nil, "Missing rider rig landmark: \(part).\(anchor)")
             return landmarks[anchor]!
         }
 
@@ -50,14 +49,55 @@ enum RoccoArtwork {
         }
     }
 
+    struct Profile {
+        let pelvisCentre: CGPoint
+        let torsoCentre: CGPoint
+        let retainDetachPose: Bool
+        let bootFollowsCalf: Bool
+        let bootAngleOffset: CGFloat
+        let upperArmThickness: CGFloat
+        let pelvisCropMaxX: CGFloat?
+        let farArmOffset: CGPoint
+        let farLegOffset: CGPoint
+        let maxTorsoLean: CGFloat
+        let maxPelvisShift: CGFloat
+        let smoothingTime: CGFloat
+        let maxLeanSpeed: CGFloat
+        let maxShiftSpeed: CGFloat
+        let depths: [String: CGFloat]
+
+        func depth(_ name: String, default fallback: CGFloat) -> CGFloat { depths[name] ?? fallback }
+    }
+
+    struct Manifest {
+        let parts: [Part: Entry]
+        let profile: Profile
+    }
+
+    static func supports(_ riderID: String) -> Bool { directory(for: riderID) != nil }
+
+    private static func directory(for riderID: String) -> String? {
+        switch riderID {
+        case "croco": "RoccoRig"
+        case "shiba": "ShibaRig"
+        default: nil
+        }
+    }
+
+    private static func prefix(for riderID: String) -> String { riderID == "croco" ? "rocco" : riderID }
+    private static var manifests: [String: Manifest] = [:]
+
     /// The same manifest is consumed by scripts/check-rocco-assets.swift.
-    /// Art calibration is data, so changing an image does not change the rig math.
-    static let manifest: [Part: Entry] = {
-        guard let url = Bundle.main.url(forResource: "manifest", withExtension: "json", subdirectory: "GameAssets/RoccoRig"),
+    /// Rocco's historical adjustments stay confined to its profile; new riders
+    /// use their own calibration without inheriting its cropping or muscle scale.
+    static func manifest(for riderID: String) -> Manifest? {
+        if let cached = manifests[riderID] { return cached }
+        guard let directory = directory(for: riderID) else { return nil }
+        guard let url = Bundle.main.url(forResource: "manifest", withExtension: "json", subdirectory: "GameAssets/" + directory),
               let data = try? Data(contentsOf: url), let document = try? JSONDecoder().decode(Document.self, from: data),
               document.schemaVersion == 1 else {
-            assertionFailure("The bundled Rocco rig manifest is missing or invalid. Run scripts/check-rocco-assets.swift.")
-            return [:]
+            assertionFailure("The bundled \(riderID) rig manifest is missing or invalid. Run scripts/check-rocco-assets.swift --rider \(riderID).")
+            return nil
         }
         var entries: [Part: Entry] = [:]
         for source in document.parts {
@@ -68,10 +108,55 @@ enum RoccoArtwork {
             entries[part] = Entry(part: part, sourceSize: CGSize(width: source.sourceSize.width, height: source.sourceSize.height),
                                   visibleBounds: source.visibleBounds.rect, landmarks: landmarks, calibration: source.calibration.span, orientation: source.orientation?.span)
         }
-        return entries
-    }()
+        let p = document.presentation
+        let rocco = riderID == "croco"
+        let profile = Profile(pelvisCentre: document.rig?.pelvisCentre.point ?? CGPoint(x: 0, y: 0.10),
+                              torsoCentre: document.rig?.torsoCentre?.point ?? CGPoint(x: 0, y: 0.36),
+                              retainDetachPose: p?.retainDetachPose ?? false,
+                              bootFollowsCalf: p?.bootFollowsCalf ?? false,
+                              bootAngleOffset: p?.bootAngleOffset ?? 0,
+                              upperArmThickness: p?.upperArmThickness ?? (rocco ? 1.8 : 1),
+                              pelvisCropMaxX: p?.pelvisCropMaxX ?? (rocco ? 0.82 : nil),
+                              farArmOffset: p?.farArmOffset?.point ?? CGPoint(x: rocco ? 0.045 : 0.025, y: -0.015),
+                              farLegOffset: p?.farLegOffset?.point ?? CGPoint(x: -0.035, y: 0.025),
+                              maxTorsoLean: p?.maxTorsoLean ?? 0.35,
+                              maxPelvisShift: p?.maxPelvisShift ?? 0.14,
+                              smoothingTime: p?.smoothingTime ?? 0.065,
+                              maxLeanSpeed: p?.maxLeanSpeed ?? 2.5,
+                              maxShiftSpeed: p?.maxShiftSpeed ?? 0.8,
+                              depths: p?.depths ?? [:])
+        guard Part.allCases.allSatisfy({ entries[$0] != nil }), profile.upperArmThickness > 0,
+              profile.smoothingTime > 0, profile.maxTorsoLean >= 0, profile.maxPelvisShift >= 0 else {
+            assertionFailure("Incomplete or invalid \(riderID) rig configuration.")
+            return nil
+        }
+        let manifest = Manifest(parts: entries, profile: profile)
+        manifests[riderID] = manifest
+        return manifest
+    }
 
-    private struct Document: Decodable { let schemaVersion: Int; let parts: [SourceEntry] }
+    private struct Document: Decodable {
+        let schemaVersion: Int
+        let rig: SourceRig?
+        let presentation: SourcePresentation?
+        let parts: [SourceEntry]
+    }
+    private struct SourceRig: Decodable { let pelvisCentre: SourcePoint; let torsoCentre: SourcePoint? }
+    private struct SourcePresentation: Decodable {
+        let retainDetachPose: Bool?
+        let bootFollowsCalf: Bool?
+        let bootAngleOffset: CGFloat?
+        let upperArmThickness: CGFloat?
+        let pelvisCropMaxX: CGFloat?
+        let farArmOffset: SourcePoint?
+        let farLegOffset: SourcePoint?
+        let maxTorsoLean: CGFloat?
+        let maxPelvisShift: CGFloat?
+        let smoothingTime: CGFloat?
+        let maxLeanSpeed: CGFloat?
+        let maxShiftSpeed: CGFloat?
+        let depths: [String: CGFloat]?
+    }
     private struct SourcePoint: Decodable {
         let x: CGFloat, y: CGFloat
         var point: CGPoint { CGPoint(x: x, y: y) }
@@ -110,28 +195,32 @@ enum RoccoArtwork {
         }
     }
 
-    private static var cache: [Part: Loaded] = [:]
+    private static var cache: [String: [Part: Loaded]] = [:]
 
-    static func load(_ part: Part) -> Loaded? {
-        if let cached = cache[part] { return cached }
-        guard let entry = manifest[part] else {
-            assertionFailure("Rocco manifest is missing \(part.rawValue).")
+    static func load(_ part: Part, riderID: String = "croco") -> Loaded? {
+        if let cached = cache[riderID]?[part] { return cached }
+        guard let directory = directory(for: riderID), let entry = manifest(for: riderID)?.parts[part] else {
+            assertionFailure("\(riderID) manifest is missing \(part.rawValue).")
             return nil
         }
+        let assetName = prefix(for: riderID) + "-" + part.rawValue
         guard
-              let url = Bundle.main.url(forResource: part.assetName, withExtension: "png", subdirectory: "GameAssets/RoccoRig"),
+              let url = Bundle.main.url(forResource: assetName, withExtension: "png", subdirectory: "GameAssets/" + directory),
               let image = UIImage(contentsOfFile: url.path) else {
-            assertionFailure("Missing Rocco sprite: \(part.assetName).")
+            assertionFailure("Missing rider sprite: \(assetName).")
             return nil
         }
         guard image.size == entry.sourceSize else {
-            assertionFailure("\(part.assetName) canvas \(image.size) differs from manifest \(entry.sourceSize). Recalibrate the manifest.")
+            assertionFailure("\(assetName) canvas \(image.size) differs from manifest \(entry.sourceSize). Recalibrate the manifest.")
             return nil
         }
         let texture = SKTexture(image: image)
         texture.filteringMode = .linear
         let loaded = Loaded(entry: entry, texture: texture, sourceSize: image.size)
-        cache[part] = loaded
+        cache[riderID, default: [:]][part] = loaded
         return loaded
     }
 }
+
+// Kept for local diagnostics written against the original Rocco implementation.
+typealias RoccoArtwork = RiderRigArtwork

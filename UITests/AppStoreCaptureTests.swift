@@ -13,7 +13,7 @@ final class AppStoreCaptureTests: XCTestCase {
         Thread.sleep(forTimeInterval: 1)
         shot("03-home")
         app.buttons["help"].tap()
-        XCTAssertTrue(app.navigationBars["How to play"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "howToContent").firstMatch.waitForExistence(timeout: 5))
         Thread.sleep(forTimeInterval: 0.5)
         shot("04-controls")
         app.swipeUp()

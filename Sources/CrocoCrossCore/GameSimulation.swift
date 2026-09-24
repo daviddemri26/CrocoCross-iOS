@@ -143,6 +143,17 @@ public final class GameSimulation {
     }
 
     #if DEBUG
+    /// A real airborne backflip setup for offline UI tests; controls still have to land it safely.
+    public static func backflipFixtureForTesting(mode: RunMode) -> GameSimulation {
+        var configuration = PhysicsConfiguration()
+        configuration.terrainStyle = .flat
+        var state = SimulationState(mode: mode, seed: 1)
+        state.bike.position = .init(x: 3, y: 16)
+        state.bike.velocity.x = 8
+        state.bike.angularVelocity = 6
+        return GameSimulation(state: state, configuration: configuration)
+    }
+
     /// Near-finish UI fixture. The app additionally requires its offline UI-testing flag.
     public static func finishFixtureForTesting(airborne: Bool) -> GameSimulation {
         let configuration = PhysicsConfiguration()

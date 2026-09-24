@@ -1,9 +1,58 @@
+import Foundation
+import CoreGraphics
+
+/// The first contact owns a pedal until that contact ends or the session cancels it.
+/// Moves deliberately have no transition: the first contact point stays fixed.
+struct PedalContactState<TouchID: Equatable> {
+    private(set) var owner: TouchID?
+    private(set) var origin: CGPoint?
+
+    mutating func begin(_ id: TouchID, at point: CGPoint) -> Bool {
+        guard owner == nil else { return false }
+        owner = id
+        origin = point
+        return true
+    }
+
+    mutating func end(_ id: TouchID) -> Bool {
+        guard owner == id else { return false }
+        reset()
+        return true
+    }
+
+    mutating func reset() {
+        owner = nil
+        origin = nil
+    }
+}
+
+/// Keep the smaller artwork inside its safe-area-respecting contact zone, clear of Pause.
+struct PedalGeometry {
+    let bounds: CGRect
+    let diameter: CGFloat
+    let right: Bool
+
+    var side: CGFloat { max(0, min(diameter, min(bounds.width, bounds.height)) - 8) }
+    var restingPoint: CGPoint {
+        clamp(CGPoint(x: right ? bounds.maxX - diameter / 2 : bounds.minX + diameter / 2,
+                      y: bounds.maxY - diameter / 2))
+    }
+
+    func clamp(_ point: CGPoint) -> CGPoint {
+        let inset = side / 2 + 4
+        return CGPoint(x: max(bounds.minX + inset, min(bounds.maxX - inset, point.x)),
+                       y: max(bounds.minY + inset, min(bounds.maxY - inset, point.y)))
+    }
+}
+
+#if canImport(UIKit)
 import SwiftUI
 import UIKit
 
-/// Fixed image buttons with independent binary hold/release input for both thumbs.
+/// Broad thumb zones with first-contact artwork and independent binary hold/release input.
 struct PedalControl: UIViewRepresentable {
     var right: Bool
+    var diameter: CGFloat = 112
     var enabled = true
     var resetToken = 0
     var changed: (Bool) -> Void
@@ -12,6 +61,7 @@ struct PedalControl: UIViewRepresentable {
     func makeUIView(context: Context) -> PedalView {
         let view = PedalView()
         view.right = right
+        view.diameter = diameter
         view.changed = changed
         return view
     }
@@ -19,6 +69,7 @@ struct PedalControl: UIViewRepresentable {
     func updateUIView(_ view: PedalView, context: Context) {
         view.changed = changed
         view.right = right
+        view.diameter = diameter
         view.reducedMotion = reducedMotion
         if !enabled || view.resetToken != resetToken {
             view.release()
@@ -38,7 +89,10 @@ final class PedalView: UIView {
     var reducedMotion = UIAccessibility.isReduceMotionEnabled {
         didSet { if reducedMotion != oldValue { updateFeedback(animated: false) } }
     }
-    private var activeTouch: UITouch?
+    var diameter: CGFloat = 112 { didSet { if diameter != oldValue { setNeedsLayout() } } }
+    private var contact = PedalContactState<ObjectIdentifier>()
+    private var previousSize = CGSize.zero
+    private var geometry: PedalGeometry { .init(bounds: bounds, diameter: diameter, right: right) }
     private var held = false
     private let face = UIView()
     private let artwork = UIImageView()
@@ -56,6 +110,8 @@ final class PedalView: UIView {
         isMultipleTouchEnabled = true
         isExclusiveTouch = false
         isAccessibilityElement = true
+        NotificationCenter.default.addObserver(self, selector: #selector(applicationWillResignActive),
+            name: UIApplication.willResignActiveNotification, object: nil)
         face.isUserInteractionEnabled = false
         face.layer.shadowColor = UIColor.black.cgColor
         face.layer.shadowOpacity = 0.30
@@ -97,6 +153,10 @@ final class PedalView: UIView {
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
+    deinit { NotificationCenter.default.removeObserver(self) }
+
+    @objc private func applicationWillResignActive() { release() }
+
     private func configureArtwork() {
         artwork.image = GameAssets.image(named: right ? "control-throttle" : "control-brake")
         accessibilityIdentifier = right ? "throttle" : "brake"
@@ -109,11 +169,13 @@ final class PedalView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        let side = max(0, min(bounds.width, bounds.height) - 8)
+        if previousSize != .zero && previousSize != bounds.size { release() }
+        previousSize = bounds.size
+        let side = geometry.side
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         face.bounds = CGRect(x: 0, y: 0, width: side, height: side)
-        face.center = CGPoint(x: bounds.midX, y: bounds.midY)
+        face.center = contact.origin.map(geometry.clamp) ?? geometry.restingPoint
         let circle = CGPath(ellipseIn: face.bounds.insetBy(dx: 2, dy: 2), transform: nil)
         face.layer.shadowPath = circle
         for shape in [surface, bevel, innerEdge, activeRing] { shape.frame = face.bounds }
@@ -122,51 +184,51 @@ final class PedalView: UIView {
         bevelMask.path = circle
         activeRing.path = CGPath(ellipseIn: face.bounds.insetBy(dx: 3, dy: 3), transform: nil)
         innerEdge.path = CGPath(ellipseIn: face.bounds.insetBy(dx: 7, dy: 7), transform: nil)
-        ripple.frame = bounds
-        ripple.path = CGPath(ellipseIn: CGRect(x: bounds.midX - side / 2, y: bounds.midY - side / 2,
-                                              width: side, height: side), transform: nil)
+        ripple.bounds = CGRect(x: 0, y: 0, width: side, height: side)
+        ripple.position = face.center
+        ripple.path = CGPath(ellipseIn: ripple.bounds, transform: nil)
         artwork.frame = face.bounds.insetBy(dx: side * 0.075, dy: side * 0.075)
         CATransaction.commit()
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard activeTouch == nil, let touch = touches.first else { return }
-        activeTouch = touch
+        guard isUserInteractionEnabled, let touch = touches.first,
+              contact.begin(ObjectIdentifier(touch), at: touch.location(in: self)) else { return }
         setHeld(true, animated: true)
     }
     // Sliding never changes power, artwork position or the owning touch.
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {}
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if let activeTouch, touches.contains(activeTouch) { release(animated: true) }
+        if touches.contains(where: { contact.end(ObjectIdentifier($0)) }) { release(animated: true) }
     }
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if let activeTouch, touches.contains(activeTouch) { release() }
+        if touches.contains(where: { contact.end(ObjectIdentifier($0)) }) { release() }
     }
     override func didMoveToWindow() { if window == nil { release() } }
 
     override func accessibilityActivate() -> Bool {
-        guard isUserInteractionEnabled else { return false }
+        guard isUserInteractionEnabled, contact.owner == nil else { return false }
         setHeld(!held, animated: true)
         return true
     }
 
     func release(animated: Bool = false) {
-        activeTouch = nil
+        contact.reset()
         setHeld(false, animated: animated)
     }
     private func setHeld(_ pressed: Bool, animated: Bool) {
-        guard held != pressed else {
-            if !animated { updateFeedback(animated: false) }
-            return
+        if held != pressed {
+            held = pressed
+            // Simulation input changes immediately; animation never delays a release.
+            changed?(pressed)
         }
-        held = pressed
-        // Simulation input changes immediately; animation never delays a release.
-        changed?(pressed)
         updateFeedback(animated: animated)
     }
     private func updateFeedback(animated: Bool) {
         accessibilityTraits = held ? [.button, .selected] : [.button]
         accessibilityValue = held ? "Pressed" : "Released"
+        let oldPosition = face.layer.presentation()?.position ?? face.layer.position
+        let targetPosition = contact.origin.map(geometry.clamp) ?? geometry.restingPoint
         let oldScale = (face.layer.presentation()?.value(forKeyPath: "transform.scale") as? CGFloat)
             ?? (face.layer.value(forKeyPath: "transform.scale") as? CGFloat) ?? 1
         face.layer.removeAllAnimations()
@@ -175,6 +237,8 @@ final class PedalView: UIView {
         let target: CGFloat = held && !reducedMotion ? 0.935 : 1
         CATransaction.begin()
         CATransaction.setDisableActions(true)
+        face.center = targetPosition
+        ripple.position = targetPosition
         face.layer.setValue(target, forKeyPath: "transform.scale")
         activeRing.opacity = held ? 1 : 0.16
         activeRing.shadowOpacity = held ? 0.65 : 0
@@ -183,6 +247,12 @@ final class PedalView: UIView {
         CATransaction.commit()
         guard !reducedMotion else { return }
         if animated {
+            let settle = CABasicAnimation(keyPath: "position")
+            settle.fromValue = NSValue(cgPoint: oldPosition)
+            settle.toValue = NSValue(cgPoint: targetPosition)
+            settle.duration = held ? 0.16 : 0.22
+            settle.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            face.layer.add(settle, forKey: "placement")
             let spring = CASpringAnimation(keyPath: "transform.scale")
             spring.fromValue = oldScale
             spring.toValue = target
@@ -215,3 +285,5 @@ final class PedalView: UIView {
         }
     }
 }
+
+#endif

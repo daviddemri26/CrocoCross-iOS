@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// A single Canvas per visible cell; shared cached layers keep all nine previews inexpensive.
-/// Wheel rotors turn independently while the original forks and tyre artwork remain still.
+/// Separated riders share their gameplay assembly; older locked riders retain
+/// lightweight Canvas previews until they receive their own articulated assets.
 struct RiderArtworkView: View {
     let riderID: String
     var animated: Bool = true
@@ -9,8 +9,25 @@ struct RiderArtworkView: View {
 
     var body: some View {
         let rider = GameCatalog.rider(riderID)
+        Group {
+            if RiderRigArtwork.supports(riderID) {
+                if let image = RiderRigPreview.image(for: rider) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .interpolation(.high)
+                        .scaledToFit()
+                }
+            } else {
+                legacyPreview(for: rider)
+            }
+        }
+        .accessibilityLabel("\(rider.name), \(rider.subtitle)")
+        .accessibilityAddTraits(.isImage)
+    }
+
+    private func legacyPreview(for rider: Rider) -> some View {
         let layers = RiderArtwork.layers(for: rider)
-        TimelineView(.animation(minimumInterval: 1 / 24, paused: !animated || reducedMotion)) { timeline in
+        return TimelineView(.animation(minimumInterval: 1 / 24, paused: !animated || reducedMotion)) { timeline in
             Canvas { context, size in
                 guard let layers else { return }
                 let time = animated && !reducedMotion ? timeline.date.timeIntervalSinceReferenceDate : 0
@@ -49,7 +66,6 @@ struct RiderArtworkView: View {
                 }
             }
         }
-        .accessibilityLabel("\(rider.name), \(rider.subtitle)")
-        .accessibilityAddTraits(.isImage)
     }
+
 }

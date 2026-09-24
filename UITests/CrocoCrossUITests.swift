@@ -7,7 +7,8 @@ final class CrocoCrossUITests: XCTestCase {
     @MainActor private func launch(extraArguments: [String] = []) -> XCUIApplication {
         if UIDevice.current.userInterfaceIdiom == .pad { XCUIDevice.shared.orientation = .landscapeLeft }
         let app = XCUIApplication()
-        app.launchArguments = ["-ui-testing", "-audio.muted", "YES"] + extraArguments
+        app.launchArguments = ["-ui-testing", "-unlock-test-id", UUID().uuidString,
+            "-weekly-record-test-id", UUID().uuidString, "-audio.muted", "YES"] + extraArguments
         app.launch()
         let ready = app.buttons["startWeekly"].waitForExistence(timeout: 15)
         if !ready {
@@ -40,7 +41,7 @@ final class CrocoCrossUITests: XCTestCase {
         let settings = app.buttons["settings"]
         XCTAssertGreaterThan(settings.frame.midY, endless.maxY)
         XCTAssertTrue(settings.isHittable)
-        for id in ["rankings", "settings", "help"] {
+        for id in ["rankings", "achievements", "settings", "help"] {
             let item = app.buttons[id]
             XCTAssertEqual(item.frame.height, settings.frame.height, accuracy: 1)
             XCTAssertEqual(item.frame.width, settings.frame.width, accuracy: 1)
@@ -90,9 +91,9 @@ final class CrocoCrossUITests: XCTestCase {
         app.buttons["closePanel"].tap()
         app.buttons["rankings"].tap()
         assertBottomClose(app)
-        XCTAssertTrue(app.staticTexts["Your best"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["rankings.weeklyHeading"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["settings.tab.audio"].exists)
-        XCTAssertTrue(app.buttons["rankings.connect"].exists || app.buttons["rankings.online"].exists)
+        XCTAssertTrue(app.buttons["rankings.connect"].exists || app.buttons["rankings.all"].exists)
         capture("rankings")
         app.buttons["closePanel"].tap()
     }
@@ -234,6 +235,103 @@ final class CrocoCrossUITests: XCTestCase {
         waitForPaused(app)
     }
 
+    @MainActor private func openAchievements(_ app: XCUIApplication) {
+        app.buttons["achievements"].tap()
+        XCTAssertTrue(app.staticTexts["achievements.summary"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor func testAchievementsSafeLandingClaimAndPersistence() throws {
+        let achievementID = UUID().uuidString
+        let app = launch(extraArguments: ["-achievement-test-id", achievementID,
+            "-unlock-landing-preview", "-unlock-fixture-backflips", "2"])
+        defer { app.terminate() }
+        openAchievements(app)
+        let summary = app.staticTexts["achievements.summary"]
+        XCTAssertTrue(summary.waitForExistence(timeout: 5))
+        XCTAssertTrue(summary.label.hasPrefix("0 / 34"), "A fresh save must not invent prior achievements")
+        capture("achievements-new")
+        app.buttons["closePanel"].tap()
+        waitForHome(app)
+        app.buttons["startEndless"].tap()
+        waitForPlaying(app)
+        let landed = NSPredicate { _, _ in
+            guard app.staticTexts["score"].exists else { return false }
+            return (Int(app.staticTexts["score"].label.filter(\.isNumber)) ?? 0) >= 1_000
+        }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: landed, object: nil)], timeout: 10), .completed)
+        app.buttons["pause"].tap()
+        waitForPaused(app)
+        app.buttons["home"].tap()
+        waitForHome(app)
+        openAchievements(app)
+        XCTAssertTrue(summary.waitForExistence(timeout: 5))
+        XCTAssertTrue(summary.label.hasPrefix("1 / 34"), "Only the safely landed first backflip is complete")
+        let firstBackflip = app.descendants(matching: .any).matching(identifier: "achievement.stunt.backflip.first").firstMatch
+        XCTAssertEqual(firstBackflip.value as? String, "Unlocked")
+        for id in ["stunt.double.landed", "stunt.triple.landed"] {
+            let stunt = app.descendants(matching: .any).matching(identifier: "achievement.\(id)").firstMatch
+            XCTAssertEqual(stunt.value as? String, "0 percent", "One single flip never partly earns a double or triple")
+        }
+        capture("achievements-first-backflip")
+        app.buttons["closePanel"].tap()
+        waitForHome(app)
+        app.buttons["riders"].tap()
+        let kenji = app.buttons["select-shiba"]
+        reveal(kenji, in: app)
+        kenji.tap()
+        let ride = app.buttons["rideWithKenji"]
+        XCTAssertTrue(ride.waitForExistence(timeout: 6))
+        ride.tap()
+        waitForHome(app)
+        openAchievements(app)
+        XCTAssertTrue(summary.waitForExistence(timeout: 5))
+        XCTAssertTrue(summary.label.hasPrefix("2 / 34"), "The explicit Kenji claim earns its own achievement")
+        capture("achievements-claim")
+        app.terminate()
+        app.launch()
+        waitForHome(app)
+        openAchievements(app)
+        XCTAssertTrue(summary.waitForExistence(timeout: 5))
+        XCTAssertTrue(summary.label.hasPrefix("2 / 34"), "Achievements persist and imports cannot duplicate them")
+        XCTAssertEqual(firstBackflip.value as? String, "Unlocked")
+        capture("achievements-relaunch")
+    }
+
+    @MainActor func testWeeklyScoreAndTimeRecordsAfterFinishAndRelaunch() throws {
+        let app = launch(extraArguments: ["-finish-preview"])
+        defer { app.terminate() }
+        app.buttons["rankings"].tap()
+        XCTAssertTrue(app.buttons["rankings.weeklyTime"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons["rankings.weeklyScore"].value as? String, "No record")
+        XCTAssertEqual(app.buttons["rankings.weeklyTime"].value as? String, "No record")
+        let rankings = app.descendants(matching: .any).matching(identifier: "rankings.list").firstMatch
+        XCTAssertTrue(rankings.exists)
+        XCTAssertFalse(rankings.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "Canyon")).firstMatch.exists)
+        capture("weekly-records-empty")
+        app.buttons["closePanel"].tap()
+        waitForHome(app)
+        app.buttons["startWeekly"].tap()
+        XCTAssertTrue(app.buttons["rideAgain"].waitForExistence(timeout: 12))
+        let score = app.staticTexts["finalScore"].label.filter(\.isNumber)
+        app.buttons["home"].tap()
+        waitForHome(app)
+        app.buttons["rankings"].tap()
+        XCTAssertTrue(app.buttons["rankings.weeklyTime"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons["rankings.weeklyScore"].value as? String, "\(score) points")
+        let time = app.buttons["rankings.weeklyTime"].value as? String
+        XCTAssertNotEqual(time, "No record")
+        XCTAssertTrue(time?.contains(":") == true && time?.contains(".") == true)
+        capture("weekly-records-finished")
+        app.terminate()
+        app.launch()
+        waitForHome(app)
+        app.buttons["rankings"].tap()
+        XCTAssertTrue(app.buttons["rankings.weeklyTime"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons["rankings.weeklyScore"].value as? String, "\(score) points")
+        XCTAssertEqual(app.buttons["rankings.weeklyTime"].value as? String, time)
+        capture("weekly-records-relaunch")
+    }
+
     @MainActor func testImageButtonsAndBottomPause() throws {
         let app = launch(extraArguments: ["-audio.muted", "YES", "-world", "paris"])
         defer { app.terminate() }
@@ -247,9 +345,8 @@ final class CrocoCrossUITests: XCTestCase {
         for button in [throttle, brake] {
             XCTAssertTrue(button.isHittable)
             XCTAssertGreaterThanOrEqual(button.frame.width, 100)
-            XCTAssertLessThanOrEqual(button.frame.width, 130)
-            XCTAssertEqual(button.frame.width, button.frame.height, accuracy: 1)
-            XCTAssertGreaterThan(button.frame.minY, window.height * 0.65)
+            XCTAssertGreaterThanOrEqual(button.frame.height, 144)
+            XCTAssertGreaterThan(button.frame.minY, window.height * 0.40)
             XCTAssertEqual(button.value as? String, "Released")
         }
         XCTAssertLessThan(brake.frame.maxX, pause.frame.minX)
@@ -261,7 +358,7 @@ final class CrocoCrossUITests: XCTestCase {
         let end = throttle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.85))
         start.press(forDuration: 0.25, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
         XCTAssertEqual(throttle.value as? String, "Released", "A moving thumb must still release on lift")
-        XCTAssertEqual(throttle.frame, original, "The image button must remain fixed")
+        XCTAssertEqual(throttle.frame, original, "The touch region stays fixed while the artwork returns to rest")
         waitForDistance(app, greaterThan: before)
         brake.press(forDuration: 0.2)
         XCTAssertEqual(brake.value as? String, "Released")
@@ -328,7 +425,7 @@ final class CrocoCrossUITests: XCTestCase {
         }
         capture("game-over-actions")
         app.buttons["resultsRankings"].tap()
-        XCTAssertTrue(app.staticTexts["Your best"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["rankings.weeklyHeading"].waitForExistence(timeout: 5))
         capture("rankings-from-game-over")
         app.buttons["closePanel"].tap()
         XCTAssertTrue(app.buttons["rideAgain"].waitForExistence(timeout: 5))
@@ -572,7 +669,8 @@ final class CrocoCrossUITests: XCTestCase {
                 XCTAssertEqual(card.isEnabled, index == 0, "Only the existing selection may be played")
                 if index > 0 {
                     XCTAssertTrue(card.label.hasSuffix(", Locked"))
-                    XCTAssertEqual(card.value as? String, "Requirements coming soon.")
+                    XCTAssertEqual(card.value as? String, id == "shiba"
+                        ? "Land 2 backflips to unlock Kenji, 0 / 2" : "Requirements coming soon.")
                 }
                 if index == 1 || index == ids.count - 1 {
                     card.tap()
@@ -595,6 +693,119 @@ final class CrocoCrossUITests: XCTestCase {
         waitForHome(app)
         XCTAssertEqual(app.buttons["riders"].label, "Rider: Rocco")
         XCTAssertEqual(app.buttons["worlds"].label, "World: Canyon")
+    }
+
+    @MainActor func testKenjiRealLandingsAccumulateAcrossModesWithoutDuplicates() throws {
+        let app = launch(extraArguments: ["-unlock-landing-preview"])
+        for (start, count) in [("startWeekly", 1), ("startEndless", 2)] {
+            app.buttons[start].tap()
+            waitForPlaying(app)
+            let landed = NSPredicate { _, _ in
+                guard app.staticTexts["score"].exists else { return false }
+                return (Int(app.staticTexts["score"].label.filter(\.isNumber)) ?? 0) >= 1_000
+            }
+            XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: landed, object: nil)], timeout: 10), .completed,
+                "A real, safely received backflip must award its core score before progress is inspected")
+            app.buttons["pause"].tap()
+            waitForPaused(app)
+            app.buttons["resume"].tap()
+            waitForPlaying(app)
+            app.buttons["pause"].tap()
+            waitForPaused(app)
+            app.buttons["home"].tap()
+            waitForHome(app)
+            app.buttons["riders"].tap()
+            let kenji = app.buttons["select-shiba"]
+            reveal(kenji, in: app)
+            XCTAssertEqual(kenji.value as? String, "Land 2 backflips to unlock Kenji, \(count) / 2")
+            XCTAssertEqual(kenji.isEnabled, count == 2, "Pause/resume/home must not credit the reception again")
+            capture("kenji-real-reception-\(count)")
+            app.buttons["closePanel"].tap()
+            waitForHome(app)
+        }
+        app.terminate()
+        app.launch()
+        waitForHome(app)
+        app.buttons["riders"].tap()
+        let kenji = app.buttons["select-shiba"]
+        reveal(kenji, in: app)
+        XCTAssertEqual(kenji.label, "Kenji, Ready to unlock")
+        XCTAssertEqual(kenji.value as? String, "Land 2 backflips to unlock Kenji, 2 / 2")
+        app.buttons["closePanel"].tap()
+    }
+
+    @MainActor func testKenjiClaimRevealSelectionAndPersistence() throws {
+        let app = launch(extraArguments: ["-unlock-fixture-backflips", "2"])
+        app.buttons["riders"].tap()
+        let kenji = app.buttons["select-shiba"]
+        reveal(kenji, in: app)
+        XCTAssertTrue(kenji.isEnabled)
+        XCTAssertEqual(kenji.label, "Kenji, Ready to unlock")
+        XCTAssertEqual(kenji.value as? String, "Land 2 backflips to unlock Kenji, 2 / 2")
+        capture("kenji-ready-to-unlock")
+        kenji.tap()
+        XCTAssertTrue(app.staticTexts["kenjiUnlockTitle"].waitForExistence(timeout: 3))
+        let ride = app.buttons["rideWithKenji"]
+        XCTAssertTrue(ride.waitForExistence(timeout: 6))
+        XCTAssertEqual(app.staticTexts["kenjiUnlockTitle"].label, "KENJI UNLOCKED")
+        capture("kenji-unlock-reveal")
+        ride.tap()
+        waitForHome(app)
+        XCTAssertEqual(app.buttons["riders"].label, "Rider: Kenji")
+        capture("kenji-selected-home")
+        app.buttons["startEndless"].tap()
+        waitForPlaying(app)
+        app.buttons["throttle"].press(forDuration: 0.45)
+        capture("kenji-first-ride")
+        app.buttons["pause"].tap()
+        waitForPaused(app)
+        app.buttons["home"].tap()
+        waitForHome(app)
+        app.terminate()
+        app.launch()
+        waitForHome(app)
+        XCTAssertEqual(app.buttons["riders"].label, "Rider: Kenji")
+        app.buttons["riders"].tap()
+        reveal(kenji, in: app)
+        XCTAssertTrue(kenji.isEnabled)
+        XCTAssertTrue(kenji.isSelected)
+        XCTAssertEqual(kenji.label, "Kenji")
+        XCTAssertFalse(app.buttons["rideWithKenji"].exists, "The completed reveal must not replay")
+        // Keep other catalog tests independent of this rider preference.
+        app.buttons["select-croco"].tap()
+        waitForHome(app)
+    }
+
+    @MainActor func testKenjiInterruptedClaimRemainsUnlocked() throws {
+        let app = launch(extraArguments: ["-unlock-fixture-backflips", "2"])
+        app.buttons["riders"].tap()
+        let kenji = app.buttons["select-shiba"]
+        reveal(kenji, in: app)
+        kenji.tap()
+        XCTAssertTrue(app.staticTexts["kenjiUnlockTitle"].waitForExistence(timeout: 3))
+        app.terminate()
+        app.launch()
+        waitForHome(app)
+        app.buttons["riders"].tap()
+        reveal(kenji, in: app)
+        XCTAssertTrue(kenji.isEnabled)
+        XCTAssertEqual(kenji.label, "Kenji", "Claim persistence must precede its animation")
+        XCTAssertFalse(app.buttons["rideWithKenji"].exists)
+        app.buttons["closePanel"].tap()
+    }
+
+    @MainActor func testKenjiOneBackflipRemainsLockedAcrossRelaunch() throws {
+        let app = launch(extraArguments: ["-unlock-fixture-backflips", "1"])
+        for iteration in 0..<2 {
+            app.buttons["riders"].tap()
+            let kenji = app.buttons["select-shiba"]
+            reveal(kenji, in: app)
+            XCTAssertFalse(kenji.isEnabled)
+            XCTAssertEqual(kenji.value as? String, "Land 2 backflips to unlock Kenji, 1 / 2")
+            capture("kenji-progress-\(iteration)")
+            app.buttons["closePanel"].tap()
+            if iteration == 0 { app.terminate(); app.launch(); waitForHome(app) }
+        }
     }
 
     @MainActor private func assertBottomClose(
@@ -673,11 +884,21 @@ final class CrocoCrossUITests: XCTestCase {
         _ element: XCUIElement, in app: XCUIApplication,
         file: StaticString = #filePath, line: UInt = #line
     ) {
+        let navigationBar = app.navigationBars.firstMatch
+        let close = app.buttons["closePanel"]
+        let panelReady = NSPredicate { _, _ in
+            app.state == .runningForeground && navigationBar.exists && close.exists && close.isHittable
+                && navigationBar.frame.height > 0
+        }
+        guard XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: panelReady, object: nil)], timeout: 8) == .completed else {
+            capture("picker-did-not-open")
+            XCTFail("The picker must finish opening before its controls can be revealed", file: file, line: line)
+            return
+        }
         let window = app.windows.firstMatch.frame
-        let navigation = app.navigationBars.firstMatch.frame
+        let navigation = navigationBar.frame
         let top = navigation.maxY + 12
         let settingsTab = app.buttons["settings.tab.audio"]
-        let close = app.buttons["closePanel"]
         let bottom =
             settingsTab.exists
             ? settingsTab.frame.minY - 10

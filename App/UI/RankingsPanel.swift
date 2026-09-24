@@ -2,70 +2,105 @@ import SwiftUI
 
 struct RankingsPanel: View {
     @Bindable var session: GameSession
+    let showEndlessWorlds: () -> Void
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
-                HStack(spacing: 12) {
-                    Image(systemName: "trophy.fill").font(.system(size: 29, weight: .bold))
-                        .foregroundStyle(CrocoTheme.lime)
-                    Text("Your best").font(.system(size: 27, weight: .black, design: .rounded))
+                Label("Weekly", systemImage: "flag.checkered")
+                    .font(.system(size: 28, weight: .black, design: .rounded))
+                    .accessibilityIdentifier("rankings.weeklyHeading")
+                TimelineView(.everyMinute) { timeline in
+                    let challenge = session.currentWeeklyChallenge(now: timeline.date)
+                    let local = session.weeklyRecords.record(for: challenge.identifier)
+                    let sameWeek = session.gameCenter.weeklyRecordsChallengeIdentifier == challenge.identifier
+                    VStack(spacing: 14) {
+                        record(time: false, local: local.score,
+                               remote: sameWeek ? session.gameCenter.weeklyScoreRecord : nil)
+                        record(time: true, local: local.timeCentiseconds,
+                               remote: sameWeek ? session.gameCenter.weeklyTimeRecord : nil)
+                    }.accessibilityElement(children: .contain)
+                        .accessibilityIdentifier("rankings.localRecords")
                 }
-                HStack(spacing: 12) {
-                    record("WEEKLY", score: session.bestWeekly, icon: "flag.checkered", color: CrocoTheme.lime)
-                    record("ENDLESS", score: session.bestEndless, icon: "infinity", color: CrocoTheme.orange)
-                }.accessibilityIdentifier("rankings.localRecords")
-                Text("Personal bests saved on this device.").font(.footnote).foregroundStyle(CrocoTheme.muted)
-                VStack(alignment: .leading, spacing: 17) {
-                    Label("Leaderboards", systemImage: "globe").font(.title3.bold())
-                    Text("Weekly score · Weekly time · Endless score")
-                        .font(.subheadline).foregroundStyle(CrocoTheme.muted)
-                    if session.gameCenter.isAuthenticated {
-                        Label(session.gameCenter.playerName, systemImage: "person.crop.circle.fill")
+                Button {
+                    if session.gameCenter.isAuthenticated { session.showLeaderboards() }
+                    else { session.gameCenter.authenticate() }
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "person.crop.circle.badge.checkmark")
+                        Text(session.gameCenter.isAuthenticated ? "Game Center" : "Connect Game Center")
                             .font(.subheadline.bold())
-                        Button {
-                            session.showLeaderboards()
-                        } label: {
-                            Label("View rankings", systemImage: "trophy.fill")
-                                .frame(maxWidth: .infinity).padding(16)
-                        }.buttonStyle(RankingsButtonStyle()).accessibilityIdentifier("rankings.online")
-                    } else {
-                        Text("Connect with Game Center to compare your scores with other riders.")
-                            .font(.subheadline).foregroundStyle(CrocoTheme.muted)
-                        Button {
-                            session.gameCenter.authenticate()
-                        } label: {
-                            Label("Connect", systemImage: "person.crop.circle.badge.checkmark")
-                                .frame(maxWidth: .infinity).padding(16)
-                        }.buttonStyle(RankingsButtonStyle()).accessibilityIdentifier("rankings.connect")
-                    }
-                    if let message = session.gameCenter.statusMessage {
-                        Text(message).font(.footnote).foregroundStyle(CrocoTheme.muted)
-                    }
-                }.padding(20).background(.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 22))
+                        Spacer()
+                        if session.gameCenter.weeklyRecordsLoading { ProgressView().tint(CrocoTheme.lime) }
+                        else { Image(systemName: "arrow.up.right").font(.caption.bold()) }
+                    }.padding(16).frame(minHeight: 48)
+                        .background(CrocoTheme.lime.opacity(0.09), in: RoundedRectangle(cornerRadius: 16))
+                }.buttonStyle(.plain).foregroundStyle(CrocoTheme.lime)
+                    .accessibilityIdentifier(session.gameCenter.isAuthenticated ? "rankings.all" : "rankings.connect")
+                Divider().overlay(.white.opacity(0.12))
+                Button(action: showEndlessWorlds) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "infinity").foregroundStyle(CrocoTheme.orange)
+                        Text("Endless leaderboards").font(.headline)
+                        Spacer()
+                        Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(CrocoTheme.muted)
+                    }.padding(.vertical, 16).contentShape(Rectangle())
+                }.buttonStyle(.plain).accessibilityIdentifier("rankings.endlessWorlds")
             }.padding(22).frame(maxWidth: 620).frame(maxWidth: .infinity)
         }.background(CrocoTheme.ink).foregroundStyle(.white)
-
+            .accessibilityIdentifier("rankings.list")
+            .task { await session.gameCenter.refresh() }
     }
 
-    private func record(_ mode: String, score: Int, icon: String, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 17) {
-            Image(systemName: icon).font(.system(size: 27, weight: .bold)).frame(height: 32).foregroundStyle(color)
-            Text(mode).font(.system(size: 11, weight: .heavy, design: .monospaced)).tracking(1)
-            Text(score.formatted()).font(.system(size: 32, weight: .black, design: .rounded))
-                .monospacedDigit().lineLimit(1).minimumScaleFactor(0.6)
-            Text("POINTS").font(.system(size: 9, weight: .bold, design: .monospaced)).foregroundStyle(CrocoTheme.muted)
-        }.frame(maxWidth: .infinity, alignment: .leading).padding(18)
-            .background(color.opacity(0.08), in: RoundedRectangle(cornerRadius: 22))
-            .overlay(RoundedRectangle(cornerRadius: 22).stroke(color.opacity(0.3), lineWidth: 1))
-            .accessibilityElement(children: .ignore).accessibilityLabel("\(mode), \(score.formatted()) points")
+    private func record(time: Bool, local: Int?, remote: WeeklyPlayerRecord?) -> some View {
+        let best: Int? = switch (local, remote?.score) {
+        case let (local?, online?): time ? min(local, online) : max(local, online)
+        case let (local?, nil): local
+        case let (nil, online?): online
+        case (nil, nil): nil
+        }
+        let available = session.gameCenter.isAuthenticated && session.gameCenter.isWeeklyLeaderboardConfirmed(time: time)
+        return Button { session.showWeeklyLeaderboard(time: time) } label: {
+            HStack(spacing: 16) {
+                Image(systemName: time ? "stopwatch" : "trophy.fill")
+                    .font(.system(size: 27, weight: .semibold)).foregroundStyle(time ? CrocoTheme.orange : CrocoTheme.lime)
+                    .frame(width: 40)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(time ? "BEST TIME" : "BEST SCORE")
+                        .font(.system(size: 10, weight: .heavy, design: .monospaced)).tracking(1.3)
+                        .foregroundStyle(CrocoTheme.muted)
+                    HStack(alignment: .firstTextBaseline, spacing: 7) {
+                        Text(best.map { formatted($0, time: time) } ?? "—")
+                            .font(.system(size: 34, weight: .black, design: .rounded))
+                            .monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+                        if !time { Text("pts").font(.caption.bold()).foregroundStyle(CrocoTheme.muted) }
+                    }
+                    if let remote {
+                        Text(remote.score == best
+                             ? "#\(remote.rank.formatted()) worldwide"
+                             : "Game Center · \(formatted(remote.score, time: time))\(time ? "" : " pts") · #\(remote.rank.formatted())")
+                            .font(.caption).foregroundStyle(CrocoTheme.lime)
+                    }
+                }.frame(maxWidth: .infinity, alignment: .leading)
+                if available { Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(CrocoTheme.muted) }
+            }.padding(20).frame(maxWidth: .infinity, minHeight: 120, alignment: .leading)
+                .background(.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 20))
+        }.buttonStyle(ReadableRecordButtonStyle()).disabled(!available)
+            .accessibilityIdentifier(time ? "rankings.weeklyTime" : "rankings.weeklyScore")
+            .accessibilityLabel(time ? "Weekly best time" : "Weekly best score")
+            .accessibilityValue((best.map { time ? formatted($0, time: true) : "\($0) points" } ?? "No record")
+                + (remote.map { ", Game Center \(formatted($0.score, time: time)), number \($0.rank) worldwide" } ?? ""))
+    }
+
+    private func formatted(_ value: Int, time: Bool) -> String {
+        guard time else { return value.formatted() }
+        return String(format: "%d:%02d.%02d", value / 6_000, (value / 100) % 60, value % 100)
     }
 }
 
-private struct RankingsButtonStyle: ButtonStyle {
+// Offline personal records remain readable; only their online navigation is disabled.
+private struct ReadableRecordButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label.font(.headline.bold()).foregroundStyle(CrocoTheme.ink)
-            .background(
-                CrocoTheme.lime.opacity(configuration.isPressed ? 0.7 : 1), in: RoundedRectangle(cornerRadius: 15))
+        configuration.label.opacity(configuration.isPressed ? 0.85 : 1)
     }
 }

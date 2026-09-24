@@ -17,6 +17,20 @@ struct SceneryPresentation {
     /// Tall foreground subjects grow upward from this footing and may hide the rider.
     /// Nil keeps a small vignette entirely below the road.
     var footingDepth: Double? = nil
+    /// A stable subset of gateways spans the road with its transparent opening.
+    /// Depth already belongs to the seeded placement; no new randomness.
+    var roadOverlap: RoadOverlap? = nil
+
+    struct RoadOverlap {
+        let fraction: Double
+        /// Height of the riding line inside the trimmed artwork, measured from its base.
+        let ridingLine: Double
+    }
+
+    func roadAnchor(at depth: Double) -> Double? {
+        guard let overlap = roadOverlap, depth < overlap.fraction else { return nil }
+        return overlap.ridingLine
+    }
 
     static func forImage(world: String, layer: SceneryLayer, variant: Int) -> Self {
         let key = "\(world)/\(layer == .wayside ? "wayside" : "\(layer.rawValue)-\(variant)")"
@@ -34,9 +48,9 @@ struct SceneryPresentation {
         "canyon/sky-2": .init(name: "Avion rétro crème et rouge", width: 0, maxHeight: 0, skyScale: 1.08, skySpeed: 1.14),
         "canyon/wayside": .init(name: "Cactus fleuri", width: 1.8, maxHeight: 2.2),
 
-        "japan/ground-1": .init(name: "Bassin de carpes koï", width: 3.8, maxHeight: 2.3, clearance: 0.55),
+        "japan/ground-1": .init(name: "Bassin de carpes koï", width: 5.8, maxHeight: 3.5, clearance: 0.55, footingDepth: 3.3),
         "japan/ground-2": .init(name: "Renard endormi sur la mousse", width: 2.8, maxHeight: 1.8, clearance: 0.55),
-        "japan/ground-3": .init(name: "Pierres, champignons et fougère", width: 2.3, maxHeight: 1.6, clearance: 0.55),
+        "japan/ground-3": .init(name: "Torii vermillon sur pierres moussues", width: 9.0, maxHeight: 9.2, clearance: 0.55, roadOverlap: .init(fraction: 1.0 / 3, ridingLine: 0.30)),
         "japan/sky-1": .init(name: "Hirondelle", width: 0, maxHeight: 0, skyScale: 0.72),
         "japan/sky-2": .init(name: "Cerf-volant japonais", width: 0, maxHeight: 0, skyScale: 1, skySpeed: 0.9),
         "japan/wayside": .init(name: "Lanterne japonaise en pierre", width: 1.65, maxHeight: 2.0),

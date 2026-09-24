@@ -4,7 +4,45 @@
 
 The owner reports version 1.0.0 (17) awaiting Apple review. Accumulate local changes until the owner explicitly authorizes the next release; do not archive, upload, submit or change live Game Center configuration during preparation. [Next-release tracking](NEXT-RELEASE.md) is authoritative for the new 2,600 m course and complete leaderboard reset.
 
-The next version uses fresh `weekly.score.v3`, `weekly.time.v3` and `endless.score.v3` boards under `com.daviddemri.crococross`, and local rules namespace `box2d-2`. These new boards are only referenced locally so far; their creation, review and activation are pending. The v2 setup documented below is the first-version baseline, not the configuration to reuse for the next release.
+The next version uses fresh `weekly.score.v3`, `weekly.time.v3` and `endless.score.v3` boards under `com.daviddemri.crococross`, and local rules namespace `box2d-2`. Japan Mountains adds an independent Endless board, `endless.japan.route-1.score.v3`. These boards are only referenced locally so far; their creation, review and activation are pending. The v2 setup documented below is the first-version baseline, not the configuration to reuse for the next release.
+
+## Current Weekly personal records — September 23, 2026
+
+The Rankings UI reads two independent entries for the authenticated player: Weekly points and Weekly time. `GameCenterService.weeklyScoreRecord` and `weeklyTimeRecord` are optional `WeeklyPlayerRecord(score: Int, rank: Int)` values. `weeklyRecordsLoading` covers pending reads; `weeklyRecordsChallengeIdentifier` identifies their confirmed occurrence. An absent entry or failed read remains `nil`, and one unavailable board does not discard a successful result from the other. A Game Center rank is displayed with that same remote entry's score, never attached to a newer unsent local best.
+
+The time score is **centiseconds**: submission uses `Int((elapsedSeconds * 100).rounded())`. Read it as `Double(record.score) / 100` seconds, not milliseconds. Lower time scores are better. Points use integer scores, with higher scores better. The new entry request path is read-only. The existing refresh flow may separately retry previously queued gameplay submissions, as before.
+
+After both recurring board schedules are confirmed as the same active Monday-UTC week, the service calls the existing `GKLeaderboard` instances with `loadEntries(for: .global, timeScope: .allTime, range: NSRange(location: 1, length: 1))`. The separately returned `localPlayerEntry` contains the local player's score and global rank even when they are outside that requested top row. For recurring boards the instance chooses the occurrence; Apple's `timeScope` filter applies only to classic boards. The implementation uses the current async GameKit API, available from iOS 14. [Load entries](https://developer.apple.com/documentation/gamekit/gkleaderboard/loadentries(for:timescope:range:completionhandler:)), [Leaderboard entry](https://developer.apple.com/documentation/gamekit/gkleaderboard/entry), [Recurring leaderboards](https://developer.apple.com/documentation/gamekit/creating-recurring-leaderboards).
+
+Entry requests do not block course confirmation, submission retries or gameplay. They refresh after confirmed metadata, after a successful Weekly submission, and when the app refreshes on foreground/network restoration or after dismissing the Game Center dashboard. Rankings can call the existing `refresh()` when opened. Every read validates the player, exact board instances and active occurrence before and after its await. A request generation also rejects old callbacks after A → sign-out → A or another refresh. Account changes, invalid metadata and the occurrence deadline clear displayed values. These results are ephemeral and are not persisted as local run records. Standard automated UI tests disable online access.
+
+`scripts/check-weekly-player-records.swift` exercises independent success/failure, missing entries, raw time units, account and occurrence changes, stale callbacks, exact boundary rejection, rank validation and expiry using fake loaders only. It does not contact Game Center or validate the pending v3 remote configuration.
+
+## Staged world-specific Endless rankings — September 22, 2026
+
+Weekly stays on Canyon route 1: every player receives the exact same 2,600 m course for a given confirmed server occurrence. The Weekly points and time boards remain shared; a selected Japan world does not change the Weekly course. Endless generates a new seed for each run and keeps records and rankings separate for each world and terrain revision.
+
+| English display name | Next-version identifier | Type | Ordering |
+|---|---|---|---|
+| Weekly Score | `com.daviddemri.crococross.weekly.score.v3` | Recurring | High to low |
+| Weekly Time | `com.daviddemri.crococross.weekly.time.v3` | Recurring | Low to high |
+| Endless — Canyon | `com.daviddemri.crococross.endless.score.v3` | Classic | High to low |
+| Endless — Japan Mountains | `com.daviddemri.crococross.endless.japan.route-1.score.v3` | Classic | High to low |
+
+Both Endless boards use integer points and Best Score. Keep Canyon's existing v3 identifier and `bestEndless.box2d-2` local key. Japan uses `bestEndless.box2d-2.japan.route-1`; future terrain revisions require a separately registered board and local key. Do not combine Japan scores into the Canyon leaderboard.
+
+New pending submissions freeze the rules version, world, terrain revision, board, original player and any Weekly occurrence. Existing current-version entries without a course field are recognized only as Canyon. A route/board mismatch cannot upload; a queue containing incompatible entries is preserved on disk instead of being silently replaced. Japan's optional board is loaded independently, so its absence does not disable confirmed Canyon or Weekly competition. Until Japan's board is confirmed, Japan remains playable with local records.
+
+After explicit release authorization, complete and record this setup:
+
+1. Inspect App Store Connect and create or verify the four exact v3 identifiers above; retain the v2 historical boards. Configure matching future Monday UTC occurrences for the two Weekly boards.
+2. Add the English world labels above, attach the new components to the intended release and verify their review/activation state. This checklist is preparation only; no remote configuration has been changed for the Japan work.
+3. With the Japan board absent in a test environment, confirm Canyon Endless and Weekly still become eligible, while Japan runs stay local.
+4. Play real Endless runs in both worlds. Verify each result and best-score replacement on its own board; confirm a world switch does not replace the other world's local best. Do not fabricate production entries.
+5. Queue a result while offline, change the home-screen world and reconnect with the original account. Confirm upload uses the frozen original world/route board. Repeat an account switch to confirm the pending score remains with its original owner.
+6. Start Weekly while Japan is selected and compare two players' seeds and course samples for the same occurrence. Both must ride the shared Canyon course. Restart Endless repeatedly and confirm fresh seeds.
+
+The checks below describing v2 and the original 4,000 m course document the first-version baseline. Use the v3 identifiers and 2,600 m distance above when validating the prepared next release.
 
 
 ## Live configuration status — September 17, 2026

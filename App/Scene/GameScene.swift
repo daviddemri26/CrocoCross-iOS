@@ -16,6 +16,16 @@ final class GameScene: SKScene {
     private var crashStartScale: CGFloat = 0
 
     private let backgroundTiles = (0..<3).map { _ in SKSpriteNode() }
+    private lazy var japanPanoramaShader: SKShader = {
+        let shader = SKShader(source: """
+            void main() {
+                float fade = smoothstep(0.0, u_edgeWidth, v_tex_coord.x);
+                gl_FragColor = texture2D(u_texture, v_tex_coord) * fade;
+            }
+            """)
+        shader.uniforms = [SKUniform(name: "u_edgeWidth", float: Float(BackgroundPanorama.japanEdgeBlend))]
+        return shader
+    }()
     private var backgroundOriginX: Double?
     private let atmosphere = AmbientNode()
     private let wayside = WaysideNode()
@@ -85,7 +95,7 @@ final class GameScene: SKScene {
     }
 
     func display(state: SimulationState, terrain: (Double) -> Double,
-                 characterID: String, worldID: String, reducedMotion: Bool) {
+                 characterID: String, worldID: String, reducedMotion: Bool, riderMotionSeconds: Double? = nil) {
         guard size.width > 0, size.height > 0 else { return }
         let startsNewRun = lastSeed != nil && (lastSeed != state.seed || state.tick < lastTick)
         if startsNewRun || lastPreview != isPreview {
@@ -174,7 +184,7 @@ final class GameScene: SKScene {
         // Pose once, then use the complete rig's bounds to preserve headroom
         // during large jumps. The common translation keeps every wheel attached.
         bike.position = .zero
-        bike.display(state, rider: GameCatalog.rider(characterID), pointsPerMetre: ppm, project: project, terrain: terrain, reducedMotion: reducedMotion, seconds: scenicTime, isPreview: isPreview)
+        bike.display(state, rider: GameCatalog.rider(characterID), pointsPerMetre: ppm, project: project, terrain: terrain, reducedMotion: reducedMotion, seconds: scenicTime, isPreview: isPreview, motionSeconds: riderMotionSeconds)
         if !isPreview && !followingRider {
             let ceiling = size.height - min(size.height * 0.20, landscape ? 80 : 120)
             let excess = max(0, bike.visibleFrame.maxY - ceiling)
@@ -277,9 +287,16 @@ final class GameScene: SKScene {
         worldID = world.id
         backgroundOriginX = nil
         backgroundColor = world.sky
-        let texture = GameAssets.texture(named: world.assetName)
+        // The catalog keeps its composed thumbnail; the Japanese scene uses a
+        // wider painting authored for continuous travel and a larger scale.
+        let texture = (world.id == "japan" ? GameAssets.texture(named: "japan-panorama") : nil)
+            ?? GameAssets.texture(named: world.assetName)
         textureSize = texture?.size() ?? CGSize(width: 16, height: 9)
-        backgroundTiles.forEach { $0.texture = texture }
+        backgroundTiles.forEach {
+            $0.texture = texture
+            $0.shader = world.id == "japan" ? japanPanoramaShader : nil
+            $0.zPosition = -20
+        }
     }
 
     private func displayBackground(reducedMotion: Bool) {
@@ -296,6 +313,25 @@ final class GameScene: SKScene {
                 node.size = CGSize(width: width + 1, height: height)
                 node.xScale = tile.mirrored ? -1 : 1
                 node.position = CGPoint(x: tile.centre, y: height / 2 - 28 + vertical)
+            }
+            return
+        }
+        if worldID == "japan" {
+            if backgroundOriginX == nil { backgroundOriginX = cameraX }
+            let layout = BackgroundPanorama.japan(
+                viewportWidth: size.width, viewportHeight: size.height,
+                textureWidth: textureSize.width, textureHeight: textureSize.height,
+                cameraTravel: cameraX - (backgroundOriginX ?? cameraX), cameraHeight: cameraY,
+                reducedMotion: reducedMotion, isPreview: isPreview)
+            for (slot, pair) in zip(backgroundTiles, layout.tiles).enumerated() {
+                let (node, tile) = pair
+                node.isHidden = false
+                // The right painting fades over an opaque left neighbour. This
+                // ordering is stable across pooled-node reuse and reverse travel.
+                node.zPosition = -20 + CGFloat(slot) * 0.01
+                node.size = CGSize(width: layout.width + 1, height: layout.height)
+                node.xScale = tile.mirrored ? -1 : 1
+                node.position = CGPoint(x: tile.centre, y: layout.centreY)
             }
             return
         }
@@ -320,12 +356,7 @@ final class GameScene: SKScene {
         let verticalParallax: CGFloat = reducedMotion ? 0 : min(30, max(-30, CGFloat(cameraY) * -1.2))
         var centreX = size.width / 2
         var centreY = height / 2 - overscan + verticalParallax
-        if worldID == "japan" {
-            // Keep Fuji's summit inside the narrow portrait crop and below the
-            // top edge in landscape. Coordinates refer to the original painting.
-            centreX = size.width * 0.68 - (0.74 - 0.5) * width
-            centreY = size.height * 0.82 - (0.745 - 0.5) * height + verticalParallax
-        } else if bayPortrait {
+        if bayPortrait {
             centreX = size.width / 2 - (0.247 - 0.5) * width
         } else if worldID == "paris" {
             centreX = size.width / 2 - (0.526 - 0.5) * width

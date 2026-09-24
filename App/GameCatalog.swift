@@ -35,9 +35,8 @@ struct World: Identifiable {
     let availability: CatalogAvailability
 
     var course: WorldCoursePlan {
-        .init(worldID: id, revision: 1, status: id == "canyon" ? .ready : .planned)
+        .init(worldID: id, revision: 1, status: ["canyon", "japan"].contains(id) ? .ready : .planned)
     }
-    var isPlayable: Bool { availability.isUnlocked && course.status == .ready }
 }
 
 @MainActor
@@ -55,7 +54,14 @@ enum GameCatalog {
     ]
 
     /// The complete catalog is visible, but only validated, unlocked riders can start a run.
-    static var playableRiders: [Rider] { riders.filter { $0.availability.isUnlocked } }
+    static func riderAvailability(_ id: String, progression: RiderProgression) -> CatalogAvailability {
+        guard let rider = riders.first(where: { $0.id == id }) else { return .locked() }
+        return id == "shiba" ? progression.kenjiAvailability : rider.availability
+    }
+
+    static func playableRiders(progression: RiderProgression) -> [Rider] {
+        riders.filter { riderAvailability($0.id, progression: progression).isUnlocked }
+    }
 
     static let worlds: [World] = [
         .init(id: "canyon", name: "Canyon", subtitle: "Red rock & desert dust", assetName: "canyon-backdrop", sky: .hex(0x99D9EF), earth: .hex(0xD77740), deepEarth: .hex(0x703D2E), edge: .hex(0xFBD190), accent: .hex(0xFFB369), availability: .available),
@@ -69,7 +75,14 @@ enum GameCatalog {
         .init(id: "clouds", name: "Cloud Nine", subtitle: "Floating trails above the world", assetName: "cloud-nine", sky: .hex(0x65C7EC), earth: .hex(0xFFFFFF), deepEarth: .hex(0xBAAFEA), edge: .white, accent: .hex(0xFCE6FF), availability: .locked())
     ]
 
-    static var playableWorlds: [World] { worlds.filter(\.isPlayable) }
+    static func worldAvailability(_ id: String, progression: WorldProgression) -> CatalogAvailability {
+        guard let world = worlds.first(where: { $0.id == id }), world.course.status == .ready else { return .locked() }
+        return id == "japan" ? progression.japanAvailability : world.availability
+    }
+
+    static func playableWorlds(progression: WorldProgression) -> [World] {
+        worlds.filter { worldAvailability($0.id, progression: progression).isUnlocked }
+    }
 
     static func rider(_ id: String) -> Rider { riders.first { $0.id == id } ?? riders[0] }
     static func world(_ id: String) -> World { worlds.first { $0.id == id } ?? worlds[0] }

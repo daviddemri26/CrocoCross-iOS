@@ -18,6 +18,7 @@
 <key>CrocoWeeklyScoreLeaderboardID</key><string>com.daviddemri.crococross.weekly.score.v3</string>
 <key>CrocoWeeklyTimeLeaderboardID</key><string>com.daviddemri.crococross.weekly.time.v3</string>
 <key>CrocoEndlessScoreLeaderboardID</key><string>com.daviddemri.crococross.endless.score.v3</string>
+<key>CrocoJapanEndlessScoreLeaderboardID</key><string>com.daviddemri.crococross.endless.japan.route-1.score.v3</string>
 <key>CrocoSupportURL</key><string>https://daviddemri26.github.io/CrocoCross-iOS/support.html</string>
 <key>CrocoPrivacyURL</key><string>https://daviddemri26.github.io/CrocoCross-iOS/privacy.html</string>
 </dict></plist>
