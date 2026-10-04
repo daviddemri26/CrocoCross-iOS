@@ -27,6 +27,24 @@ final class GameScene: SKScene {
         return shader
     }()
     private var backgroundOriginX: Double?
+    private lazy var junglePanoramaShader: SKShader = {
+        let shader = SKShader(source: """
+            void main() {
+                float localX = (v_tex_coord.x - u_cropX) / u_cropWidth;
+                float fade = smoothstep(0.0, u_edgeWidth, localX);
+                gl_FragColor = texture2D(u_texture, v_tex_coord) * fade;
+            }
+            """)
+        // SpriteKit supplies parent UVs for SKTexture(rect:in:), so fading
+        // must use coordinates local to the cropped panorama.
+        shader.uniforms = [
+            SKUniform(name: "u_edgeWidth", float: Float(BackgroundPanorama.jungleEdgeBlend)),
+            SKUniform(name: "u_cropX", float: Float(BackgroundPanorama.jungleCropX)),
+            SKUniform(name: "u_cropWidth", float: Float(BackgroundPanorama.jungleCropWidth))
+        ]
+        return shader
+    }()
+    private var jungleBackgroundMotion = BackgroundPanorama.WorldMotion()
     private let atmosphere = AmbientNode()
     private let wayside = WaysideNode()
     private let track = TrackNode()
@@ -48,8 +66,9 @@ final class GameScene: SKScene {
     private var lastViewportSize: CGSize = .zero
     private var presentingCrash = false
     private var cameraNeedsRespawnReset = false
+    private var jungleCamera = JungleCamera()
     private var worldID = ""
-    private var scenerySeed = UInt64.random(in: UInt64.min...UInt64.max)
+    private var scenerySeed = GameScene.makeScenerySeed()
     private var textureSize = CGSize(width: 16, height: 9)
 
     override init(size: CGSize) {
@@ -95,11 +114,13 @@ final class GameScene: SKScene {
     }
 
     func display(state: SimulationState, terrain: (Double) -> Double,
-                 characterID: String, worldID: String, reducedMotion: Bool, riderMotionSeconds: Double? = nil) {
+                 characterID: String, worldID: String, reducedMotion: Bool, riderMotionSeconds: Double? = nil,
+                 terrainSolidSpans: ((Double, Double) -> [TerrainSpan])? = nil,
+                 terrainIsSolid: ((Double) -> Bool)? = nil) {
         guard size.width > 0, size.height > 0 else { return }
         let startsNewRun = lastSeed != nil && (lastSeed != state.seed || state.tick < lastTick)
         if startsNewRun || lastPreview != isPreview {
-            scenerySeed = UInt64.random(in: UInt64.min...UInt64.max)
+            scenerySeed = Self.makeScenerySeed()
             scenicTime = 0
         }
         if isPreview {
@@ -120,12 +141,22 @@ final class GameScene: SKScene {
         // Scale from usable dimensions, never from a particular device model.
         // Faster travel needs more reaction distance, especially in portrait.
         let speedFraction = min(1, max(0, CGFloat(abs(state.bike.velocity.x)) / 22))
+        // Jungle stays close to the rider even when the receiving bank is offscreen.
+        let platformCourse = world.id == "jungle"
+        let junglePlaying = platformCourse && !isPreview && !followingRider && state.status == .active
+        let playAnchor = (landscape ? CGFloat(0.30) : 0.28) - speedFraction * (landscape ? 0.06 : 0.04)
         let visibleMetres: CGFloat = landscape ? 19 + speedFraction * 9 : 10 + speedFraction * 5
-        let playScale = min(64, max(23, min(size.width / visibleMetres, size.height / 13))) * 1.18
+        let playScale: CGFloat = platformCourse
+            ? JungleCamera.ridingScale(width: size.width, height: size.height, speed: state.bike.velocity.x)
+            : min(64, max(23, min(size.width / visibleMetres, size.height / 13))) * 1.18
         // Match the SwiftUI home's 440-point menu column, including narrow regular windows.
         let previewContentWidth = max(1, size.width - Self.homePanelWidth)
         let previewVerticalFraction: CGFloat = widePreview ? 0.38 : 0.55
-        let previewWidthWheelbase = widePreview ? min(240, previewContentWidth * 0.46) : min(185, size.width * 0.43)
+        // Milo sits upright: leave his cap and face below the portrait home logo.
+        // Keep the road anchor and the separate wide-layout preview unchanged.
+        let portraitRiderScale: CGFloat = characterID == "monkey" ? 0.80 : 1
+        let previewWidthWheelbase = widePreview ? min(240, previewContentWidth * 0.46)
+            : min(185, size.width * 0.43) * portraitRiderScale
         // The tallest silhouette fits within 1.2 wheelbases above the road.
         // Preserve the current size whenever it also leaves 24 points of headroom.
         let previewHeightWheelbase = max(1, (size.height * (1 - previewVerticalFraction) - 24) / 1.2)
@@ -135,19 +166,21 @@ final class GameScene: SKScene {
         let reset = presentationReset || cameraNeedsRespawnReset
         // Follow the rider as the bike separates. Zoom is based on crash time,
         // not the bike slowing down, and remains gentle and bounded.
-        if presentingCrash && !finalExplosion {
+        if platformCourse && finalExplosion && crashStartScale > 0 {
+            // Keep the last crossing's view behind the terminal explosion too.
+            desiredScale = crashStartScale
+        } else if presentingCrash && !finalExplosion {
             if !isCrashPaused { crashElapsed += frameDuration }
             let progress = reducedMotion ? 0 : min(1, crashElapsed / 3.2)
             let smooth = progress * progress * (3 - 2 * progress)
-            desiredScale = max(23, crashStartScale) * (1 + CGFloat(smooth) * 0.38)
+            desiredScale = max(platformCourse ? 0.1 : 23, crashStartScale) * (1 + CGFloat(smooth) * 0.38)
         } else if state.status == .finished && finishStartScale > 0 {
             // Keep the winning jump's framing as the bike coasts and slows down.
             desiredScale = finishStartScale
         }
         if reset || renderScale == 0 { renderScale = desiredScale }
         else { renderScale += (desiredScale - renderScale) * min(1, frameDuration * 2.8) }
-        let ppm = renderScale
-        let playAnchor = (landscape ? CGFloat(0.30) : 0.28) - speedFraction * (landscape ? 0.06 : 0.04)
+        var ppm = renderScale
         let previewCentre = widePreview ? Self.homePanelWidth + previewContentWidth / 2 : size.width / 2
         let horizontalFraction: CGFloat = isPreview ? previewCentre / size.width : followingRider ? 0.5 : playAnchor
         let followedX = followingRider && !finalExplosion ? state.rider.torso.position.x : state.bike.position.x
@@ -157,9 +190,15 @@ final class GameScene: SKScene {
         let highestBody = followingRider ? max(state.bike.position.y, state.rider.torso.position.y) : state.bike.position.y
         let followedHeight = max(near * 0.6 + ahead * 0.4, highestBody - (landscape ? 2.4 : 3.2))
         let verticalFraction: CGFloat = isPreview ? previewVerticalFraction : (landscape ? 0.40 : 0.39)
-        let desiredY = followingRider && !finalExplosion
+        var desiredY = followingRider && !finalExplosion
             ? state.rider.torso.position.y - Double(size.height * 0.50 / ppm)
             : (isPreview ? near : followedHeight) - Double(size.height * verticalFraction / ppm)
+        if !isPreview && world.id == "jungle" && terrainSolidSpans != nil {
+            // The continuous height profile is a camera guide, even over a void.
+            // Show a short fall without following a ragdoll down an endless chasm.
+            let courseCameraY = near * 0.6 + ahead * 0.4 - Double(size.height * verticalFraction / ppm)
+            desiredY = max(desiredY, courseCameraY - (landscape ? 2.0 : 2.6))
+        }
         if reset {
             cameraX = desiredX
             cameraY = desiredY
@@ -172,6 +211,16 @@ final class GameScene: SKScene {
             cameraX += (desiredX - cameraX) * min(1, frameDuration * 11)
             cameraY += (desiredY - cameraY) * min(1, frameDuration * 4)
         }
+        if junglePlaying {
+            let view = jungleCamera.update(bike: state.bike, width: size.width, height: size.height,
+                anchor: playAnchor, deltaTime: frameDuration, reset: reset)
+            renderScale = view.scale
+            ppm = renderScale
+            cameraX = view.x
+            cameraY = view.y
+        } else {
+            jungleCamera = .init()
+        }
         lastSeed = state.seed
         lastTick = state.tick
         lastPreview = isPreview
@@ -180,6 +229,20 @@ final class GameScene: SKScene {
         var bottom = cameraY
         func ground(_ x: Double) -> CGFloat { CGFloat(terrain(x) - bottom) * ppm }
         func project(_ p: Vector2) -> CGPoint { CGPoint(x: CGFloat(p.x - left) * ppm, y: CGFloat(p.y - bottom) * ppm) }
+        func supportsFootprint(_ lower: Double, _ upper: Double) -> Bool {
+            if let terrainSolidSpans {
+                // A complete footprint must belong to one connected platform.
+                // Checking just a sprite's centre or corners can miss a narrow gap.
+                return terrainSolidSpans(lower, upper).contains {
+                    $0.lowerBound <= lower && $0.upperBound >= upper
+                }
+            }
+            guard let terrainIsSolid else { return true }
+            let samples = max(1, Int(ceil((upper - lower) / 0.1)))
+            return (0...samples).allSatisfy {
+                terrainIsSolid(lower + (upper - lower) * Double($0) / Double(samples))
+            }
+        }
 
         // Pose once, then use the complete rig's bounds to preserve headroom
         // during large jumps. The common translation keeps every wheel attached.
@@ -196,6 +259,10 @@ final class GameScene: SKScene {
         }
 
         // Terrain, scenery and effects share the final projection for this frame.
+        if world.id == "jungle" {
+            jungleBackgroundMotion.update(x: state.bike.position.x, y: state.bike.position.y,
+                                          seed: state.seed, tick: state.tick, isPreview: isPreview)
+        }
         displayBackground(reducedMotion: reducedMotion)
         // A large home hero occupies the sky band. Keep its silhouette clear;
         // the background painting still supplies the preview's sky.
@@ -204,18 +271,22 @@ final class GameScene: SKScene {
             atmosphere.display(world: world, size: size, cameraX: cameraX, seconds: scenicTime,
                                reducedMotion: reducedMotion, seed: scenerySeed)
         }
-        wayside.display(world: world, size: size, left: cameraX, ppm: ppm, seed: scenerySeed, ground: ground)
+        wayside.display(world: world, size: size, left: cameraX, ppm: ppm, seed: scenerySeed, ground: ground,
+                        supportsFootprint: supportsFootprint)
+        let visibleSpans = terrainSolidSpans?(left - 1, left + Double(size.width / ppm) + 1)
         track.display(world: world, size: size, left: cameraX, ppm: ppm, seconds: scenicTime,
-                      reducedMotion: reducedMotion, seed: scenerySeed, ground: ground)
+                      reducedMotion: reducedMotion, seed: scenerySeed, ground: ground, solidSpans: visibleSpans)
         foreground.isHidden = isPreview
         if !isPreview {
             foreground.display(world: world, size: size, left: cameraX, ppm: ppm, seconds: scenicTime,
-                               reducedMotion: reducedMotion, seed: scenerySeed, ground: ground)
+                               reducedMotion: reducedMotion, seed: scenerySeed, ground: ground,
+                               supportsFootprint: supportsFootprint)
         }
         effects.display(time: scenicTime, ppm: ppm, world: world, reducedMotion: reducedMotion, project: project)
         let rear = project(state.bike.rear.position)
         dust.position = CGPoint(x: rear.x, y: rear.y - ppm * 0.28)
-        dust.particleBirthRate = !reducedMotion && state.status == .active && state.bike.rear.contact ? CGFloat(min(30, abs(state.bike.velocity.x) * 2)) : 0
+        let rearHasGround = terrainIsSolid?(state.bike.rear.position.x) ?? true
+        dust.particleBirthRate = !reducedMotion && state.status == .active && state.bike.rear.contact && rearHasGround ? CGFloat(min(30, abs(state.bike.velocity.x) * 2)) : 0
         dust.particleColor = world.edge
         dust.particleSpeed = ppm * (0.45 + CGFloat(abs(state.bike.velocity.x)) * 0.22)
         dust.particleScale = ppm / 320
@@ -286,20 +357,44 @@ final class GameScene: SKScene {
     private func configureWorld(_ world: World) {
         worldID = world.id
         backgroundOriginX = nil
+        jungleBackgroundMotion = .init()
         backgroundColor = world.sky
         // The catalog keeps its composed thumbnail; the Japanese scene uses a
         // wider painting authored for continuous travel and a larger scale.
-        let texture = (world.id == "japan" ? GameAssets.texture(named: "japan-panorama") : nil)
+        var texture = (world.id == "japan" ? GameAssets.texture(named: "japan-panorama") : nil)
             ?? GameAssets.texture(named: world.assetName)
+        if world.id == "jungle", let painting = texture {
+            // Reuse the source painting without its foreground framing palms.
+            // This is a GPU subtexture; the approved source PNG is unchanged.
+            texture = SKTexture(rect: CGRect(x: BackgroundPanorama.jungleCropX, y: 0,
+                                            width: BackgroundPanorama.jungleCropWidth, height: 1), in: painting)
+        }
         textureSize = texture?.size() ?? CGSize(width: 16, height: 9)
         backgroundTiles.forEach {
             $0.texture = texture
-            $0.shader = world.id == "japan" ? japanPanoramaShader : nil
+            $0.shader = world.id == "japan" ? japanPanoramaShader
+                : world.id == "jungle" ? junglePanoramaShader : nil
             $0.zPosition = -20
         }
     }
 
     private func displayBackground(reducedMotion: Bool) {
+        if worldID == "jungle" {
+            let layout = BackgroundPanorama.jungle(
+                viewportWidth: size.width, viewportHeight: size.height,
+                textureWidth: textureSize.width, textureHeight: textureSize.height,
+                worldTravel: jungleBackgroundMotion.travel, worldHeight: jungleBackgroundMotion.height,
+                reducedMotion: reducedMotion, isPreview: isPreview)
+            for (slot, pair) in zip(backgroundTiles, layout.tiles).enumerated() {
+                let (node, tile) = pair
+                node.isHidden = false
+                node.zPosition = -20 + CGFloat(slot) * 0.01
+                node.size = CGSize(width: layout.width + 1, height: layout.height)
+                node.xScale = tile.mirrored ? -1 : 1
+                node.position = CGPoint(x: tile.centre, y: layout.centreY)
+            }
+            return
+        }
         if worldID == "canyon" {
             let aspect = max(1, textureSize.width) / max(1, textureSize.height)
             let height = max(size.height * 1.50, (size.width + 4) / aspect)
@@ -372,6 +467,17 @@ final class GameScene: SKScene {
             tile.position = CGPoint(x: centreX, y: centreY)
             tile.xScale = 1
         }
+    }
+
+    private static func makeScenerySeed() -> UInt64 {
+        #if DEBUG
+        let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("-ui-testing"), let flag = arguments.firstIndex(of: "-scenery-seed"),
+           arguments.indices.contains(flag + 1), let value = UInt64(arguments[flag + 1]) {
+            return value
+        }
+        #endif
+        return UInt64.random(in: UInt64.min...UInt64.max)
     }
 
     private func configureDust() {

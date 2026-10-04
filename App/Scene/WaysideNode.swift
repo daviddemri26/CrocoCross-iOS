@@ -11,7 +11,7 @@ final class WaysideNode: SKNode {
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
     func display(world: World, size: CGSize, left: Double, ppm: CGFloat, seed: UInt64,
-                 ground: (Double) -> CGFloat) {
+                 ground: (Double) -> CGFloat, supportsFootprint: ((Double, Double) -> Bool)? = nil) {
         actors.forEach { $0.isHidden = true }
         let right = left + Double(size.width / ppm)
         let accents = SceneryPlacement.visible(world: world.id, layer: .wayside,
@@ -22,11 +22,25 @@ final class WaysideNode: SKNode {
             actor.configure(world: world.id, layer: .wayside, variant: 1,
                 width: min(size.width * 0.24, ppm * style.width * accent.scale),
                 maxHeight: min(size.height * 0.22, ppm * style.maxHeight * accent.scale))
+            let halfWidth = Double(actor.size.width / ppm / 2)
+            if let supportsFootprint, !supportsFootprint(x - halfWidth - 0.12, x + halfWidth + 0.12) {
+                actor.isHidden = true
+                continue
+            }
             guard let footing = Self.footing(x: x, width: Double(actor.size.width / ppm),
                 height: Double(actor.size.height / ppm), followsSlope: style.followsSlope,
                 inset: style.roadInset, ground: { Double(ground($0) / ppm) }) else {
                 actor.isHidden = true
                 continue
+            }
+            if let supportsFootprint {
+                let rotatedHalfWidth = halfWidth * cos(footing.angle)
+                let topShift = -Double(actor.size.height / ppm) * sin(footing.angle)
+                guard supportsFootprint(x - rotatedHalfWidth + min(0, topShift) - 0.12,
+                                        x + rotatedHalfWidth + max(0, topShift) + 0.12) else {
+                    actor.isHidden = true
+                    continue
+                }
             }
             actor.position = CGPoint(x: CGFloat(x - left) * ppm, y: footing.height * ppm)
             actor.zRotation = footing.angle

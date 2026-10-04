@@ -371,6 +371,9 @@ final class RiderRig: SKNode {
         piece.node.setScale(ppm * piece.artwork.metresPerPixel)
         // Increase muscle thickness without moving shoulder/elbow joint centres.
         if piece.artwork.entry.part == .upperArm { piece.node.yScale *= profile.upperArmThickness }
+        // Calibrated limb endpoints lie on local X, so transverse scaling keeps
+        // the knee and boot cuff fixed while changing only the calf silhouette.
+        if piece.artwork.entry.part == .calf { piece.node.yScale *= profile.calfThickness }
     }
 
     private func landmark(_ name: RiderRigArtwork.Anchor, on piece: Piece, position: CGPoint,

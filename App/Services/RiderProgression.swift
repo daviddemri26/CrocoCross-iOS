@@ -11,14 +11,23 @@ final class RiderProgression {
     struct State: Codable, Equatable {
         var landedBackflips = 0
         var kenjiClaimed = false
+        var miloClaimed = false
         var lastLanding: Landing?
+        // Each new contributing run accounts for at least one backflip, up to the 2/100 goal.
+        var creditedRunTicks: [String: Int] = [:]
+
+        enum CodingKeys: String, CodingKey {
+            case landedBackflips, kenjiClaimed, miloClaimed, lastLanding, creditedRunTicks
+        }
     }
 
     #if DEBUG
     static let kenjiRequirement = 2
+    static let miloRequirement = 2
     static let filename = "rider-progression.debug.json"
     #else
     static let kenjiRequirement = 50
+    static let miloRequirement = 100
     static let filename = "rider-progression.json"
     #endif
 
@@ -29,6 +38,7 @@ final class RiderProgression {
     @ObservationIgnored private var unreadableSave = false
     @ObservationIgnored private var hasPendingSave = false
     private static let maximumCount = 1_000_000_000
+    private static let backflipGoal = max(kenjiRequirement, miloRequirement)
 
     init(store: LocalStore = LocalStore(), filename: String = RiderProgression.filename) {
         self.store = store
@@ -36,7 +46,8 @@ final class RiderProgression {
         do {
             if let loaded = try store.load(State.self, from: filename) {
                 guard loaded.landedBackflips >= 0, loaded.landedBackflips <= Self.maximumCount,
-                      loaded.lastLanding.map({ $0.tick >= 0 }) ?? true else {
+                      loaded.lastLanding.map({ $0.tick >= 0 && (loaded.creditedRunTicks[$0.runID.uuidString] ?? -1) >= $0.tick }) ?? true,
+                      loaded.creditedRunTicks.allSatisfy({ UUID(uuidString: $0.key) != nil && $0.value >= 0 }) else {
                     throw LocalStore.StoreError.corruptedFile(filename)
                 }
                 state = loaded
@@ -57,13 +68,24 @@ final class RiderProgression {
             : .locked(requirement: requirement, progress: progress)
     }
 
+    var miloAvailability: CatalogAvailability {
+        if state.miloClaimed { return .available }
+        let progress = CatalogProgress(current: state.landedBackflips, target: Self.miloRequirement)
+        let requirement = "Land \(Self.miloRequirement) backflips to unlock Milo"
+        return state.landedBackflips >= Self.miloRequirement
+            ? .readyToUnlock(requirement: requirement, progress: progress)
+            : .locked(requirement: requirement, progress: progress)
+    }
+
     /// Called only for a core .flip event, which follows a validated safe reception.
     /// Persist the event identity with the count so repeated pause/restart callbacks cannot credit it twice.
     func recordLanding(backflips: Int, runID: UUID, tick: Int) {
-        guard !unreadableSave, backflips > 0, tick >= 0 else { return }
-        if let last = state.lastLanding, last.runID == runID, tick <= last.tick { return }
-        state.landedBackflips += min(backflips, Self.maximumCount - state.landedBackflips)
+        guard !unreadableSave, backflips > 0, tick >= 0, state.landedBackflips < Self.backflipGoal else { return }
+        let key = runID.uuidString
+        if let previousTick = state.creditedRunTicks[key], tick <= previousTick { return }
+        state.landedBackflips += min(backflips, Self.backflipGoal - state.landedBackflips)
         state.lastLanding = Landing(runID: runID, tick: tick)
+        state.creditedRunTicks[key] = tick
         hasPendingSave = true
         flush()
     }
@@ -73,6 +95,17 @@ final class RiderProgression {
         guard !unreadableSave, kenjiAvailability.isReadyToUnlock else { return false }
         var claimed = state
         claimed.kenjiClaimed = true
+        return saveClaim(claimed)
+    }
+
+    @discardableResult func claimMilo() -> Bool {
+        guard !unreadableSave, miloAvailability.isReadyToUnlock else { return false }
+        var claimed = state
+        claimed.miloClaimed = true
+        return saveClaim(claimed)
+    }
+
+    private func saveClaim(_ claimed: State) -> Bool {
         do {
             try store.save(claimed, to: filename)
             state = claimed
@@ -112,13 +145,34 @@ final class RiderProgression {
             let store = LocalStore(rootURL: root)
             let hasSave = FileManager.default.fileExists(atPath: root.appendingPathComponent(filename).path)
             let progression = RiderProgression(store: store)
-            if !hasSave, let count = argument("-unlock-fixture-backflips").flatMap(Int.init),
-               (0...kenjiRequirement).contains(count) {
-                progression.recordLanding(backflips: count, runID: UUID(), tick: 0)
+            if !hasSave {
+                let shouldClaimMilo = arguments.contains("-milo-unlock-fixture-claimed")
+                let count = argument("-unlock-fixture-backflips").flatMap(Int.init) ?? (shouldClaimMilo ? miloRequirement : 0)
+                if (0...backflipGoal).contains(count) {
+                    progression.recordLanding(backflips: count, runID: UUID(), tick: 0)
+                    if shouldClaimMilo { progression.claimMilo() }
+                }
             }
             return progression
         }
         #endif
         return RiderProgression()
+    }
+}
+
+extension RiderProgression.State {
+    /// Read original Kenji saves without resetting either their count or their durable claim.
+    /// Only fields introduced with Milo default; malformed existing fields stay a recoverable error.
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        landedBackflips = try values.decode(Int.self, forKey: .landedBackflips)
+        kenjiClaimed = try values.decode(Bool.self, forKey: .kenjiClaimed)
+        miloClaimed = values.contains(.miloClaimed) ? try values.decode(Bool.self, forKey: .miloClaimed) : false
+        lastLanding = try values.decodeIfPresent(RiderProgression.Landing.self, forKey: .lastLanding)
+        if values.contains(.creditedRunTicks) {
+            creditedRunTicks = try values.decode([String: Int].self, forKey: .creditedRunTicks)
+        } else if let lastLanding {
+            creditedRunTicks = [lastLanding.runID.uuidString: lastLanding.tick]
+        } else { creditedRunTicks = [:] }
     }
 }

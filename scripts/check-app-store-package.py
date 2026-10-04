@@ -113,7 +113,7 @@ for f in ['Info.plist','PrivacyInfo.xcprivacy','CrocoCross.entitlements']:
  require((D/'config'/f).read_bytes()==(ROOT/'App'/f).read_bytes(),f+' copy matches app')
 info=plistlib.loads((ROOT/'App/Info.plist').read_bytes())
 leaderboard_ids=[value for key,value in info.items() if key.endswith('LeaderboardID')]
-require(len(leaderboard_ids)==4 and len(set(leaderboard_ids))==4,'four distinct configured leaderboard identifiers')
+require(len(leaderboard_ids)==5 and len(set(leaderboard_ids))==5,'five distinct configured leaderboard identifiers')
 for identifier in leaderboard_ids+[entry['gameCenterID'] for entry in entries]:
  require(isinstance(identifier,str) and re.fullmatch(r'[A-Za-z0-9._]+',identifier) is not None,
          'App Store Connect identifier uses only ASCII alphanumerics, dots and underscores: '+str(identifier))

@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// A short reveal follows the durable claim. Dismissing/interruption never replays or loses it.
-struct KenjiUnlockView: View {
+struct RiderUnlockView: View {
+    let riderID: String
     let ride: () -> Void
     let dismiss: () -> Void
     @Environment(\.accessibilityReduceMotion) private var reducedMotion
@@ -9,7 +10,9 @@ struct KenjiUnlockView: View {
     @State private var revealed = false
     @State private var complete = false
 
-    private let blue = Color(red: 0.20, green: 0.66, blue: 1)
+    private var rider: Rider { GameCatalog.rider(riderID) }
+    private var identifier: String { riderID == "monkey" ? "milo" : "kenji" }
+    private var blue: Color { riderID == "monkey" ? CrocoTheme.lime : Color(red: 0.20, green: 0.66, blue: 1) }
 
     var body: some View {
         GeometryReader { geometry in
@@ -35,12 +38,12 @@ struct KenjiUnlockView: View {
                 ScrollView {
                     VStack(spacing: 18) {
                         Spacer(minLength: 12)
-                        Text(complete ? "KENJI UNLOCKED" : "A NEW RIDER")
+                        Text(complete ? "\(rider.name.uppercased()) UNLOCKED" : "A NEW RIDER")
                             .font(.system(size: 13, weight: .heavy, design: .monospaced))
                             .tracking(3).foregroundStyle(blue)
-                            .accessibilityIdentifier("kenjiUnlockTitle")
+                            .accessibilityIdentifier("\(identifier)UnlockTitle")
                         ZStack {
-                            RiderArtworkView(riderID: "shiba", animated: complete)
+                            RiderArtworkView(riderID: riderID, animated: complete)
                                 .saturation(revealed ? 1 : 0.7)
                                 .blur(radius: revealed ? 0 : 4)
                                 .opacity(revealed ? 1 : 0.45)
@@ -56,27 +59,27 @@ struct KenjiUnlockView: View {
                         .frame(height: min(geometry.size.height * 0.42, 300))
                         .accessibilityHidden(true)
                         VStack(spacing: 6) {
-                            Text("KENJI").font(.custom("AvenirNextCondensed-HeavyItalic", size: 45))
-                            Text("Shiba Inu · Superbike")
+                            Text(rider.name.uppercased()).font(.custom("AvenirNextCondensed-HeavyItalic", size: 45))
+                            Text(rider.subtitle)
                                 .font(.system(size: 15, weight: .medium)).foregroundStyle(CrocoTheme.muted)
                         }
                         VStack(spacing: 10) {
                             Button(action: ride) {
-                                Label("Ride with Kenji", systemImage: "arrow.right")
+                                Label("Ride with \(rider.name)", systemImage: "arrow.right")
                                     .font(.headline.bold()).frame(maxWidth: .infinity).padding(18)
                                     .foregroundStyle(CrocoTheme.ink)
                                     .background(.white, in: RoundedRectangle(cornerRadius: 18))
-                            }.accessibilityIdentifier("rideWithKenji")
+                            }.accessibilityIdentifier("rideWith\(rider.name)")
                             Button("Not now", action: dismiss)
                                 .font(.subheadline.bold()).foregroundStyle(CrocoTheme.muted)
-                                .frame(minHeight: 44).accessibilityIdentifier("dismissKenjiUnlock")
+                                .frame(minHeight: 44).accessibilityIdentifier("dismiss\(rider.name)Unlock")
                         }.opacity(complete ? 1 : 0).disabled(!complete).accessibilityHidden(!complete)
                     }.padding(24).frame(maxWidth: 430)
                         .frame(maxWidth: .infinity, minHeight: geometry.size.height)
                 }.scrollIndicators(.hidden)
             }.foregroundStyle(.white)
         }
-        .accessibilityIdentifier("kenjiUnlockCelebration")
+        .accessibilityIdentifier("\(identifier)UnlockCelebration")
         .task {
             if reducedMotion {
                 opened = true

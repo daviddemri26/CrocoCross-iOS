@@ -8,6 +8,7 @@ enum CompetitionRules {
         var identifier: String { "\(worldID).route-\(revision)" }
         static let canyon = CourseIdentity(worldID: "canyon", revision: 1)
         static let japan = CourseIdentity(worldID: "japan", revision: 1)
+        static let jungle = CourseIdentity(worldID: "jungle", revision: 6)
     }
 
     static let version = "box2d-2"
@@ -32,7 +33,7 @@ enum CompetitionRules {
 
     static func isCurrentLeaderboard(_ identifier: String) -> Bool {
         guard isValidGameCenterIdentifier(identifier) else { return false }
-        return ["weekly.score", "weekly.time", "endless.score", "endless.japan.route_1.score"]
+        return ["weekly.score", "weekly.time", "endless.score", "endless.japan.route_1.score", "endless.jungle.route_6.score"]
             .contains { leaderboardID($0) == identifier }
     }
 
@@ -41,6 +42,7 @@ enum CompetitionRules {
         switch course {
         case .canyon: leaderboardID("endless.score")
         case .japan: leaderboardID("endless.japan.route_1.score")
+        case .jungle: leaderboardID("endless.jungle.route_6.score")
         default: nil
         }
     }
@@ -52,7 +54,8 @@ enum CompetitionRules {
     static func acceptsSubmission(rulesVersion: String, leaderboardID: String,
                                   weeklyBoardIDs: Set<String>, endlessBoardID: String,
                                   challengeIdentifier: String?, course: CourseIdentity? = nil,
-                                  japanEndlessBoardID: String = leaderboardID("endless.japan.route_1.score")) -> Bool {
+                                  japanEndlessBoardID: String = leaderboardID("endless.japan.route_1.score"),
+                                  jungleEndlessBoardID: String = leaderboardID("endless.jungle.route_6.score")) -> Bool {
         guard rulesVersion == version, isCurrentLeaderboard(leaderboardID) else { return false }
         // Saves from before world routing omitted the course and are Canyon-only by definition.
         let course = course ?? .canyon
@@ -66,7 +69,13 @@ enum CompetitionRules {
                   let start = Int64(challengeIdentifier.dropFirst(prefix.count)), start >= 0 else { return false }
             return true
         }
-        let configuredID = course == .canyon ? endlessBoardID : japanEndlessBoardID
+        let configuredID: String
+        switch course {
+        case .canyon: configuredID = endlessBoardID
+        case .japan: configuredID = japanEndlessBoardID
+        case .jungle: configuredID = jungleEndlessBoardID
+        default: return false
+        }
         return leaderboardID == configuredID && leaderboardID == expectedEndlessID && challengeIdentifier == nil
     }
 }

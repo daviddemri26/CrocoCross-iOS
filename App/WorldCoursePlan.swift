@@ -12,7 +12,13 @@ struct WorldCoursePlan: Equatable {
     var roadArtworkID: String { worldID }
 
     var scoreScope: String { "\(CompetitionRules.version).\(identifier)" }
-    var terrainStyle: PhysicsConfiguration.TerrainStyle { worldID == "japan" ? .japanMountains : .hills }
+    var terrainStyle: PhysicsConfiguration.TerrainStyle {
+        switch worldID {
+        case "japan": .japanMountains
+        case "jungle": .junglePlatforms
+        default: .hills
+        }
+    }
     var competitionIdentity: CompetitionRules.CourseIdentity { .init(worldID: worldID, revision: revision) }
     var endlessLeaderboardID: String? {
         status == .ready ? CompetitionRules.endlessLeaderboardID(for: competitionIdentity) : nil

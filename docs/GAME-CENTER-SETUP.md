@@ -1,5 +1,11 @@
 # CrocoCross — native Game Center setup
 
+## Jungle local preparation — September 26, 2026
+
+Tropical Jungle route 6 has an independent Endless scope: `box2d-2.jungle.route-6`, local key `bestEndless.box2d-2.jungle.route-6`, and configured board `com.daviddemri.crococross.endless.jungle.route_6.score.v3`. Its mixed horizontal departures and ramp crossings do not reuse scores from routes 1, 2, 3, 4 or 5; those earlier local values remain stored under their original keys. The intended display name is **Endless — Tropical Jungle**, Classic / integer points / high to low / Best Score. This board is prepared in source only; no remote creation, review-draft modification or publication was performed for this change. The earlier remote snapshot below remains dated evidence.
+
+Only an authenticated, individually confirmed Jungle board enables ranked Jungle starts. A missing Jungle board leaves Jungle playable offline and does not disable Canyon, Japan or Weekly. Pending submissions retain their world and revision; Jungle scores cannot enter another board. Weekly continues to use Canyon for every player, regardless of selected or unlocked world.
+
 ## Current remote preparation — September 24, 2026
 
 Four v3 boards are created, localized and associated with **app 1.1.0 (18) in one iOS review draft**, verified September 24 at 00:32 local time. Its five items are the app plus Weekly Score v3, Weekly Time v3, Endless Canyon v3 and Endless Japan v3; there are no achievements. The dialog confirms review with version 1.1.0 on iOS. The final send button was not clicked.

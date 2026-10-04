@@ -30,6 +30,9 @@ struct HowToView: View {
                             .foregroundStyle(CrocoTheme.lime).font(.subheadline.bold())
                     }
                 }
+                lesson("JUNGLE PLATFORMS", icon: "leaf.fill", color: CrocoTheme.lime) {
+                    Text("Build speed on the wide platforms, then ease off in the air. Aim for the next grassy ledge — the gaps are real.")
+                }
                 HStack(alignment: .top, spacing: 12) {
                     modeCard("WEEKLY", icon: "flag.checkered", text: "\(GameSession.weeklyDistanceText) m · 1 life\nCanyon for now. The exact same course for every player all week.\nA new shared course every Monday.\nFinish bonus: +1,000.")
                     modeCard("ENDLESS", icon: "infinity", text: "3 lives · No finish line\nA new random course on every ride, in your chosen world.\nSeparate records and Game Center leaderboards for each world.\nBoth modes work offline.")

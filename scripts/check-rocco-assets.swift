@@ -3,7 +3,7 @@ import Foundation
 import CoreGraphics
 import ImageIO
 
-// Run from the repository root: swift scripts/check-rocco-assets.swift [root] [--rider croco|shiba]
+// Run from the repository root: swift scripts/check-rocco-assets.swift [root] [--rider croco|shiba|monkey]
 // The no-argument Rocco command remains compatible. Reads the renderer manifest; never rewrites PNGs.
 struct Point: Decodable {
     let x: Double, y: Double
@@ -49,6 +49,7 @@ struct Presentation: Decodable {
     let bootAngleOffset: Double?
     let retainDetachPose: Bool?
     let maxTorsoLean: Double?, maxPelvisShift: Double?, upperArmThickness: Double?, pelvisCropMaxX: Double?
+    let calfThickness: Double?
     let farArmOffset: Point?, farLegOffset: Point?
     let smoothingTime: Double?, maxLeanSpeed: Double?, maxShiftSpeed: Double?
     let depths: [String: Double]?
@@ -74,16 +75,17 @@ do {
     var arguments = Array(CommandLine.arguments.dropFirst())
     var riderID = "croco"
     if let flag = arguments.firstIndex(of: "--rider") {
-        try check(arguments.indices.contains(flag + 1), "--rider requires croco or shiba")
+        try check(arguments.indices.contains(flag + 1), "--rider requires croco, shiba or monkey")
         riderID = arguments[flag + 1]
         arguments.removeSubrange(flag ... flag + 1)
     }
-    try check(["croco", "rocco", "shiba"].contains(riderID), "Supported rigs: croco, shiba")
-    try check(arguments.count <= 1, "Usage: check-rocco-assets.swift [root] [--rider croco|shiba]")
-    let rocco = riderID != "shiba"
-    let prefix = rocco ? "rocco" : "shiba"
+    let directories = ["croco": "RoccoRig", "rocco": "RoccoRig", "shiba": "ShibaRig", "monkey": "MonkeyRig"]
+    try check(directories[riderID] != nil, "Supported rigs: croco, shiba, monkey")
+    try check(arguments.count <= 1, "Usage: check-rocco-assets.swift [root] [--rider croco|shiba|monkey]")
+    let rocco = riderID == "croco" || riderID == "rocco"
+    let prefix = rocco ? "rocco" : riderID
     let root = URL(fileURLWithPath: arguments.first ?? FileManager.default.currentDirectoryPath)
-    let directory = root.appendingPathComponent("App/Resources/GameAssets/" + (rocco ? "RoccoRig" : "ShibaRig"), isDirectory: true)
+    let directory = root.appendingPathComponent("App/Resources/GameAssets/" + directories[riderID]!, isDirectory: true)
     let manifest = try JSONDecoder().decode(Manifest.self, from: Data(contentsOf: directory.appendingPathComponent("manifest.json")))
     try check(manifest.schemaVersion == 1, "Unsupported rider manifest version")
     let required: Set<String> = ["bike", "torso", "pelvis", "upper-arm", "forearm", "thigh", "calf", "boot", "fork", "swingarm", "wheel"]
@@ -103,6 +105,7 @@ do {
     let bootAngleOffset = presentation?.bootAngleOffset ?? 0
     try check(bootAngleOffset.isFinite && abs(bootAngleOffset) <= .pi, "Invalid boot angle offset")
     for value in [maxLean, maxShift, presentation?.upperArmThickness ?? 1,
+                  presentation?.calfThickness ?? 1,
                   presentation?.smoothingTime ?? 0.065, presentation?.maxLeanSpeed ?? 2.5,
                   presentation?.maxShiftSpeed ?? 0.8] {
         try check(value.isFinite && value > 0, "Presentation limits must be finite and positive")
@@ -113,7 +116,7 @@ do {
     if !rocco {
         try check(abs(maxLean - manifest.rig.torsoAngleTravel) < 0.000001 &&
                   abs(maxShift - manifest.rig.pelvisTravel) < 0.000001,
-                  "Kenji validation envelope must match presentation motion limits")
+                  "Rider validation envelope must match presentation motion limits")
     }
     var report: [[String: Any]] = []
     for part in manifest.parts {
@@ -248,7 +251,8 @@ do {
                                 "testedTorsoLean": manifest.rig.torsoAngleTravel, "testedPelvisShift": manifest.rig.pelvisTravel,
                                 "maximumArmReach": armReach, "maximumLegReach": legReach,
                                 "armLength": armA + armB, "legLength": legA + legB,
-                                "effectiveLegReach": legA + effectiveLegB, "bootFollowsCalf": followsCalf]
+                                "effectiveLegReach": legA + effectiveLegB, "bootFollowsCalf": followsCalf,
+                                "calfThickness": presentation?.calfThickness ?? 1]
     print(String(data: try JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted, .sortedKeys]), encoding: .utf8)!)
 } catch {
     FileHandle.standardError.write(Data(("Rider asset check failed: \(error.localizedDescription)\n").utf8))

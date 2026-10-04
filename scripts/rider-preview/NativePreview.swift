@@ -7,7 +7,7 @@ import CrocoCrossCore
 
 @main struct NativePreview {
     @MainActor static func main() throws {
-        precondition(CommandLine.arguments.count == 3, "Usage: Preview croco|shiba output-directory")
+        precondition(CommandLine.arguments.count == 3, "Usage: Preview croco|shiba|monkey output-directory")
         _ = NSApplication.shared
         let rider = Rider(id: CommandLine.arguments[1])
         let output = URL(fileURLWithPath: CommandLine.arguments[2], isDirectory: true)
@@ -18,12 +18,14 @@ import CrocoCrossCore
         let renderer = SKRenderer(device: device)
         let scene = SKScene(size: size)
         scene.backgroundColor = NSColor(calibratedWhite: 0.84, alpha: 1)
+        let checker = SKNode()
+        scene.addChild(checker)
         for row in 0..<30 {
             for column in 0..<36 where (row + column).isMultiple(of: 2) {
                 let square = SKSpriteNode(color: NSColor(calibratedWhite: 0.74, alpha: 1), size: CGSize(width: 50, height: 50))
                 square.position = CGPoint(x: column * 50 + 25, y: row * 50 + 25)
                 square.zPosition = -10
-                scene.addChild(square)
+                checker.addChild(square)
             }
         }
         renderer.scene = scene
@@ -89,6 +91,17 @@ import CrocoCrossCore
             renderer.update(atTime: 1)
             let image = render(renderer, device: device, queue: queue, size: size)
             try save(image, to: output.appendingPathComponent(name + ".png"))
+            if name == "neutral" || name == "landing" {
+                checker.isHidden = true
+                for (background, white) in [("light", 0.98), ("dark", 0.07)] {
+                    scene.backgroundColor = NSColor(calibratedWhite: white, alpha: 1)
+                    renderer.update(atTime: 1)
+                    try save(render(renderer, device: device, queue: queue, size: size),
+                             to: output.appendingPathComponent(name + "-" + background + ".png"))
+                }
+                scene.backgroundColor = NSColor(calibratedWhite: 0.84, alpha: 1)
+                checker.isHidden = false
+            }
             rig.removeFromParent()
         }
         summary["poseBounds"] = poseBounds
@@ -96,6 +109,7 @@ import CrocoCrossCore
         let rig = RoccoRig()
         scene.addChild(rig)
         let profile = RiderRigArtwork.manifest(for: rider.id)!.profile
+        let exportAllMotionFrames = ProcessInfo.processInfo.environment["RIDER_PREVIEW_ALL_FRAMES"] == "1"
         var previousLean: CGFloat?
         var maxLeanStep: CGFloat = 0
         // Two full rotations pass through both +/-pi boundaries while all four
@@ -114,7 +128,7 @@ import CrocoCrossCore
             let lean = rig.attachmentDiagnostics()!.torsoLean
             if let previousLean { maxLeanStep = max(maxLeanStep, abs(lean - previousLean)) }
             previousLean = lean
-            if [30, 60, 90, 120, 150].contains(frame) {
+            if exportAllMotionFrames || [30, 60, 90, 120, 150].contains(frame) {
                 fit(rig, in: scene)
                 renderer.update(atTime: Double(frame) / 60 + 2)
                 try save(render(renderer, device: device, queue: queue, size: size),
@@ -130,8 +144,8 @@ import CrocoCrossCore
         summary["maximumFootErrorMetres"] = maximumFootError
         summary["maximumWaistErrorMetres"] = maximumWaistError
         summary["maximumLeanStepRadians"] = maxLeanStep
+        precondition(maximumAnkleError < 0.0001, "The shin left the boot cuff")
         if profile.bootFollowsCalf {
-            precondition(maximumAnkleError < 0.0001, "The shin left the boot cuff")
             precondition(maximumCuffAngleError < 0.000001, "The shin no longer enters the boot from above")
         }
         summary["boots"] = ["followsCalf": profile.bootFollowsCalf,
@@ -398,7 +412,9 @@ import CrocoCrossCore
         pass.colorAttachments[0].texture = texture
         pass.colorAttachments[0].loadAction = .clear
         pass.colorAttachments[0].storeAction = .store
-        pass.colorAttachments[0].clearColor = MTLClearColor(red: 0.84, green: 0.84, blue: 0.84, alpha: 1)
+        let background = renderer.scene!.backgroundColor.usingColorSpace(.deviceRGB)!
+        pass.colorAttachments[0].clearColor = MTLClearColor(red: background.redComponent, green: background.greenComponent,
+                                                          blue: background.blueComponent, alpha: background.alphaComponent)
         let buffer = queue.makeCommandBuffer()!
         renderer.render(withViewport: CGRect(origin: .zero, size: size), commandBuffer: buffer, renderPassDescriptor: pass)
         buffer.commit(); buffer.waitUntilCompleted()

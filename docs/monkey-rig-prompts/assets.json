@@ -1,0 +1,79 @@
+[
+  {
+    "path": "App/Resources/GameAssets/MonkeyRig/monkey-bike.png",
+    "width": 1536,
+    "height": 1024,
+    "sha256": "639f522e3bae5c48e50237487be12b8703a43af98a8f90b3fa664cd7b618ec38",
+    "bytes": 1286079
+  },
+  {
+    "path": "App/Resources/GameAssets/MonkeyRig/monkey-boot.png",
+    "width": 1536,
+    "height": 1024,
+    "sha256": "4ca50f4a120382835e8a5e862bbc2b400eea96657627c020e7ad9bd0fc75c20d",
+    "bytes": 1622150
+  },
+  {
+    "path": "App/Resources/GameAssets/MonkeyRig/monkey-calf.png",
+    "width": 1024,
+    "height": 1536,
+    "sha256": "e42737f151329b02e319d2f46bd5fd9c77ca658336b7e052fb27a7dc7825374d",
+    "bytes": 1342870
+  },
+  {
+    "path": "App/Resources/GameAssets/MonkeyRig/monkey-forearm.png",
+    "width": 1536,
+    "height": 1024,
+    "sha256": "3edc3c6a8b5f6b10c767a952dd9578abc00d7bccd719af21c8b3510b4e52ae36",
+    "bytes": 1180190
+  },
+  {
+    "path": "App/Resources/GameAssets/MonkeyRig/monkey-fork.png",
+    "width": 1302,
+    "height": 1208,
+    "sha256": "2c40e69f7f19943b989ea91f627697678bcbc17080c7b9af3dfdf8e39ae20d7a",
+    "bytes": 467588
+  },
+  {
+    "path": "App/Resources/GameAssets/MonkeyRig/monkey-pelvis.png",
+    "width": 1536,
+    "height": 1024,
+    "sha256": "02e41d1a8702a2beb3466d84808767aa933ebbd34012b5ff7b33debaf94f023b",
+    "bytes": 1209319
+  },
+  {
+    "path": "App/Resources/GameAssets/MonkeyRig/monkey-swingarm.png",
+    "width": 1536,
+    "height": 1024,
+    "sha256": "a4a91d81ca9857290e2a4937e1c7a90317f81395aa53ba95f0b04e4de8ac7093",
+    "bytes": 1072274
+  },
+  {
+    "path": "App/Resources/GameAssets/MonkeyRig/monkey-thigh.png",
+    "width": 1536,
+    "height": 1024,
+    "sha256": "9d143c141a4e653ab84adee5c23d13e79a12625d975804fee09005f9c461f4cb",
+    "bytes": 1247681
+  },
+  {
+    "path": "App/Resources/GameAssets/MonkeyRig/monkey-torso.png",
+    "width": 1312,
+    "height": 1199,
+    "sha256": "69c7a3bf82a9eb60c0cc5371c707a6eefd414225ae6233dba743bdea032cc290",
+    "bytes": 997296
+  },
+  {
+    "path": "App/Resources/GameAssets/MonkeyRig/monkey-upper-arm.png",
+    "width": 1536,
+    "height": 1024,
+    "sha256": "1605511cadac5dba12ee2ed6e158ca8eef7bb95d30293b6b81a6e42f60db98c1",
+    "bytes": 1243060
+  },
+  {
+    "path": "App/Resources/GameAssets/MonkeyRig/monkey-wheel.png",
+    "width": 1254,
+    "height": 1254,
+    "sha256": "5213aaa78984664bcd02eacae117a4873e12bee017c403196c36a7edf2b46df8",
+    "bytes": 1192519
+  }
+]

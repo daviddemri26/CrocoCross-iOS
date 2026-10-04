@@ -15,9 +15,9 @@ Large buildings, vehicles and selected landscape features are anchored by their 
 | highway | ground-1.png | Caravane rétro | 6 m | 3.6 m | 0.65 m |
 | highway | ground-2.png | Coyote endormi | 2.8 m | 1.9 m | Small vignette: full silhouette below road |
 | highway | ground-3.png | Pickup et citrouilles | 5.6 m | 3.4 m | 0.65 m |
-| jungle | ground-1.png | Tapir endormi | 3.2 m | 2.4 m | Small vignette: full silhouette below road |
-| jungle | ground-2.png | Grenouille sur une feuille | 1.9 m | 1.7 m | Small vignette: full silhouette below road |
-| jungle | ground-3.png | Cascade et bassin tropical | 5.5 m | 5.2 m | 1.4 m |
+| jungle | ground-1.png | Tapir endormi | 3.84 m | 2.88 m | Small vignette: full silhouette below road |
+| jungle | ground-2.png | Grenouille sur une feuille | 2.375 m | 2.125 m | Small vignette: full silhouette below road |
+| jungle | ground-3.png | Cascade et bassin tropical | 15.125 m | 14.3 m | 60% wholly below road; 40% footing 3.85 m; foreground, 6 m ledge clearance |
 | arctic | ground-1.png | Renard polaire sur la neige | 2.8 m | 1.8 m | Small vignette: full silhouette below road |
 | arctic | ground-2.png | Phoque sur la banquise | 3 m | 1.9 m | Small vignette: full silhouette below road |
 | arctic | ground-3.png | Cristaux de glace dressés | 4 m | 4.6 m | 0.85 m |
@@ -39,3 +39,8 @@ The additional perspective depth is depth × 2.4 m in portrait or depth × 1 m i
 Texture, object footing and riding surface scroll together at factor 1. Size and footing do not depend on speed or camera height. Large subjects with a dimension budget of at least 6 m decode their existing PNG at up to 1536 pixels; smaller sprites retain the 768-pixel decode. No source PNG was modified for this size pass.
 
 See [Scenery](SCENERY.md) for source provenance and placement, and the [current native gallery](../artifacts/foreground-overlap/index.html) for the building, other large subjects and the pass in front of the bike.
+
+
+### Jungle placement and animal adjustment — September 27, 2026
+
+Waterfalls retain the approved 15.125 × 14.3 m budgets, foreground draw order, 6 m support margin and 36 m spacing. A stable 60% subset is now entirely below the road, using the ordinary top-below-support placement; the remaining 40% retains the 3.85 m base depth and rises above the road. Seeded depth determines placement for the whole occurrence. Tapir budgets are now 3.84 × 2.88 m (+20%); frog budgets are 2.375 × 2.125 m (+25%). Images and other-world profiles are unchanged.

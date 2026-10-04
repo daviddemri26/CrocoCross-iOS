@@ -56,6 +56,7 @@ final class GameSession {
     @ObservationIgnored private var achievementRunPlayerID: String?
     #if DEBUG
     @ObservationIgnored private var unlockLandingFixtureActive = false
+    @ObservationIgnored private var junglePreviewAwaitingInput = false
     @ObservationIgnored private var unlockFixtureDirection = 1.0
     @ObservationIgnored private var unlockFixtureAngle = 0.0
     @ObservationIgnored private var unlockFixturePreviousAngle = 0.0
@@ -118,8 +119,10 @@ final class GameSession {
         scene.scaleMode = .resizeFill
         scene.onFrame = { [weak self] dt in self?.frame(dt) }
         achievements.importClaimedUnlocks(
-            riderIDs: progression.state.kenjiClaimed ? ["shiba"] : [],
-            worldIDs: worlds.state.japanClaimed ? ["japan"] : [], at: Date())
+            riderIDs: (progression.state.kenjiClaimed ? ["shiba"] : [])
+                + (progression.state.miloClaimed ? ["monkey"] : []),
+            worldIDs: (worlds.state.japanClaimed ? ["japan"] : [])
+                + (worlds.state.jungleClaimed ? ["jungle"] : []), at: Date())
         gameCenter.achievementProgressProvider = { [weak self] playerID in
             self?.achievements.gameCenterProgress(for: playerID) ?? [:]
         }
@@ -170,6 +173,14 @@ final class GameSession {
             wasRankedAtStart = false
             ranked = false
         }
+        junglePreviewAwaitingInput = mode == .endless && runCourse.worldID == "jungle"
+            && arguments.contains("-ui-testing")
+            && (arguments.contains("-jungle-course-preview") || arguments.contains("-jungle-high-jump-preview"))
+        if junglePreviewAwaitingInput {
+            simulation = .jungleCourseFixtureForTesting(highJump: arguments.contains("-jungle-high-jump-preview"))
+            wasRankedAtStart = false
+            ranked = false
+        }
         let frontflipFixture = arguments.contains("-world-unlock-landing-preview")
         unlockLandingFixtureActive = arguments.contains("-ui-testing")
             && (arguments.contains("-unlock-landing-preview") || frontflipFixture)
@@ -212,8 +223,18 @@ final class GameSession {
     }
 
     func claimKenji() -> Bool {
-        guard riderProgression.claimKenji() else { return false }
-        announceAchievements(achievements.recordUnlock(kind: .rider, catalogID: "shiba",
+        claimRider("shiba")
+    }
+
+    func claimRider(_ id: String) -> Bool {
+        let claimed: Bool
+        switch id {
+        case "shiba": claimed = riderProgression.claimKenji()
+        case "monkey": claimed = riderProgression.claimMilo()
+        default: claimed = false
+        }
+        guard claimed else { return false }
+        announceAchievements(achievements.recordUnlock(kind: .rider, catalogID: id,
             playerID: gameCenter.currentPlayerID, at: Date()))
         audio.playUnlockCelebration()
         return true
@@ -229,9 +250,15 @@ final class GameSession {
         bestEndless = defaults.integer(forKey: GameCatalog.world(id).course.endlessRecordKey)
     }
 
-    func claimJapan() -> Bool {
-        guard worldProgression.claimJapan() else { return false }
-        announceAchievements(achievements.recordUnlock(kind: .world, catalogID: "japan",
+    func claimWorld(_ id: String) -> Bool {
+        let claimed: Bool
+        switch id {
+        case "japan": claimed = worldProgression.claimJapan()
+        case "jungle": claimed = worldProgression.claimJungle()
+        default: claimed = false
+        }
+        guard claimed else { return false }
+        announceAchievements(achievements.recordUnlock(kind: .world, catalogID: id,
             playerID: gameCenter.currentPlayerID, at: Date()))
         audio.playUnlockCelebration()
         return true
@@ -242,6 +269,9 @@ final class GameSession {
             input = .neutral
             return
         }
+        #if DEBUG
+        if pressed { junglePreviewAwaitingInput = false }
+        #endif
         let value = pressed ? 1.0 : 0.0
         if right { input.throttle = value } else { input.brake = value }
         input.lean = input.throttle - input.brake
@@ -356,7 +386,12 @@ final class GameSession {
     }
 
     private func frame(_ rawDelta: Double) {
-        let dt = rawDelta.isFinite ? max(0, min(rawDelta, 0.1)) : 0
+        var dt = rawDelta.isFinite ? max(0, min(rawDelta, 0.1)) : 0
+        #if DEBUG
+        // Hold the physically reached ledge or jump apex for a deterministic UI capture.
+        // A real pedal press resumes the same simulation; normal launches never wait.
+        if junglePreviewAwaitingInput { dt = 0 }
+        #endif
         if !interrupted { frameTime += dt }
         if !interrupted && (phase == .playing || phase == .results) {
             deathHoldRemaining = max(0, deathHoldRemaining - dt)
@@ -450,7 +485,8 @@ final class GameSession {
             scene.display(
                 state: renderedState(), terrain: simulation.terrainHeight,
                 characterID: characterID, worldID: runCourse.worldID, reducedMotion: reducedMotion,
-                riderMotionSeconds: shownRiderMotionSeconds)
+                riderMotionSeconds: shownRiderMotionSeconds,
+                terrainSolidSpans: simulation.terrainSolidSpans, terrainIsSolid: simulation.terrainIsSolid)
         }
     }
 

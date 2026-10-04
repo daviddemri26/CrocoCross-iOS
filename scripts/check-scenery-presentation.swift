@@ -11,8 +11,9 @@ import Foundation
                     precondition(!item.name.isEmpty && item.clearance > 0 && item.skyScale > 0 && item.skySpeed > 0)
                     if layer != .sky {
                         let large = layer == .ground && (item.footingDepth != nil || item.roadOverlap != nil)
-                        precondition(item.width > 0 && item.width <= (large ? 12 : 5.5))
-                        precondition(item.maxHeight > 0 && item.maxHeight <= (large ? 14 : 3.5))
+                        let waterfall = world == "jungle" && layer == .ground && variant == 3
+                        precondition(item.width > 0 && item.width <= (waterfall ? 16 : large ? 12 : 5.5))
+                        precondition(item.maxHeight > 0 && item.maxHeight <= (waterfall ? 15 : large ? 14 : 3.5))
                         if let footing = item.footingDepth {
                             precondition(layer == .ground && footing > 0 && footing < item.maxHeight)
                         }
@@ -60,6 +61,34 @@ import Foundation
         precondition(ground("highway", 1).width > ground("canyon", 1).width * 2)
         precondition(ground("highway", 3).width > ground("paris", 1).width * 2)
         precondition(ground("jungle", 2).width < ground("jungle", 1).width)
+        let waterfall = ground("jungle", 3)
+        precondition(abs(waterfall.width / 5.5 - 2.75) < 0.000001
+                     && abs(waterfall.maxHeight / 5.2 - 2.75) < 0.000001,
+                     "Both waterfall budgets must grow together to preserve its approved aspect ratio")
+        precondition(waterfall.supportMargin == 6 && waterfall.minimumSeparation == 36)
+        precondition(waterfall.width * 1.08 / 2 < 9,
+                     "The complete enlarged waterfall must enter the expanded visible window")
+        precondition(waterfall.footingDepth == 3.85 && waterfall.roadOverlap == nil)
+        var below = 0, raised = 0
+        for seed: UInt64 in [0, 5, 42, 913] {
+            let scenes = SceneryPlacement.visible(world: "jungle", layer: .ground, lower: 0, upper: 30_000, seed: seed)
+                .filter { $0.variant == 3 }
+            for scene in scenes {
+                if waterfall.footing(at: scene.depth) == nil { below += 1 } else { raised += 1 }
+                let redisplayed = SceneryPlacement.sample(world: "jungle", layer: .ground, cell: scene.cell, seed: seed)!
+                precondition(waterfall.footing(at: redisplayed.depth) == waterfall.footing(at: scene.depth),
+                             "A waterfall cannot change placement while scrolling")
+            }
+        }
+        precondition((0.54...0.66).contains(Double(below) / Double(below + raised)),
+                     "Most waterfalls stay entirely below the road, with some raised scenes for variety")
+        precondition(ground("jungle", 1).width == 3.84 && ground("jungle", 1).maxHeight == 2.88)
+        precondition(ground("jungle", 2).width == 2.375 && ground("jungle", 2).maxHeight == 2.125)
+        fputs("Jungle waterfall placement: \(below) below road / \(raised) raised\n", stderr)
+        for (key, item) in SceneryPresentation.catalog where key != "jungle/ground-3" {
+            precondition(item.supportMargin == 0.12 && item.minimumSeparation == 0 && item.belowRoadFraction == 0,
+                         "Other approved scenery retains its support, depth and density rules")
+        }
         precondition(ground("mine", 2).width < ground("mine", 1).width)
         // Increasing both pond budgets keeps the actual aspect-fit image about 1.5x larger.
         // Its existing base-anchor mode avoids losing the larger pond below a shallow viewport.

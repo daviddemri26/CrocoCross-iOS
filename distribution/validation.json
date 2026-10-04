@@ -1,6 +1,6 @@
 {
   "status": "pass",
-  "checks": 629,
+  "checks": 630,
   "items": [
     "release metadata version is explicit",
     "release metadata version matches generated project source",
@@ -548,11 +548,12 @@
     "Info.plist copy matches app",
     "PrivacyInfo.xcprivacy copy matches app",
     "CrocoCross.entitlements copy matches app",
-    "four distinct configured leaderboard identifiers",
+    "five distinct configured leaderboard identifiers",
     "App Store Connect identifier uses only ASCII alphanumerics, dots and underscores: com.daviddemri.crococross.weekly.score.v3",
     "App Store Connect identifier uses only ASCII alphanumerics, dots and underscores: com.daviddemri.crococross.weekly.time.v3",
     "App Store Connect identifier uses only ASCII alphanumerics, dots and underscores: com.daviddemri.crococross.endless.score.v3",
     "App Store Connect identifier uses only ASCII alphanumerics, dots and underscores: com.daviddemri.crococross.endless.japan.route_1.score.v3",
+    "App Store Connect identifier uses only ASCII alphanumerics, dots and underscores: com.daviddemri.crococross.endless.jungle.route_6.score.v3",
     "App Store Connect identifier uses only ASCII alphanumerics, dots and underscores: com.daviddemri.crococross.achievement.stunt.backflip.first",
     "App Store Connect identifier uses only ASCII alphanumerics, dots and underscores: com.daviddemri.crococross.achievement.stunt.frontflip.first",
     "App Store Connect identifier uses only ASCII alphanumerics, dots and underscores: com.daviddemri.crococross.achievement.stunt.double.landed",

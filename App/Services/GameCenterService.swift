@@ -12,6 +12,7 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
         var weeklyTime: String
         var endlessScore: String
         var japanEndlessScore: String
+        var jungleEndlessScore: String
 
         static func configured(in bundle: Bundle = .main) -> Self {
             func identifier(_ key: String, _ suffix: String) -> String {
@@ -23,7 +24,8 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
                 weeklyScore: identifier("CrocoWeeklyScoreLeaderboardID", "weekly.score"),
                 weeklyTime: identifier("CrocoWeeklyTimeLeaderboardID", "weekly.time"),
                 endlessScore: identifier("CrocoEndlessScoreLeaderboardID", "endless.score"),
-                japanEndlessScore: identifier("CrocoJapanEndlessScoreLeaderboardID", "endless.japan.route_1.score")
+                japanEndlessScore: identifier("CrocoJapanEndlessScoreLeaderboardID", "endless.japan.route_1.score"),
+                jungleEndlessScore: identifier("CrocoJungleEndlessScoreLeaderboardID", "endless.jungle.route_6.score")
             )
         }
 
@@ -31,13 +33,15 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
             weeklyScore == CompetitionRules.leaderboardID("weekly.score") &&
             weeklyTime == CompetitionRules.leaderboardID("weekly.time") &&
             endlessScore == CompetitionRules.leaderboardID("endless.score") &&
-            japanEndlessScore == CompetitionRules.leaderboardID("endless.japan.route_1.score")
+            japanEndlessScore == CompetitionRules.leaderboardID("endless.japan.route_1.score") &&
+            jungleEndlessScore == CompetitionRules.leaderboardID("endless.jungle.route_6.score")
         }
 
         func endlessScore(for course: CompetitionRules.CourseIdentity) -> String? {
             switch course {
             case .canyon: endlessScore
             case .japan: japanEndlessScore
+            case .jungle: jungleEndlessScore
             default: nil
             }
         }
@@ -92,6 +96,8 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
     @ObservationIgnored private var flushAgain = false
     @ObservationIgnored private var isRefreshing = false
     @ObservationIgnored private var refreshAgain = false
+    @ObservationIgnored private var leaderboardRefreshID = UUID()
+    @ObservationIgnored private var optionalLeaderboardTasks: [Task<Void, Never>] = []
     @ObservationIgnored private var foregroundObserver: NotificationObservation?
     @ObservationIgnored private var retryTask: Task<Void, Never>?
     @ObservationIgnored private var retryAttempt = 0
@@ -189,17 +195,28 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
                 Task { [weak self] in await self?.refresh() }
             }
         }
+        cancelOptionalLeaderboardLoads()
+        let refreshID = UUID()
+        leaderboardRefreshID = refreshID
         pruneExpiredScores()
         // An unavailable achievement endpoint must not delay ranked-course validation.
         Task { [weak self] in await self?.refreshAchievements() }
         guard GKLocalPlayer.local.isAuthenticated, GKLocalPlayer.local.gamePlayerID == playerID else { return }
-        // Each world is confirmed independently, including when the base board group fails to load.
-        await refreshJapanLeaderboard(playerID: playerID)
-        guard currentPlayerID == playerID, GKLocalPlayer.local.isAuthenticated,
-              GKLocalPlayer.local.gamePlayerID == playerID else { return }
+        // Optional worlds load independently so a missing board cannot delay Canyon or Weekly.
+        // The refresh identity discards older replies after another refresh or account change.
+        for identifier in [ids.japanEndlessScore, ids.jungleEndlessScore] {
+            optionalLeaderboardTasks.append(Task { [weak self] in
+                guard !Task.isCancelled, let self else { return }
+                await self.refreshEndlessLeaderboard(identifier: identifier, playerID: playerID, refreshID: refreshID)
+                guard !Task.isCancelled, self.leaderboardRefreshID == refreshID, self.currentPlayerID == playerID,
+                      GKLocalPlayer.local.isAuthenticated, GKLocalPlayer.local.gamePlayerID == playerID else { return }
+                await self.flushPending()
+            })
+        }
         do {
             let loaded = try await GKLeaderboard.loadLeaderboards(IDs: [ids.weeklyScore, ids.weeklyTime, ids.endlessScore])
-            guard currentPlayerID == playerID, GKLocalPlayer.local.gamePlayerID == playerID else { return }
+            guard leaderboardRefreshID == refreshID, currentPlayerID == playerID,
+                  GKLocalPlayer.local.isAuthenticated, GKLocalPlayer.local.gamePlayerID == playerID else { return }
             confirmedEndlessBoardIDs.remove(ids.endlessScore)
             if loaded.contains(where: {
                 $0.baseLeaderboardID == ids.endlessScore && $0.type == .classic
@@ -231,15 +248,13 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
             statusMessage = queueCanBeSaved ? nil : statusMessage
             await flushPending()
         } catch {
-            guard currentPlayerID == playerID else { return }
+            guard leaderboardRefreshID == refreshID, currentPlayerID == playerID else { return }
             // No newly ranked start while the active period cannot be confirmed.
             weeklyChallenge = nil
             weeklyBoards.removeAll()
             weeklyRecords.clear()
             confirmedEndlessBoardIDs.remove(ids.endlessScore)
-            statusMessage = confirmedEndlessBoardIDs.contains(ids.japanEndlessScore)
-                ? "Canyon and Weekly rankings could not be confirmed. Japan Endless remains available."
-                : "Game Center could not be reached. Scores are kept locally; weekly practice is available."
+            statusMessage = "Canyon and Weekly rankings could not be confirmed. You can still play locally."
             await flushPending()
         }
     }
@@ -291,19 +306,26 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
         return confirmedEndlessBoardIDs.contains(identifier)
     }
 
-    private func refreshJapanLeaderboard(playerID: String) async {
+    private func refreshEndlessLeaderboard(identifier: String, playerID: String, refreshID: UUID) async {
+        guard !Task.isCancelled, leaderboardRefreshID == refreshID, currentPlayerID == playerID,
+              GKLocalPlayer.local.isAuthenticated, GKLocalPlayer.local.gamePlayerID == playerID else { return }
         do {
-            let loaded = try await GKLeaderboard.loadLeaderboards(IDs: [ids.japanEndlessScore])
-            guard currentPlayerID == playerID, GKLocalPlayer.local.isAuthenticated,
+            let loaded = try await GKLeaderboard.loadLeaderboards(IDs: [identifier])
+            guard !Task.isCancelled, leaderboardRefreshID == refreshID, currentPlayerID == playerID, GKLocalPlayer.local.isAuthenticated,
                   GKLocalPlayer.local.gamePlayerID == playerID else { return }
-            confirmedEndlessBoardIDs.remove(ids.japanEndlessScore)
-            if loaded.contains(where: { $0.baseLeaderboardID == ids.japanEndlessScore && $0.type == .classic }) {
-                confirmedEndlessBoardIDs.insert(ids.japanEndlessScore)
+            confirmedEndlessBoardIDs.remove(identifier)
+            if loaded.contains(where: { $0.baseLeaderboardID == identifier && $0.type == .classic }) {
+                confirmedEndlessBoardIDs.insert(identifier)
             }
         } catch {
-            guard currentPlayerID == playerID else { return }
-            confirmedEndlessBoardIDs.remove(ids.japanEndlessScore)
+            guard !Task.isCancelled, leaderboardRefreshID == refreshID, currentPlayerID == playerID else { return }
+            confirmedEndlessBoardIDs.remove(identifier)
         }
+    }
+
+    private func cancelOptionalLeaderboardLoads() {
+        optionalLeaderboardTasks.forEach { $0.cancel() }
+        optionalLeaderboardTasks.removeAll()
     }
 
     /// Explicit Weekly routing for the two permanent Rankings rows. A selected
@@ -484,6 +506,8 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
         let identifier = player.isAuthenticated ? player.gamePlayerID : nil
         let playerChanged = identifier != currentPlayerID
         if playerChanged {
+            cancelOptionalLeaderboardLoads()
+            leaderboardRefreshID = UUID()
             weeklyChallenge = nil
             confirmedEndlessBoardIDs.removeAll()
             weeklyBoards.removeAll()
@@ -578,7 +602,7 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
             rulesVersion: submission.rulesVersion, leaderboardID: submission.leaderboardID,
             weeklyBoardIDs: [ids.weeklyScore, ids.weeklyTime], endlessBoardID: ids.endlessScore,
             challengeIdentifier: submission.challenge?.identifier, course: submission.course,
-            japanEndlessBoardID: ids.japanEndlessScore)
+            japanEndlessBoardID: ids.japanEndlessScore, jungleEndlessBoardID: ids.jungleEndlessScore)
     }
 
     private func persistQueue() {
@@ -612,6 +636,7 @@ final class GameCenterService: NSObject, GKGameCenterControllerDelegate {
 
     deinit {
         monitor.cancel()
+        optionalLeaderboardTasks.forEach { $0.cancel() }
         retryTask?.cancel()
         achievementRetryTask?.cancel()
     }

@@ -19,11 +19,11 @@ struct GameRootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reducedMotion
     @State private var panel: GamePanel?
-    @State private var showingKenjiUnlock = false
-    @State private var showingJapanUnlock = false
+    @State private var unlockRiderID: String?
+    @State private var unlockWorldID: String?
     @State private var showingUnlockError = false
     @State private var unlockErrorMessage: String?
-    private var showingUnlock: Bool { showingKenjiUnlock || showingJapanUnlock }
+    private var showingUnlock: Bool { unlockRiderID != nil || unlockWorldID != nil }
 
     var body: some View {
         GeometryReader { geometry in
@@ -98,8 +98,8 @@ struct GameRootView: View {
             case .inactive: session.setActive(false)
             case .background:
                 panel = nil
-                showingKenjiUnlock = false
-                showingJapanUnlock = false
+                unlockRiderID = nil
+                unlockWorldID = nil
                 session.leaveApp()
             @unknown default: session.setActive(false)
             }
@@ -131,21 +131,21 @@ struct GameRootView: View {
                 }
                 .background(CrocoTheme.ink)
                 .overlay {
-                    if showingKenjiUnlock {
-                        KenjiUnlockView {
-                            session.selectRider("shiba")
-                            showingKenjiUnlock = false
+                    if let riderID = unlockRiderID {
+                        RiderUnlockView(riderID: riderID) {
+                            session.selectRider(riderID)
+                            unlockRiderID = nil
                             panel = nil
                         } dismiss: {
-                            showingKenjiUnlock = false
+                            unlockRiderID = nil
                         }
-                    } else if showingJapanUnlock {
-                        JapanUnlockView {
-                            session.selectWorld("japan")
-                            showingJapanUnlock = false
+                    } else if let worldID = unlockWorldID {
+                        WorldUnlockView(worldID: worldID) {
+                            session.selectWorld(worldID)
+                            unlockWorldID = nil
                             panel = nil
                         } dismiss: {
-                            showingJapanUnlock = false
+                            unlockWorldID = nil
                         }
                     }
                 }
@@ -418,6 +418,7 @@ struct GameRootView: View {
     private var pauseOverlay: some View {
         modal {
             Text("PAUSED").font(.system(size: 27, weight: .black, design: .rounded)).italic()
+            SoundToggleButton(audio: session.audio, identifier: "pauseSoundToggle")
             HStack(spacing: 10) {
                 menuAction("Restart", icon: "arrow.counterclockwise", id: "restart") { session.start(session.mode) }
                 menuAction("Settings", icon: "slider.horizontal.3", id: "pauseSettings") { panel = .settings }
@@ -546,8 +547,8 @@ struct GameRootView: View {
                                 availability: session.riderAvailability(rider.id), selected: session.characterID == rider.id, rider: true
                             ) {
                                 let availability = session.riderAvailability(rider.id)
-                                if rider.id == "shiba" && availability.isReadyToUnlock {
-                                    if session.claimKenji() { showingKenjiUnlock = true }
+                                if availability.isReadyToUnlock {
+                                    if session.claimRider(rider.id) { unlockRiderID = rider.id }
                                     else {
                                         unlockErrorMessage = session.riderProgression.saveError
                                         showingUnlockError = true
@@ -581,8 +582,8 @@ struct GameRootView: View {
                                 leaderboardStatus: session.gameCenter.isAuthenticated ? "Compare Endless scores in Game Center." : "Connect with Game Center."
                             ) {
                                 let availability = session.worldAvailability(world.id)
-                                if world.id == "japan" && availability.isReadyToUnlock {
-                                    if session.claimJapan() { showingJapanUnlock = true }
+                                if availability.isReadyToUnlock {
+                                    if session.claimWorld(world.id) { unlockWorldID = world.id }
                                     else {
                                         unlockErrorMessage = session.worldProgression.saveError
                                         showingUnlockError = true

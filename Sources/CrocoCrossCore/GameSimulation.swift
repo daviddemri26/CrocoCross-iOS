@@ -50,11 +50,15 @@ public final class GameSimulation {
         terrain = TerrainGenerator(seed: state.seed, style: configuration.terrainStyle)
         physics = Box2DBikeWorld(configuration: configuration, terrain: terrain, bike: state.bike)
         stuntScore = max(0, state.score - Int(floor(state.distance * 10)))
-        checkpointX = max(PhysicsConfiguration.courseStartX, state.bike.position.x)
+        checkpointX = safeCheckpoint(atOrBefore: max(PhysicsConfiguration.courseStartX, state.bike.position.x))
         copySnapshot()
     }
 
     public func terrainHeight(at x: Double) -> Double { terrain.height(at: x) }
+    public func terrainSolidSpans(from lower: Double, to upper: Double) -> [TerrainSpan] {
+        terrain.solidSpans(from: lower, to: upper)
+    }
+    public func terrainIsSolid(at x: Double) -> Bool { terrain.isSolid(at: x) }
 
     @discardableResult
     public func step(input: ControlInput) -> [GameEvent] {
@@ -81,14 +85,17 @@ public final class GameSimulation {
         // A compressed suspension can let the skid plate graze the ground.
         // Impact force alone is never a crash: require an overturned chassis or
         // actual rider-ground contact. Judge orientation against the local slope.
-        let hit = hasCrashContact
+        let fellIntoVoid = terrain.style == .junglePlatforms
+            && state.bike.position.y < terrain.height(at: state.bike.position.x) - 8
+        let hit = hasCrashContact || fellIntoVoid
         crashContactTicks = hit ? crashContactTicks + 1 : 0
         let traveled = max(0, state.bike.position.x - PhysicsConfiguration.courseStartX)
         state.distance = max(state.distance, state.mode == .weekly ? min(Self.weeklyDistance, traveled) : traveled)
         if state.bike.rear.contact && state.bike.front.contact && !hit &&
             abs(wrapped(state.bike.angle - atan(terrain.slope(at: state.bike.position.x)))) < 0.2 &&
             abs(state.bike.angularVelocity) < 0.75 && state.bike.position.x > checkpointX + 12 {
-            checkpointX = state.bike.position.x
+            let candidate = safeCheckpoint(atOrBefore: state.bike.position.x)
+            if candidate > checkpointX { checkpointX = candidate }
         }
         let finishing = state.mode == .weekly && state.distance >= Self.weeklyDistance
         if !finishing && shieldTicks == 0 && crashContactTicks >= 3 {
@@ -137,12 +144,55 @@ public final class GameSimulation {
     }
 
     private var hasCrashContact: Bool {
+        // A missed raised reception can hit its vertical face while the bike
+        // is still upright relative to the top. Wheels may brush a lip safely;
+        // an actual chassis/rider collision with the cliff is a failed landing.
+        if diagnostics.cliffBodyContact { return true }
         let relativeAngle = abs(wrapped(state.bike.angle - atan(terrain.slope(at: state.bike.position.x))))
         return (diagnostics.riderContact && relativeAngle > .pi / 4) ||
             (diagnostics.chassisContact && relativeAngle > .pi * 75 / 180)
     }
 
     #if DEBUG
+    /// Offline UI preview advances a real ride to the first ledge or the third
+    /// jump's apex using ordinary 100 ms pedal holds. It never teleports the bike.
+    public static func jungleCourseFixtureForTesting(highJump: Bool = false) -> GameSimulation {
+        var configuration = PhysicsConfiguration()
+        configuration.terrainStyle = .junglePlatforms
+        let simulation = GameSimulation(mode: .endless, seed: 42, configuration: configuration)
+        let platforms = simulation.terrainSolidSpans(from: PhysicsConfiguration.courseStartX, to: 600)
+        guard let firstPlatform = platforms.first, !highJump || platforms.count > 2 else {
+            return simulation
+        }
+        let previewX = highJump ? platforms[2].upperBound : firstPlatform.upperBound - 4
+        var input = ControlInput.neutral
+        for tick in 0..<(highJump ? 7_200 : 2_400) {
+            let previousVerticalSpeed = simulation.state.bike.velocity.y
+            if tick.isMultiple(of: 12) {
+                let bike = simulation.state.bike
+                if bike.grounded {
+                    let pitch = atan(simulation.terrain.slope(at: bike.position.x))
+                    let error = wrapped(bike.angle - pitch)
+                    let brake = bike.velocity.x > 25 || (error > 0.28 && bike.velocity.x > 1) ? 1.0 : 0
+                    let throttle = brake == 0 && bike.velocity.x < 24 && error < 0.25 ? 1.0 : 0
+                    input = .init(throttle: throttle, brake: brake, lean: throttle - brake)
+                } else {
+                    let effort = wrapped(-0.08 - bike.angle) * 2.2 - bike.angularVelocity * 0.8
+                    let throttle = effort > 0.22 ? 1.0 : 0
+                    let brake = effort < -0.22 ? 1.0 : 0
+                    input = .init(throttle: throttle, brake: brake, lean: throttle - brake)
+                }
+            }
+            simulation.step(input: input)
+            if simulation.state.status != .active { break }
+            let bike = simulation.state.bike
+            if bike.position.x >= previewX {
+                if !highJump || (!bike.grounded && previousVerticalSpeed > 0 && bike.velocity.y <= 0) { break }
+            }
+        }
+        return simulation
+    }
+
     /// A real airborne backflip setup for offline UI tests; controls still have to land it safely.
     public static func backflipFixtureForTesting(mode: RunMode) -> GameSimulation {
         var configuration = PhysicsConfiguration()
@@ -182,6 +232,21 @@ public final class GameSimulation {
         bike.velocity = .init(x: cos(angle) * speed, y: sin(angle) * speed)
         physics = Box2DBikeWorld(configuration: configuration, terrain: terrain, bike: bike)
         stunt.clear(); copySnapshot()
+    }
+
+    private func safeCheckpoint(atOrBefore x: Double) -> Double {
+        guard terrain.style == .junglePlatforms else { return x }
+        // Raised, long Jungle crossings need a complete acceleration run before
+        // the ramp. Recovery keeps the ordinary 3.5 m/s speed, with no boost.
+        let approach = 60.0
+        let spans = terrain.solidSpans(from: max(PhysicsConfiguration.courseStartX - 2,
+                                               x - TerrainGenerator.jungleSectionLength - approach),
+                                       to: x + approach + 2)
+        for span in spans.reversed() {
+            let candidate = min(x, span.upperBound - approach)
+            if candidate >= span.lowerBound + 2 { return max(PhysicsConfiguration.courseStartX, candidate) }
+        }
+        return PhysicsConfiguration.courseStartX
     }
 
     /// Internal fixture operation exercises the production atomic rebase path.

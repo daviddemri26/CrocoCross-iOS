@@ -1,14 +1,14 @@
 #!/bin/bash
 set -euo pipefail
-# Usage: bash scripts/render-rider-preview.sh croco|shiba /tmp/preview [--baseline]
+# Usage: bash scripts/render-rider-preview.sh croco|shiba|monkey /tmp/preview [--baseline]
 # --baseline renders Rocco from HEAD for a pixel-level before/after comparison.
 script_dir=$(cd "$(dirname "$0")" && pwd)
 repo_dir=$(cd "$script_dir/.." && pwd)
 rider_id=${1:-croco}
 output_dir=${2:-/tmp/crococross-rider-preview}
 baseline=${3:-}
-if [[ "$rider_id" != croco && "$rider_id" != shiba ]]; then
-  echo 'Supported riders: croco, shiba' >&2
+if [[ "$rider_id" != croco && "$rider_id" != shiba && "$rider_id" != monkey ]]; then
+  echo 'Supported riders: croco, shiba, monkey' >&2
   exit 2
 fi
 if [[ -n "$baseline" && ( "$baseline" != --baseline || "$rider_id" != croco ) ]]; then
@@ -24,7 +24,10 @@ import subprocess, sys
 from pathlib import Path
 root,out=map(Path,sys.argv[1:3])
 paths = ['App/Scene/RoccoArtwork.swift','App/Scene/RoccoRig.swift']
-if not sys.argv[3]: paths.append('App/Scene/DetachedLimbMotion.swift')
+motion_path = 'App/Scene/DetachedLimbMotion.swift'
+if not sys.argv[3] or subprocess.run(['git','cat-file','-e','HEAD:'+motion_path], cwd=root,
+                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+    paths.append(motion_path)
 for relative in paths:
     source = subprocess.check_output(['git','show','HEAD:'+relative], cwd=root, text=True) if sys.argv[3] else (root/relative).read_text()
     (out/Path(relative).name).write_text(source.replace('import UIKit','import AppKit'))

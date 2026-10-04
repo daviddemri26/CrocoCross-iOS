@@ -5,6 +5,34 @@ import Foundation
 struct BackgroundPanorama {
     enum Repetition { case reflected, seamless }
     static let japanEdgeBlend = 0.08
+    static let jungleCropX = 0.28
+    static let jungleCropWidth = 0.50
+    static let jungleEdgeBlend = 0.16
+    static let junglePointsPerMetre = 5.0
+
+    /// Global body coordinates survive physics rebasing and do not include the
+    /// view's zoom-dependent camera offset. Rotation/resizing preserves travel.
+    struct WorldMotion {
+        private var originX = 0.0
+        private var originY = 0.0
+        private var seed: UInt32?
+        private var lastTick = 0
+        private var wasPreview = false
+        private(set) var travel = 0.0
+        private(set) var height = 0.0
+
+        mutating func update(x: Double, y: Double, seed: UInt32, tick: Int, isPreview: Bool) {
+            if self.seed != seed || tick < lastTick || wasPreview != isPreview {
+                originX = x
+                originY = y
+            }
+            travel = x - originX
+            height = y - originY
+            self.seed = seed
+            lastTick = tick
+            wasPreview = isPreview
+        }
+    }
 
     struct Tile: Equatable {
         let index: Int
@@ -21,9 +49,10 @@ struct BackgroundPanorama {
     }
 
     static func tiles(viewportWidth: Double, tileWidth: Double, travel: Double,
-                      initialCentre: Double? = nil, repetition: Repetition = .reflected) -> [Tile] {
+                      initialCentre: Double? = nil, repetition: Repetition = .reflected,
+                      pointsPerMetre: Double = 8) -> [Tile] {
         guard tileWidth > 0, tileWidth.isFinite, travel.isFinite else { return [] }
-        let offset = travel * 8 // Far scenery moves at 8 screen points per metre.
+        let offset = travel * pointsPerMetre
         let centre = initialCentre ?? viewportWidth / 2
         let phase = initialCentre.map { offset + viewportWidth / 2 - $0 } ?? offset
         let first = Int(floor(phase / tileWidth))
@@ -59,5 +88,32 @@ struct BackgroundPanorama {
                       tiles: tiles(viewportWidth: viewportWidth, tileWidth: stride,
                                    travel: still ? 0 : cameraTravel, initialCentre: initialCentre,
                                    repetition: .seamless))
+    }
+
+    /// A close forest panorama behind the world-space scenery. The painting's
+    /// size and linear travel never depend on motorcycle zoom or camera fitting.
+    static func jungle(viewportWidth: Double, viewportHeight: Double,
+                       textureWidth: Double, textureHeight: Double,
+                       worldTravel: Double, worldHeight: Double,
+                       reducedMotion: Bool, isPreview: Bool) -> Layout {
+        let aspect = max(1, textureWidth) / max(1, textureHeight)
+        let height = max(viewportHeight * 2.40, viewportHeight + 128,
+                         (viewportWidth + 4) / aspect)
+        let width = max(viewportWidth + 4, height * aspect)
+        let still = reducedMotion || isPreview
+        let vertical = still ? 0 : min(64, max(-64, worldHeight * -1.6))
+        let peakX = (0.57 - jungleCropX) / jungleCropWidth
+        let initialCentre = viewportWidth * 0.70 - (peakX - 0.5) * width
+        // Keep the main peak in the upper part of either viewport. Cropping
+        // the nearby foliage makes the mountain and waterfall feel much larger.
+        let desiredY = viewportHeight * 0.86 - (0.88 - 0.5) * height + vertical
+        let centreY = min(height / 2 - 2, max(viewportHeight + 2 - height / 2, desiredY))
+        // Use only the central landscape, excluding the painting's framing
+        // palms. Its forested edges blend without mirroring mountain landmarks.
+        let stride = width * (1 - jungleEdgeBlend)
+        return Layout(width: width, height: height, stride: stride, centreY: centreY,
+                      tiles: tiles(viewportWidth: viewportWidth, tileWidth: stride,
+                                   travel: still ? 0 : worldTravel, initialCentre: initialCentre,
+                                   repetition: .seamless, pointsPerMetre: junglePointsPerMetre))
     }
 }

@@ -17,6 +17,12 @@ struct SceneryPresentation {
     /// Tall foreground subjects grow upward from this footing and may hide the rider.
     /// Nil keeps a small vignette entirely below the road.
     var footingDepth: Double? = nil
+    /// A seeded fraction of tall scenes sits wholly below the road instead.
+    var belowRoadFraction: Double = 0
+    /// Extra solid ground beyond the painted footprint keeps large scenes away from ledges.
+    var supportMargin: Double = 0.12
+    /// Deterministic spacing between occurrences of the same large ground subject.
+    var minimumSeparation: Double = 0
     /// A stable subset of gateways spans the road with its transparent opening.
     /// Depth already belongs to the seeded placement; no new randomness.
     var roadOverlap: RoadOverlap? = nil
@@ -30,6 +36,10 @@ struct SceneryPresentation {
     func roadAnchor(at depth: Double) -> Double? {
         guard let overlap = roadOverlap, depth < overlap.fraction else { return nil }
         return overlap.ridingLine
+    }
+
+    func footing(at depth: Double) -> Double? {
+        depth < belowRoadFraction ? nil : footingDepth
     }
 
     static func forImage(world: String, layer: SceneryLayer, variant: Int) -> Self {
@@ -62,9 +72,10 @@ struct SceneryPresentation {
         "highway/sky-2": .init(name: "Rapace brun", width: 0, maxHeight: 0, skyScale: 1),
         "highway/wayside": .init(name: "Pneus anciens et fleurs jaunes", width: 2.15, maxHeight: 1.5, followsSlope: true, roadInset: 0.005),
 
-        "jungle/ground-1": .init(name: "Tapir endormi", width: 3.2, maxHeight: 2.4, clearance: 0.55),
-        "jungle/ground-2": .init(name: "Grenouille sur une feuille", width: 1.9, maxHeight: 1.7, clearance: 0.55),
-        "jungle/ground-3": .init(name: "Cascade et bassin tropical", width: 5.5, maxHeight: 5.2, clearance: 0.55, footingDepth: 1.4),
+        "jungle/ground-1": .init(name: "Tapir endormi", width: 3.84, maxHeight: 2.88, clearance: 0.55),
+        "jungle/ground-2": .init(name: "Grenouille sur une feuille", width: 2.375, maxHeight: 2.125, clearance: 0.55),
+        "jungle/ground-3": .init(name: "Cascade et bassin tropical", width: 15.125, maxHeight: 14.3,
+            clearance: 0.55, footingDepth: 3.85, belowRoadFraction: 0.60, supportMargin: 6, minimumSeparation: 36),
         "jungle/sky-1": .init(name: "Ara rouge, bleu et jaune", width: 0, maxHeight: 0, skyScale: 1),
         "jungle/sky-2": .init(name: "Petit papillon bleu", width: 0, maxHeight: 0, skyScale: 0.6, skySpeed: 0.93, skyAltitude: 0.63),
         "jungle/wayside": .init(name: "Fougères et broméliacée", width: 2.15, maxHeight: 1.4, followsSlope: true),

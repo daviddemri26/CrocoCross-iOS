@@ -1,5 +1,70 @@
 # Next CrocoCross release
 
+## Jungle route 6 diversity, pause sound and scenery — September 27, 2026
+
+Jungle mixes ramp launches with horizontal departures: 16 m gaps to banks 5.5 m lower and 24 m gaps to banks 10.5 m lower. Twelve metres of level road before the edge make these real flat takeoffs; receiving shelves and gradual run-outs keep momentum for the next jump. About one in three crossings uses this style, starting at section four. Existing ramp motifs, occasional 38/40 m gaps, natural physics and the close camera remain.
+
+Pause gains the same sound on/off control as Home, with shared state and no automatic resumption. Around 60% of waterfall placements stay entirely below the road; the others rise above it. Large dimensions and stable spacing remain. Tapirs grow 20% and frogs 25%, preserving source artwork.
+
+The geometry has its own `jungle.route-6` record scope and prepared `endless.jungle.route_6.score.v3` board; routes 1–5 stay separate. No remote Game Center or store change is included. All 114 core tests, 84 recovery approaches, seven full 90-second control rides, 84 camera replays, scenery checks and Debug/Release competition checks pass. Eight native scenery renders, four iPhone UI scenarios (including a successful isolated Pause retry after a test-only tap correction), three iPad scenarios, signed Debug/unsigned Release builds, signature and bundled-art checks pass. The signed Debug app (1.1.0, build 18) was installed and launched normally on David’s paired iPhone 17 at 15:51 PDT on September 27, without fixture arguments. Gameplay feel remains for David’s playtest. Evidence: `artifacts/qa/next-version/jungle-diversity-2026-09-27/`.
+
+## Historical Jungle route 5: closer camera and occasional larger gaps — September 26, 2026
+
+Jungle now follows the rider at close range without zooming out to show the far bank. Gentle zoom speed/acceleration limits remain. Once per six sections, a 38 or 40 m crossing replaces an ordinary motif; a deeper hollow and a low curved takeoff supply natural momentum. The first five sections stay free of exceptional jumps; ordinary 14–34 m motifs, foreground waterfalls, enlarged parallax and rider artwork remain. The ordinary 26 m receiving bank is 0.5 m lower to preserve recovery clearance, still +1 m above takeoff.
+
+The new geometry uses `jungle.route-5`, local key `bestEndless.box2d-2.jungle.route-5` and prepared board `com.daviddemri.crococross.endless.jungle.route_5.score.v3`. Earlier route records remain stored separately; Canyon, Japan and Weekly scopes are unchanged. No remote board or store operation is included.
+
+All 84 recovery approaches pass. Six of seven 90-second control replays complete; one fixed-controller crash is recorded for seed 7. Close-camera checks pass across four viewport shapes at 30/60/120 fps. Debug/Release routing checks pass. All 113 core tests, three iPhone and two iPad UI scenarios, Debug/Release builds, signature and bundle checks pass. The signed Debug app (1.1.0, build 18) was installed on David's paired iPhone 17 at 20:49 and launched normally at 20:50 PDT on September 26, without UI fixture arguments. Evidence: `artifacts/qa/next-version/jungle-close-2026-09-26/`.
+
+## Historical Jungle camera and foreground follow-up — September 26, 2026
+
+Waterfalls and pools now pass in front of the rider. A dedicated Jungle camera anticipates crossings earlier, limits zoom speed and acceleration, holds framing through landing bounces, then eases inward. Crash framing retains the crossing scale. Terrain, physics, records, route4 identity and source artwork are unchanged.
+
+84 production-camera replays pass across seven real rides, four screen shapes and 30/60/120 fps. In 528,836 frames, all tested rider/receiving-bank bounds remain visible. Two final iPhone and two final iPad UI scenarios pass, along with signed Debug and unsigned Release builds, signature validation and asset verification. The signed Debug app (1.1.0, build 18) was installed on David's iPhone at 20:18 and launched normally at 20:19 PDT on September 26. Gameplay feedback remains with David. Evidence: `artifacts/qa/next-version/jungle-camera-2026-09-26/`.
+
+## Historical Jungle route 4 variety and scenery — September 26, 2026
+
+David approved the route 3 gap scale and requested more varied riding sequences, a much larger continuously scrolling Jungle background, and much larger waterfalls and pools. Route 4 is validated and delivered for the next local playtest. The large crossings, natural controls and 60 m recovery approaches remain the baseline. Tree-to-tree platform artwork is still deferred.
+
+Jungle now uses `jungle.route-4`, local key `bestEndless.box2d-2.jungle.route-4` and prepared board `com.daviddemri.crococross.endless.jungle.route_4.score.v3`. Routes 1/2/3 retain their original keys and frozen queue identities. Debug/Release local routing checks pass. No remote Game Center or store operation is included. Current evidence belongs under `artifacts/qa/next-version/jungle-variety-2026-09-26/`; earlier validation below describes earlier candidates.
+
+Confirmed: **112 core tests**, eleven targeted Jungle tests, three iPhone and two iPad UI scenarios pass. Eighty-four recovery approaches succeed; six of seven 90-second controller rides finish without a crash (one under-speed approach is documented). Background geometry/native rendering, Debug/Release builds, signature and bundled assets pass. The signed Debug app was installed on David's paired iPhone 17 at 19:52 and launched normally at 19:53 America/Los_Angeles on September 26. No test fixture arguments were used. This proves installation and process launch; human gameplay assessment remains David's next step.
+
+## Historical Jungle route 3 challenge — September 26, 2026
+
+- David found route 2 too easy. Route 3 fixes the candidate at 132 m sections, an introductory 18 m gap with a +1.5 m receiving bank, then seeded gaps of 18–34 m. Four of six recurring patterns receive +1.5 to +4 m above takeoff; the other two receive at −1 m and −2 m.
+- Platform edges have real vertical collision walls, so an undershot raised bank cannot be crossed from below. Recovery provides 60 m of supported approach at the normal 3.5 m/s restart speed. Progressive camera anticipation frames the rider and reception. Bike physics and controls retain their existing values; no boost or launch impulse is added. Tree-visual changes remain deferred at David's request.
+- Jungle uses `jungle.route-3`, local key `bestEndless.box2d-2.jungle.route-3` and prepared board `com.daviddemri.crococross.endless.jungle.route_3.score.v3`. Route 1/2 records and frozen queued identities remain separate. Canyon, Japan and Weekly terrain and competition scopes are unchanged. No remote board operation or release action is included.
+- Confirmed corpus: 84/84 recovery approaches from 3.5 m/s with 60 m of run-up, plus seven successful 90-second rides. The binary controller targets 24 m/s using ordinary pedals; it does not impose that velocity. Tested passive runs fail around 117–118 m. These are automated reachability checks, not approval of human difficulty or fun.
+- Local competition checks and iOS builds pass in Debug and Release. **111 core tests, three iPhone UI scenarios and one iPad scenario pass.** Native screenshots, signature and bundled resources are verified. Installed on David's iPhone 17 at 19:21 America/Los_Angeles for the next playtest. Automatic launch at 19:22 was blocked by the locked device. Evidence is under `artifacts/qa/next-version/jungle-challenge-2026-09-26/INTEGRATION.md`; the route 2 results below are historical. See [Tropical Jungle](TROPICAL-JUNGLE.md).
+
+## Milo calves and Jungle route 2 — September 26, 2026
+
+Historical route 2 candidate. Its Jungle profile and validation are superseded by the route 3 candidate above; the approved Milo calf adjustment is retained.
+
+- After the first physical playtest, Milo's shins/calves are 25% thicker through the rig's transverse `calfThickness: 1.25` parameter. Lengths, anchors and cuff/palm/sole contacts keep their existing calibration. All source PNGs remain unchanged; the remaining character and scooter visuals were approved. Rocco and Kenji use the default value `1`.
+- Jungle now uses 72 m sections, a first 6 m gap and later seeded gaps of 7–11 m, with real ramps and troughs. Recovery leaves at least 24 m of supported approach at the existing 3.5 m/s restart speed. Physics and controls are unchanged; no boost or launch impulse is added.
+- Jungle scores are isolated under `jungle.route-2`, local key `bestEndless.box2d-2.jungle.route-2` and prepared board `com.daviddemri.crococross.endless.jungle.route_2.score.v3`. Route 1 records are retained separately and not imported or relabelled. Canyon, Japan and Weekly terrain and competition identities are unchanged; Weekly remains shared Canyon.
+- Tree-visual changes are deferred at David's request. No remote Game Center configuration, review-draft update or publication is part of this adjustment.
+- Validation complete for the next playtest: 106 core tests pass, plus a focused nine-test Jungle rerun after the Debug capture extension; four distinct final iPhone scenarios and two iPad scenarios pass across the recorded runs. The iPhone camera test initially assumed unsupported landscape and passes after that test-only correction. Debug/Release builds, signature and bundled rig checks pass. Installed and launched normally on David's iPhone 17 at 18:56 America/Los_Angeles. Evidence: `artifacts/qa/next-version/jungle-tuning-2026-09-26/INTEGRATION.md`. Earlier numbers below describe their original candidates. See [Milo](MILO.md) and [Tropical Jungle](TROPICAL-JUNGLE.md).
+
+## Milo first playable — September 26, 2026
+
+Historical first candidate, before the calf-thickness adjustment above.
+
+- A new monkey on a modern electric scooter becomes the third rider, with independent articulated artwork and the same underlying bike controls/physics. The assembly follows the established shoulder, hip, waist and ankle overlap rules.
+- Unlock after 100 safely landed backflips in Release, 2 in Debug. Kenji's existing progress/claim is preserved; Milo has an independent durable claim and reveal. See [Milo](MILO.md) for art and validation.
+- This was local development work, with no release, remote achievement definition or App Store draft change. Physical installation was initially deferred; the later installation and first playtest are recorded in [Milo](MILO.md).
+
+## Tropical Jungle first playable — September 26, 2026
+
+Historical route 1 candidate, followed locally by routes 2 and 3 above.
+
+- Tropical Jungle moves to third place. Its explicit claim unlock requires 100 cumulative safely landed frontflips in Release, 2 in the separate Debug save. Older Japan progress/claims are preserved.
+- A distinct platform route introduces real 2.5–3.5 m gaps, broad landing runs, matched collision/render boundaries, supported scenery, bounded fall recovery and safe checkpoint run-ups. Bike physics remain unchanged. See [route and validation](TROPICAL-JUNGLE.md).
+- Jungle Endless records and the prepared `endless.jungle.route_1.score.v3` board are independent. Weekly remains shared Canyon; normal Endless restarts still generate a new random seed. The Jungle board has not been created or associated remotely in this change.
+- This local test build does not alter the existing review draft or release hold.
+
 ## Current candidate and authorization
 
 Verified on **September 24, 2026 at 00:32 America/Los_Angeles**: TestFlight **1.1.0 (18)** is processed (**Terminé**, **Prêt à soumettre**). Build 18 is selected and saved for version 1.1.0; the Save button is disabled. The existing **iOS review draft contains exactly five items: app 1.1.0 (18) and the four v3 leaderboards**, with no achievements. Its dialog confirms the items will be reviewed with version 1.1.0 on iOS. **The final Envoyer pour vérification button has not been clicked.**

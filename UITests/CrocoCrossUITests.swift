@@ -656,8 +656,8 @@ final class CrocoCrossUITests: XCTestCase {
         XCTAssertEqual(app.buttons["riders"].label, "Rider: Rocco")
         XCTAssertEqual(app.buttons["worlds"].label, "World: Canyon")
         let catalogs: [(String, String, [String])] = [
-            ("riders", "Rider: Rocco", ["croco", "shiba", "eagle", "tiger", "polar", "flamingo", "toucan", "raccoon", "axolotl"]),
-            ("worlds", "World: Canyon", ["canyon", "japan", "highway", "jungle", "arctic", "mine", "sanfrancisco", "paris", "clouds"]),
+            ("riders", "Rider: Rocco", ["croco", "shiba", "monkey", "eagle", "tiger", "polar", "flamingo", "toucan", "raccoon", "axolotl"]),
+            ("worlds", "World: Canyon", ["canyon", "japan", "jungle", "highway", "arctic", "mine", "sanfrancisco", "paris", "clouds"]),
         ]
         for (panel, selectedLabel, ids) in catalogs {
             app.buttons[panel].tap()
@@ -669,8 +669,13 @@ final class CrocoCrossUITests: XCTestCase {
                 XCTAssertEqual(card.isEnabled, index == 0, "Only the existing selection may be played")
                 if index > 0 {
                     XCTAssertTrue(card.label.hasSuffix(", Locked"))
-                    XCTAssertEqual(card.value as? String, id == "shiba"
-                        ? "Land 2 backflips to unlock Kenji, 0 / 2" : "Requirements coming soon.")
+                    let requirements = [
+                        "shiba": "Land 2 backflips to unlock Kenji, 0 / 2",
+                        "monkey": "Land 2 backflips to unlock Milo, 0 / 2",
+                        "japan": "Land 2 frontflips to unlock Japan Mountains, 0 / 2",
+                        "jungle": "Land 2 frontflips to unlock Tropical Jungle, 0 / 2"
+                    ]
+                    XCTAssertEqual(card.value as? String, requirements[id] ?? "Requirements coming soon.")
                 }
                 if index == 1 || index == ids.count - 1 {
                     card.tap()

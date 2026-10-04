@@ -56,6 +56,7 @@ enum RiderRigArtwork {
         let bootFollowsCalf: Bool
         let bootAngleOffset: CGFloat
         let upperArmThickness: CGFloat
+        let calfThickness: CGFloat
         let pelvisCropMaxX: CGFloat?
         let farArmOffset: CGPoint
         let farLegOffset: CGPoint
@@ -74,12 +75,28 @@ enum RiderRigArtwork {
         let profile: Profile
     }
 
-    static func supports(_ riderID: String) -> Bool { directory(for: riderID) != nil }
+    private static var availableRigs: [String: Bool] = [:]
+
+    static func supports(_ riderID: String) -> Bool {
+        if let cached = availableRigs[riderID] { return cached }
+        guard let directory = directory(for: riderID) else { return false }
+        // A new catalog entry may precede its separated artwork. Never advertise
+        // an articulated rig until every real part and its manifest are bundled.
+        let subdirectory = "GameAssets/" + directory
+        let manifestExists = Bundle.main.url(forResource: "manifest", withExtension: "json", subdirectory: subdirectory) != nil
+        let complete = manifestExists && Part.allCases.allSatisfy {
+            Bundle.main.url(forResource: prefix(for: riderID) + "-" + $0.rawValue,
+                            withExtension: "png", subdirectory: subdirectory) != nil
+        }
+        availableRigs[riderID] = complete
+        return complete
+    }
 
     private static func directory(for riderID: String) -> String? {
         switch riderID {
         case "croco": "RoccoRig"
         case "shiba": "ShibaRig"
+        case "monkey": "MonkeyRig"
         default: nil
         }
     }
@@ -116,6 +133,7 @@ enum RiderRigArtwork {
                               bootFollowsCalf: p?.bootFollowsCalf ?? false,
                               bootAngleOffset: p?.bootAngleOffset ?? 0,
                               upperArmThickness: p?.upperArmThickness ?? (rocco ? 1.8 : 1),
+                              calfThickness: p?.calfThickness ?? 1,
                               pelvisCropMaxX: p?.pelvisCropMaxX ?? (rocco ? 0.82 : nil),
                               farArmOffset: p?.farArmOffset?.point ?? CGPoint(x: rocco ? 0.045 : 0.025, y: -0.015),
                               farLegOffset: p?.farLegOffset?.point ?? CGPoint(x: -0.035, y: 0.025),
@@ -126,6 +144,7 @@ enum RiderRigArtwork {
                               maxShiftSpeed: p?.maxShiftSpeed ?? 0.8,
                               depths: p?.depths ?? [:])
         guard Part.allCases.allSatisfy({ entries[$0] != nil }), profile.upperArmThickness > 0,
+              profile.calfThickness.isFinite, profile.calfThickness > 0,
               profile.smoothingTime > 0, profile.maxTorsoLean >= 0, profile.maxPelvisShift >= 0 else {
             assertionFailure("Incomplete or invalid \(riderID) rig configuration.")
             return nil
@@ -147,6 +166,7 @@ enum RiderRigArtwork {
         let bootFollowsCalf: Bool?
         let bootAngleOffset: CGFloat?
         let upperArmThickness: CGFloat?
+        let calfThickness: CGFloat?
         let pelvisCropMaxX: CGFloat?
         let farArmOffset: SourcePoint?
         let farLegOffset: SourcePoint?

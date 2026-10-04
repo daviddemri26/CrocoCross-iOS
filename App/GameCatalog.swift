@@ -35,7 +35,8 @@ struct World: Identifiable {
     let availability: CatalogAvailability
 
     var course: WorldCoursePlan {
-        .init(worldID: id, revision: 1, status: ["canyon", "japan"].contains(id) ? .ready : .planned)
+        .init(worldID: id, revision: id == "jungle" ? CompetitionRules.CourseIdentity.jungle.revision : 1,
+              status: ["canyon", "japan", "jungle"].contains(id) ? .ready : .planned)
     }
 }
 
@@ -44,6 +45,7 @@ enum GameCatalog {
     static let riders: [Rider] = [
         Rider(id: "croco", name: "Rocco", subtitle: "Crocodile · Motocross", assetName: "croco-rider", geometry: .init(rearX: 395 / 1635, frontX: 1330 / 1635, rearY: 790 / 962, frontY: 790 / 962, radius: 0.14, hasPaintedWheels: false), availability: .available),
         Rider(id: "shiba", name: "Kenji", subtitle: "Shiba Inu · Superbike", assetName: "shiba-yamaha", geometry: .init(rearX: 267 / 1536, frontX: 1250 / 1536, rearY: 744 / 1024, frontY: 776 / 1024, radius: 215.5 / 1536), availability: .locked()),
+        Rider(id: "monkey", name: "Milo", subtitle: "Monkey · Electric scooter", assetName: "monkey-scooter", geometry: .init(rearX: 389 / 1536, frontX: 1191 / 1536, rearY: 844 / 1024, frontY: 845 / 1024, radius: 151 / 1536), availability: .locked()),
         Rider(id: "eagle", name: "Duke", subtitle: "Bald eagle · Cruiser", assetName: "eagle-harley", geometry: .init(rearX: 265 / 1536, frontX: 1314 / 1536, rearY: 791 / 1024, frontY: 791 / 1024, radius: 193 / 1536), availability: .locked()),
         Rider(id: "tiger", name: "Axel", subtitle: "Tiger · Enduro", assetName: "tiger-enduro", geometry: .init(rearX: 279 / 1536, frontX: 1228 / 1536, rearY: 777 / 1024, frontY: 776 / 1024, radius: 216 / 1536), availability: .locked()),
         Rider(id: "polar", name: "Bjorn", subtitle: "Polar bear · Electric trail", assetName: "polar-electric", geometry: .init(rearX: 291 / 1536, frontX: 1228 / 1536, rearY: 797 / 1024, frontY: 797 / 1024, radius: 207.5 / 1536), availability: .locked()),
@@ -56,7 +58,11 @@ enum GameCatalog {
     /// The complete catalog is visible, but only validated, unlocked riders can start a run.
     static func riderAvailability(_ id: String, progression: RiderProgression) -> CatalogAvailability {
         guard let rider = riders.first(where: { $0.id == id }) else { return .locked() }
-        return id == "shiba" ? progression.kenjiAvailability : rider.availability
+        switch id {
+        case "shiba": return progression.kenjiAvailability
+        case "monkey": return progression.miloAvailability
+        default: return rider.availability
+        }
     }
 
     static func playableRiders(progression: RiderProgression) -> [Rider] {
@@ -66,8 +72,8 @@ enum GameCatalog {
     static let worlds: [World] = [
         .init(id: "canyon", name: "Canyon", subtitle: "Red rock & desert dust", assetName: "canyon-backdrop", sky: .hex(0x99D9EF), earth: .hex(0xD77740), deepEarth: .hex(0x703D2E), edge: .hex(0xFBD190), accent: .hex(0xFFB369), availability: .available),
         .init(id: "japan", name: "Japan Mountains", subtitle: "Pines, peaks & falling petals", assetName: "japan-mountains", sky: .hex(0xC4E9EE), earth: .hex(0x638767), deepEarth: .hex(0x263E4B), edge: .hex(0xC4E8A9), accent: .hex(0xF9B7D7), availability: .locked()),
+        .init(id: "jungle", name: "Tropical Jungle", subtitle: "Grassy ledges & jungle jumps", assetName: "tropical-jungle", sky: .hex(0x53CDE9), earth: .hex(0x417D48), deepEarth: .hex(0x1C352E), edge: .hex(0xB4E967), accent: .hex(0xC1F178), availability: .locked()),
         .init(id: "highway", name: "American Sunset", subtitle: "Golden hour on the open road", assetName: "american-sunset", sky: .hex(0xEFA299), earth: .hex(0x555268), deepEarth: .hex(0x25273E), edge: .hex(0xF1CA93), accent: .hex(0xFFCE8D), availability: .locked()),
-        .init(id: "jungle", name: "Tropical Jungle", subtitle: "Wild trails & fireflies", assetName: "tropical-jungle", sky: .hex(0x53CDE9), earth: .hex(0x417D48), deepEarth: .hex(0x1C352E), edge: .hex(0xB4E967), accent: .hex(0xC1F178), availability: .locked()),
         .init(id: "arctic", name: "Arctic Aurora", subtitle: "Fresh snow under northern lights", assetName: "arctic-aurora", sky: .hex(0x163E75), earth: .hex(0x9FCCE7), deepEarth: .hex(0x314D85), edge: .hex(0xF2FCFF), accent: .hex(0x89F5E1), availability: .locked()),
         .init(id: "mine", name: "Old Gold Mine", subtitle: "Rolling carts & glowing lanterns", assetName: "abandoned-mine", sky: .hex(0x172731), earth: .hex(0x4B3A2E), deepEarth: .hex(0x16191D), edge: .hex(0xB8A487), accent: .hex(0xFFD078), availability: .locked()),
         .init(id: "sanfrancisco", name: "San Francisco", subtitle: "Rolling fog & the Golden Gate", assetName: "san-francisco", sky: .hex(0x8BCEE0), earth: .hex(0x206881), deepEarth: .hex(0x123D55), edge: .hex(0xFFBE77), accent: .hex(0xFF9B68), availability: .locked()),
@@ -77,7 +83,11 @@ enum GameCatalog {
 
     static func worldAvailability(_ id: String, progression: WorldProgression) -> CatalogAvailability {
         guard let world = worlds.first(where: { $0.id == id }), world.course.status == .ready else { return .locked() }
-        return id == "japan" ? progression.japanAvailability : world.availability
+        switch id {
+        case "japan": return progression.japanAvailability
+        case "jungle": return progression.jungleAvailability
+        default: return world.availability
+        }
     }
 
     static func playableWorlds(progression: WorldProgression) -> [World] {

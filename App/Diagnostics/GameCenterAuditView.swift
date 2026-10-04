@@ -100,7 +100,7 @@ private final class GameCenterAudit {
                                       "App Store version association", "achievement image contents", "score or achievement reporting"]
     }
 
-    nonisolated static let boardIDs = ["weekly.score", "weekly.time", "endless.score", "endless.japan.route_1.score"]
+    nonisolated static let boardIDs = ["weekly.score", "weekly.time", "endless.score", "endless.japan.route_1.score", "endless.jungle.route_6.score"]
         .map(CompetitionRules.leaderboardID)
     private(set) var status = "Ready. Nothing has been requested."
     private(set) var isRunning = false
@@ -242,7 +242,7 @@ private final class GameCenterAudit {
         timeout?.cancel(); timeout = nil; authenticationPending = false
         report.finishedAt = Date(); isRunning = false
         let mismatches = report.achievements.filter { !$0.mismatches.isEmpty }.count
-        status = "Read complete: \(report.achievements.count)/40 achievement definitions, \(report.leaderboards.count)/4 leaderboards, \(report.issues.count) errors, \(mismatches) metadata mismatches."
+        status = "Read complete: \(report.achievements.count)/40 achievement definitions, \(report.leaderboards.count)/\(Self.boardIDs.count) leaderboards, \(report.issues.count) errors, \(mismatches) metadata mismatches."
         do {
             let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]; encoder.dateEncodingStrategy = .iso8601
             let data = try encoder.encode(report)

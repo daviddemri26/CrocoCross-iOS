@@ -12,17 +12,24 @@ final class WorldProgression {
     struct State: Codable, Equatable {
         var landedFrontflips = 0
         var japanClaimed = false
+        var jungleClaimed = false
         var lastLanding: Landing?
-        // Retain each contributing run until the threshold; this is bounded to 2/50 entries.
+        // Retain each contributing run until the highest threshold; bounded to 2/100 entries.
         // An old callback cannot be credited after a new run.
         var creditedRunTicks: [String: Int] = [:]
+
+        enum CodingKeys: String, CodingKey {
+            case landedFrontflips, japanClaimed, jungleClaimed, lastLanding, creditedRunTicks
+        }
     }
 
     #if DEBUG
     static let japanRequirement = 2
+    static let jungleRequirement = 2
     static let filename = "world-progression.debug.json"
     #else
     static let japanRequirement = 50
+    static let jungleRequirement = 100
     static let filename = "world-progression.json"
     #endif
 
@@ -33,6 +40,7 @@ final class WorldProgression {
     @ObservationIgnored private var unreadableSave = false
     @ObservationIgnored private var hasPendingSave = false
     private static let maximumCount = 1_000_000_000
+    private static let frontflipGoal = max(japanRequirement, jungleRequirement)
 
     init(store: LocalStore = LocalStore(), filename: String = WorldProgression.filename) {
         self.store = store
@@ -62,14 +70,23 @@ final class WorldProgression {
             : .locked(requirement: requirement, progress: progress)
     }
 
+    var jungleAvailability: CatalogAvailability {
+        if state.jungleClaimed { return .available }
+        let progress = CatalogProgress(current: state.landedFrontflips, target: Self.jungleRequirement)
+        let requirement = "Land \(Self.jungleRequirement) frontflips to unlock Tropical Jungle"
+        return state.landedFrontflips >= Self.jungleRequirement
+            ? .readyToUnlock(requirement: requirement, progress: progress)
+            : .locked(requirement: requirement, progress: progress)
+    }
+
     /// Called only for a core .flip event after a validated safe reception.
     /// Backflips and unfinished rotations are excluded by the caller's frontflip count.
     func recordLanding(frontflips: Int, runID: UUID, tick: Int) {
         guard !unreadableSave, frontflips > 0, tick >= 0,
-              state.landedFrontflips < Self.japanRequirement else { return }
+              state.landedFrontflips < Self.frontflipGoal else { return }
         let key = runID.uuidString
         if let previousTick = state.creditedRunTicks[key], tick <= previousTick { return }
-        state.landedFrontflips += min(frontflips, Self.japanRequirement - state.landedFrontflips)
+        state.landedFrontflips += min(frontflips, Self.frontflipGoal - state.landedFrontflips)
         state.lastLanding = Landing(runID: runID, tick: tick)
         state.creditedRunTicks[key] = tick
         hasPendingSave = true
@@ -81,6 +98,17 @@ final class WorldProgression {
         guard !unreadableSave, japanAvailability.isReadyToUnlock else { return false }
         var claimed = state
         claimed.japanClaimed = true
+        return saveClaim(claimed)
+    }
+
+    @discardableResult func claimJungle() -> Bool {
+        guard !unreadableSave, jungleAvailability.isReadyToUnlock else { return false }
+        var claimed = state
+        claimed.jungleClaimed = true
+        return saveClaim(claimed)
+    }
+
+    private func saveClaim(_ claimed: State) -> Bool {
         do {
             try store.save(claimed, to: filename)
             state = claimed
@@ -122,16 +150,31 @@ final class WorldProgression {
             let progression = WorldProgression(store: store)
             if !hasSave {
                 let shouldClaim = arguments.contains("-world-unlock-fixture-claimed")
+                let shouldClaimJungle = arguments.contains("-jungle-unlock-fixture-claimed")
                 let count = argument("-world-unlock-fixture-frontflips").flatMap(Int.init)
-                    ?? (shouldClaim ? japanRequirement : 0)
-                if (0...japanRequirement).contains(count) {
+                    ?? (shouldClaimJungle ? jungleRequirement : (shouldClaim ? japanRequirement : 0))
+                if (0...frontflipGoal).contains(count) {
                     progression.recordLanding(frontflips: count, runID: UUID(), tick: 0)
                     if shouldClaim { progression.claimJapan() }
+                    if shouldClaimJungle { progression.claimJungle() }
                 }
             }
             return progression
         }
         #endif
         return WorldProgression()
+    }
+}
+
+extension WorldProgression.State {
+    /// The original Japan-only save is still version 1. Missing Jungle state is an unclaimed world,
+    /// while malformed existing progress remains an error so the original file is preserved.
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        landedFrontflips = try values.decode(Int.self, forKey: .landedFrontflips)
+        japanClaimed = try values.decode(Bool.self, forKey: .japanClaimed)
+        jungleClaimed = try values.decodeIfPresent(Bool.self, forKey: .jungleClaimed) ?? false
+        lastLanding = try values.decodeIfPresent(WorldProgression.Landing.self, forKey: .lastLanding)
+        creditedRunTicks = try values.decode([String: Int].self, forKey: .creditedRunTicks)
     }
 }

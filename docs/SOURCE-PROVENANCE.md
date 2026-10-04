@@ -46,3 +46,7 @@ Build 15 further shortens the same source to 0.06–4.15 s (4.09 s total), with 
 ## App Store authorship clarification — September 16, 2026
 
 David Demri explicitly confirmed that he created the currently selected death sound entirely himself and authorized its inclusion in the App Store version. The earlier source filename did not establish third-party authorship. This confirmation supersedes the unresolved authorship statement for that selected clip above; it does not assert rights for the unused Universfield clips. Build 17 renames the bundled file to `rider-fall-impact.wav` without changing any bytes (SHA-256 `228f570ceabf993e83907366e50a630f583e743c0371f9a603f0235ef63e31c2`). Historical source names and hashes remain as provenance.
+
+## Milo character — September 26, 2026
+
+At David's request, the built-in image generation tool created a new monkey/electric-scooter concept and eleven independent transparent rig parts. The source prompts, output references, retained/rejected versions and selected image hashes are recorded in [Milo artwork](monkey-rig-prompts/README.md). The art is a new unbranded design, not an adaptation of a scooter photograph or another owner's character. Existing catalog art is preserved.

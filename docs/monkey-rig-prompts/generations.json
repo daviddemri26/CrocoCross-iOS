@@ -1,0 +1,89 @@
+{
+  "date": "2026-09-26",
+  "tool": "built-in image_gen",
+  "reference": "artifacts/qa/milo-2026-09-26/sources/monkey-scooter-concept-v1.png",
+  "conceptPrompt": "docs/monkey-rig-prompts/monkey-scooter-concept.txt",
+  "generations": [
+    {
+      "part": "torso",
+      "path": "/Users/daviddemri/.codex/generated_images/01a0ccac-7218-7330-9dae-916eb259c063/exec-e7cb2b2b-f205-429f-92dc-484328f3eec4.png",
+      "prompt": "docs/monkey-rig-prompts/monkey-torso.txt",
+      "status": "selected"
+    },
+    {
+      "part": "pelvis",
+      "path": "/Users/daviddemri/.codex/generated_images/01a0ccac-7218-7330-9dae-916eb259c063/exec-8467063c-0820-4a8c-9330-83d5ad0a6d45.png",
+      "prompt": "docs/monkey-rig-prompts/monkey-pelvis.txt",
+      "status": "selected"
+    },
+    {
+      "part": "bike",
+      "path": "/Users/daviddemri/.codex/generated_images/01a0ccac-7218-7330-9dae-916eb259c063/exec-6dce9445-85d3-4d25-b2a9-44fb69dba8ac.png",
+      "prompt": "docs/monkey-rig-prompts/monkey-bike.txt",
+      "status": "selected"
+    },
+    {
+      "part": "upper-arm",
+      "path": "/Users/daviddemri/.codex/generated_images/01a0ccac-7218-7330-9dae-916eb259c063/exec-d64f1154-2d20-4210-bf1e-b37d930b4d89.png",
+      "rejected": false,
+      "prompt": "docs/monkey-rig-prompts/monkey-upper-arm.txt",
+      "status": "selected"
+    },
+    {
+      "part": "forearm",
+      "path": "/Users/daviddemri/.codex/generated_images/01a0ccac-7218-7330-9dae-916eb259c063/exec-f3994eb5-8583-46e7-a0ca-853dfee70d4b.png",
+      "rejected": false,
+      "prompt": "docs/monkey-rig-prompts/monkey-forearm.txt",
+      "status": "selected"
+    },
+    {
+      "part": "thigh",
+      "path": "/Users/daviddemri/.codex/generated_images/01a0ccac-7218-7330-9dae-916eb259c063/exec-842c8ebd-40c3-4d7b-8bd0-62d7989637ab.png",
+      "rejected": false,
+      "prompt": "docs/monkey-rig-prompts/monkey-thigh.txt",
+      "status": "selected"
+    },
+    {
+      "part": "calf",
+      "path": "/Users/daviddemri/.codex/generated_images/01a0ccac-7218-7330-9dae-916eb259c063/exec-632c55b0-e10d-4b92-8a21-46d469066939.png",
+      "rejected": true,
+      "prompt": "docs/monkey-rig-prompts/monkey-calf.txt",
+      "status": "rejected: contains bent thigh plus shin instead of isolated shin"
+    },
+    {
+      "part": "boot",
+      "variant": "boot",
+      "path": "/Users/daviddemri/.codex/generated_images/01a0ccac-7218-7330-9dae-916eb259c063/exec-a2816a4d-1293-4973-b8eb-ee65c402adc1.png",
+      "prompt": "docs/monkey-rig-prompts/monkey-boot.txt",
+      "status": "selected"
+    },
+    {
+      "part": "fork",
+      "variant": "fork",
+      "path": "/Users/daviddemri/.codex/generated_images/01a0ccac-7218-7330-9dae-916eb259c063/exec-f3ffcc00-13bc-43c9-9614-11a7ef769c9a.png",
+      "prompt": "docs/monkey-rig-prompts/monkey-fork.txt",
+      "status": "selected"
+    },
+    {
+      "part": "swingarm",
+      "variant": "swingarm",
+      "path": "/Users/daviddemri/.codex/generated_images/01a0ccac-7218-7330-9dae-916eb259c063/exec-0bd56629-dbaf-4c81-b1f9-66d99c024473.png",
+      "prompt": "docs/monkey-rig-prompts/monkey-swingarm.txt",
+      "status": "selected"
+    },
+    {
+      "part": "wheel",
+      "variant": "wheel",
+      "path": "/Users/daviddemri/.codex/generated_images/01a0ccac-7218-7330-9dae-916eb259c063/exec-74c348c3-7128-49ef-8396-a3edd633b6c0.png",
+      "prompt": "docs/monkey-rig-prompts/monkey-wheel.txt",
+      "status": "selected"
+    },
+    {
+      "part": "calf",
+      "variant": "calf-v2",
+      "path": "/Users/daviddemri/.codex/generated_images/01a0ccac-7218-7330-9dae-916eb259c063/exec-03ba6e4f-9b93-4207-a18c-206445e5d838.png",
+      "prompt": "docs/monkey-rig-prompts/monkey-calf-v2.txt",
+      "status": "selected"
+    }
+  ]
+}

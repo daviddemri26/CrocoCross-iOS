@@ -21,10 +21,16 @@ import Foundation
         let weeklyTime = CompetitionRules.leaderboardID("weekly.time")
         let endless = CompetitionRules.leaderboardID("endless.score")
         let japan = CompetitionRules.leaderboardID("endless.japan.route_1.score")
+        let jungle = CompetitionRules.leaderboardID("endless.jungle.route_6.score")
+        let previousJungleRoutes = [1, 2, 3, 4, 5].map { revision in
+            (board: CompetitionRules.leaderboardID("endless.jungle.route_\(revision).score"),
+             course: CompetitionRules.CourseIdentity(worldID: "jungle", revision: revision))
+        }
         let configuredBoards = ["CrocoWeeklyScoreLeaderboardID": weeklyScore,
                                 "CrocoWeeklyTimeLeaderboardID": weeklyTime,
                                 "CrocoEndlessScoreLeaderboardID": endless,
-                                "CrocoJapanEndlessScoreLeaderboardID": japan]
+                                "CrocoJapanEndlessScoreLeaderboardID": japan,
+                                "CrocoJungleEndlessScoreLeaderboardID": jungle]
         let appInfo = try PropertyListSerialization.propertyList(
             from: Data(contentsOf: URL(fileURLWithPath: "App/Info.plist")), format: nil) as! [String: Any]
         for (key, identifier) in configuredBoards {
@@ -41,12 +47,16 @@ import Foundation
                    "Japan uses Apple's accepted underscore remote identifier")
         try expect(!CompetitionRules.isCurrentLeaderboard(japan.replacingOccurrences(of: "route_1", with: "route-1")),
                    "The invalid uncreated Japan board cannot receive queued scores")
+        try expect(jungle == "com.daviddemri.crococross.endless.jungle.route_6.score.v3" &&
+                   CompetitionRules.CourseIdentity.jungle.identifier == "jungle.route-6", "Jungle's challenge route uses its sixth remote and local revision")
+        try expect(!CompetitionRules.isCurrentLeaderboard(jungle.replacingOccurrences(of: "route_6", with: "route-6")),
+                   "A hyphenated Jungle remote board cannot receive scores")
         let week = "box2d-2.weekly.1789344000"
         func accepted(_ board: String, _ challenge: String?, version: String = "box2d-2",
                       course: CompetitionRules.CourseIdentity? = nil) -> Bool {
             CompetitionRules.acceptsSubmission(rulesVersion: version, leaderboardID: board,
                 weeklyBoardIDs: [weeklyScore, weeklyTime], endlessBoardID: endless,
-                challengeIdentifier: challenge, course: course, japanEndlessBoardID: japan)
+                challengeIdentifier: challenge, course: course, japanEndlessBoardID: japan, jungleEndlessBoardID: jungle)
         }
         try expect(accepted(weeklyScore, week), "Current weekly points must remain eligible")
         try expect(accepted(weeklyTime, week), "Current weekly times must remain eligible")
@@ -59,6 +69,31 @@ import Foundation
         try expect(!accepted(japan, week, course: .japan) && !accepted(weeklyScore, week, course: .japan),
                    "Japan cannot enter either Weekly board or carry a Weekly challenge")
         try expect(!accepted(weeklyTime, week, course: .japan), "Japan cannot enter the Weekly time board")
+        try expect(accepted(jungle, nil, course: .jungle), "Jungle Endless uses its independent board")
+        for previous in previousJungleRoutes {
+            try expect(!CompetitionRules.isCurrentLeaderboard(previous.board) &&
+                       CompetitionRules.endlessLeaderboardID(for: previous.course) == nil &&
+                       !accepted(previous.board, nil, course: previous.course) &&
+                       !accepted(previous.board, nil, course: .jungle) &&
+                       !accepted(jungle, nil, course: previous.course),
+                       "Route \(previous.course.revision) scores cannot enter a retired board or be relabeled as route 6")
+            try expect(!CompetitionRules.acceptsSubmission(rulesVersion: CompetitionRules.version,
+                leaderboardID: jungle, weeklyBoardIDs: [weeklyScore, weeklyTime], endlessBoardID: endless,
+                challengeIdentifier: nil, course: .jungle, japanEndlessBoardID: japan,
+                jungleEndlessBoardID: previous.board), "A stale configured Jungle board cannot accept route 6 scores")
+        }
+        try expect(!accepted(jungle, nil), "A legacy queue cannot be relabeled Jungle without a course identity")
+        for (board, course) in [(endless, CompetitionRules.CourseIdentity.canyon), (japan, .japan), (jungle, .jungle)] {
+            for wrongCourse in [CompetitionRules.CourseIdentity.canyon, .japan, .jungle] where wrongCourse != course {
+                try expect(!accepted(board, nil, course: wrongCourse), "Endless world identity must match its board exactly")
+            }
+        }
+        try expect(!accepted(weeklyScore, week, course: .jungle) && !accepted(weeklyTime, week, course: .jungle) &&
+                   !accepted(jungle, week, course: .jungle), "Jungle cannot enter Weekly or carry a Weekly challenge into Endless")
+        try expect(!CompetitionRules.acceptsSubmission(rulesVersion: CompetitionRules.version,
+            leaderboardID: japan, weeklyBoardIDs: [weeklyScore, weeklyTime], endlessBoardID: endless,
+            challengeIdentifier: nil, course: .jungle, japanEndlessBoardID: jungle, jungleEndlessBoardID: japan),
+            "Swapped configured Japan/Jungle boards cannot relabel a Jungle result")
         try expect(!CompetitionRules.acceptsSubmission(rulesVersion: CompetitionRules.version,
             leaderboardID: japan, weeklyBoardIDs: [weeklyScore, weeklyTime], endlessBoardID: japan,
             challengeIdentifier: nil, course: .canyon, japanEndlessBoardID: endless),
@@ -71,10 +106,12 @@ import Foundation
             leaderboardID: endless, weeklyBoardIDs: [endless, weeklyTime], endlessBoardID: endless,
             challengeIdentifier: week, course: .canyon), "An Endless board configured as Weekly is still rejected")
         for course in [CompetitionRules.CourseIdentity(worldID: "japan", revision: 2),
+                       .init(worldID: "jungle", revision: 1), .init(worldID: "jungle", revision: 2),
+                       .init(worldID: "jungle", revision: 3), .init(worldID: "jungle", revision: 4), .init(worldID: "jungle", revision: 5), .init(worldID: "jungle", revision: 7),
                        .init(worldID: "canyon", revision: 2), .init(worldID: "unknown", revision: 1)] {
             try expect(CompetitionRules.endlessLeaderboardID(for: course) == nil,
                        "Unregistered terrain revisions have no board")
-            try expect(!accepted(japan, nil, course: course) && !accepted(endless, nil, course: course),
+            try expect(!accepted(japan, nil, course: course) && !accepted(endless, nil, course: course) && !accepted(jungle, nil, course: course),
                        "Unregistered terrain revisions cannot submit")
         }
         try expect(CompetitionRules.endlessRecordKey(for: .canyon) == CompetitionRules.endlessRecordKey,
@@ -84,10 +121,23 @@ import Foundation
                    "Japan has an independent local record")
         try expect(CompetitionRules.endlessRecordKey(for: .init(worldID: "japan", revision: 2)) !=
                    CompetitionRules.endlessRecordKey(for: .japan), "Route revisions isolate local records")
+        try expect(CompetitionRules.endlessRecordKey(for: .jungle) == "bestEndless.box2d-2.jungle.route-6" &&
+                   Set([CompetitionRules.endlessRecordKey(for: .canyon), CompetitionRules.endlessRecordKey(for: .japan),
+                        CompetitionRules.endlessRecordKey(for: .jungle)]).count == 3, "Each playable world keeps an independent local Endless record")
+        let previousRecordKeys = previousJungleRoutes.map { CompetitionRules.endlessRecordKey(for: $0.course) }
+        try expect(previousRecordKeys == ["bestEndless.box2d-2.jungle.route-1", "bestEndless.box2d-2.jungle.route-2", "bestEndless.box2d-2.jungle.route-3", "bestEndless.box2d-2.jungle.route-4", "bestEndless.box2d-2.jungle.route-5"] &&
+                   Set(previousRecordKeys + [CompetitionRules.endlessRecordKey(for: .jungle)]).count == 6,
+                   "The retained route 1/2/3/4/5 record keys are distinct from each other and Jungle route 6")
+        try expect(CompetitionRules.version == "box2d-2" && CompetitionRules.leaderboardVersion == "v3" &&
+                   CompetitionRules.queueFilename == "game-center-pending-box2d-2.json" &&
+                   CompetitionRules.weeklyRecordKey == "bestWeekly.box2d-2" &&
+                   CompetitionRules.endlessRecordKey == "bestEndless.box2d-2",
+                   "A Jungle route revision does not reset the shared queue, Canyon or Weekly")
         for version in ["native-5", "box2d-1", "box2d-3", ""] {
             try expect(!accepted(weeklyScore, week, version: version), "Other rule versions must never submit")
             try expect(!accepted(endless, nil, version: version), "Endless must enforce rule version too")
             try expect(!accepted(japan, nil, version: version, course: .japan), "Japan enforces rule version too")
+            try expect(!accepted(jungle, nil, version: version, course: .jungle), "Jungle enforces rule version too")
         }
         try expect(!accepted(weeklyScore, "native-5.weekly.1789344000"), "An old course cannot join the new week")
         try expect(!accepted(weeklyScore, nil), "Weekly needs its original challenge")
@@ -121,6 +171,17 @@ import Foundation
         let restoredJapan = try JSONDecoder().decode(QueuedRoute.self, from: JSONEncoder().encode(japanRoute))
         try expect(restoredJapan == japanRoute && accepted(restoredJapan.leaderboardID, nil, course: restoredJapan.course),
                    "Frozen Japan world and route identity survive queue serialization")
+        let jungleRoute = QueuedRoute(leaderboardID: jungle, course: .jungle)
+        let restoredJungle = try JSONDecoder().decode(QueuedRoute.self, from: JSONEncoder().encode(jungleRoute))
+        try expect(restoredJungle == jungleRoute && accepted(restoredJungle.leaderboardID, nil, course: restoredJungle.course),
+                   "Frozen Jungle world and route identity survive queue serialization")
+        for previous in previousJungleRoutes {
+            let oldJungleRoute = QueuedRoute(leaderboardID: previous.board, course: previous.course)
+            let restoredOldJungle = try JSONDecoder().decode(QueuedRoute.self, from: JSONEncoder().encode(oldJungleRoute))
+            try expect(restoredOldJungle == oldJungleRoute &&
+                       !accepted(restoredOldJungle.leaderboardID, nil, course: restoredOldJungle.course),
+                       "Decoding a queued route \(previous.course.revision) score preserves its identity and keeps it ineligible")
+        }
 
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("CrocoCrossCompetition-" + UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
@@ -136,6 +197,6 @@ import Foundation
                    "The current queue must round-trip")
         try expect(try Data(contentsOf: root.appendingPathComponent(legacyFilename)) == legacyBytes,
                    "Saving a current result must preserve the exact legacy queue")
-        print("PASS: valid remote identifier characters and plist agreement, competition version isolation, independent world/revision boards and records, Weekly Canyon-only routing, frozen queued course identities, legacy Canyon compatibility and byte-for-byte legacy queue preservation.")
+        print("PASS: valid remote identifiers and plist agreement, Jungle route 6 isolation and route 1/2/3/4/5 rejection/preservation, stale Jungle configuration rejection, unchanged global queue and Canyon/Japan/Weekly scopes, frozen queued course identities, legacy Canyon compatibility and byte-for-byte legacy queue preservation.")
     }
 }

@@ -22,12 +22,15 @@ public struct PhysicsDiagnostics: Sendable {
     public var bodyContact = false
     public var chassisContact = false
     public var riderContact = false
+    /// Actual chassis/rider contact with a Jungle cliff face, independent of road pitch.
+    public var cliffBodyContact = false
     public var stepMilliseconds: Double = 0
 }
 
 /// Owns one C world. Only this object touches Box2D IDs; no ID escapes into a snapshot.
 /// SpriteKit never participates in collisions, constraints, or integration.
 final class Box2DBikeWorld {
+    private static let jungleCliffMaterial: Int32 = 0x4a43
     private let world: b2WorldId
     private let configuration: PhysicsConfiguration
     private let terrain: TerrainGenerator
@@ -54,6 +57,8 @@ final class Box2DBikeWorld {
     private var contactBuffer = [b2ContactData](repeating: b2ContactData(), count: 16)
     private struct ContactSummary {
         var touching = false
+        var supporting = false
+        var cliffTouching = false
         var impulse = 0.0
     }
 
@@ -222,6 +227,8 @@ final class Box2DBikeWorld {
         // player command, never an angle target or an automatic landing correction.
         let gaps = [rear, front].map { body -> Double in
             let p = snapshot(body).position
+            // The continuous camera guide is not support over a real hole.
+            if !terrain.isSolid(at: p.x) { return 1 }
             let n = hypot(1, terrain.slope(at: p.x))
             let gap = (p.y - terrain.height(at: p.x)) / n - c.wheelRadius
             let t = bounded(gap / c.leanClearance, 0, 1)
@@ -282,10 +289,15 @@ final class Box2DBikeWorld {
         let count = b2Body_GetContactData(body, &contactBuffer, capacity)
         var result = ContactSummary()
         for entry in contactBuffer.prefix(Int(count)) {
+            let cliff = terrain.style == .junglePlatforms &&
+                (b2Shape_GetMaterial(entry.shapeIdA) == Self.jungleCliffMaterial ||
+                 b2Shape_GetMaterial(entry.shapeIdB) == Self.jungleCliffMaterial)
             for index in 0..<Int(entry.manifold.pointCount) {
                 let point = index == 0 ? entry.manifold.points.0 : entry.manifold.points.1
                 if point.separation <= 0.008 && point.totalNormalImpulse > 0 {
                     result.touching = true
+                    result.supporting = result.supporting || !cliff
+                    result.cliffTouching = result.cliffTouching || cliff
                     result.impulse += Double(point.totalNormalImpulse)
                 }
             }
@@ -298,13 +310,15 @@ final class Box2DBikeWorld {
         bike.position = chassisState.position; bike.velocity = chassisState.velocity
         bike.angle = chassisState.angle; bike.angularVelocity = chassisState.angularVelocity; bike.throttle = throttle
         let rearContact = contacts(rear), frontContact = contacts(front)
-        bike.rear = wheelSnapshot(rear, joint: rearSpring, contact: rearContact.touching)
-        bike.front = wheelSnapshot(front, joint: frontSpring, contact: frontContact.touching)
+        bike.rear = wheelSnapshot(rear, joint: rearSpring, contact: rearContact.supporting)
+        bike.front = wheelSnapshot(front, joint: frontSpring, contact: frontContact.supporting)
         rider = .init(pelvis: snapshot(pelvis), torso: snapshot(torso), isAttached: attached)
         diagnostics.rearNormalImpulse = rearContact.impulse
         diagnostics.frontNormalImpulse = frontContact.impulse
-        diagnostics.chassisContact = contacts(chassis).touching
-        diagnostics.riderContact = contacts(pelvis).touching || contacts(torso).touching
+        let chassisContact = contacts(chassis), pelvisContact = contacts(pelvis), torsoContact = contacts(torso)
+        diagnostics.chassisContact = chassisContact.touching
+        diagnostics.riderContact = pelvisContact.touching || torsoContact.touching
+        diagnostics.cliffBodyContact = chassisContact.cliffTouching || pelvisContact.cliffTouching || torsoContact.cliffTouching
         diagnostics.bodyContact = diagnostics.chassisContact || diagnostics.riderContact
         diagnostics.attachmentForce = attached ? Double(b2Length(b2Joint_GetConstraintForce(attachment))) : 0
         let events = b2World_GetContactEvents(world)
@@ -368,6 +382,13 @@ final class Box2DBikeWorld {
             var bodyDef = b2DefaultBodyDef()
             bodyDef.position = (Vector2(x: baseX, y: baseY) - origin).b2
             let body = b2CreateBody(world, &bodyDef)
+            if terrain.style == .junglePlatforms {
+                for span in terrain.solidSpans(from: baseX, to: baseX + 64) {
+                    createPlatformChain(body: body, span: span, baseX: baseX, baseY: baseY)
+                }
+                chunks[index] = body
+                continue
+            }
             // Reverse winding makes one-sided surface normals point up. Adjacent
             // chains share three global grid vertices. Ghost edges do not collide.
             let points = stride(from: index * 256 + 257, through: index * 256 - 1, by: -1).map { grid -> b2Vec2 in
@@ -387,6 +408,56 @@ final class Box2DBikeWorld {
                 }
             }
             chunks[index] = body
+        }
+    }
+
+    private func createPlatformChain(body: b2BodyId, span: TerrainSpan, baseX: Double, baseY: Double) {
+        // Open chains ignore their first/last edge. The top and each real cliff
+        // share three vertices so their corner normals agree without a bridge.
+        var positions = [span.lowerBound]
+        var grid = floor(span.lowerBound * 4) + 1
+        while grid * 0.25 < span.upperBound {
+            positions.append(grid * 0.25)
+            grid += 1
+        }
+        positions.append(span.upperBound)
+        func point(_ x: Double) -> b2Vec2 {
+            b2Vec2(x: Float(x - baseX), y: Float(terrain.height(at: x) - baseY))
+        }
+        let lowerCliff = !terrain.isSolid(at: span.lowerBound - 0.001)
+        let upperCliff = !terrain.isSolid(at: span.upperBound + 0.001)
+        let lowerTop = point(span.lowerBound), upperTop = point(span.upperBound)
+        // Finite walls extend well below the missed-gap cutoff. No underside is
+        // added: fallen bodies remain free after the normal crash presentation.
+        let lowerBottom = b2Vec2(x: lowerTop.x, y: lowerTop.y - 32)
+        let upperBottom = b2Vec2(x: upperTop.x, y: upperTop.y - 32)
+        let points = [upperCliff ? upperBottom : point(span.upperBound + 0.25)]
+            + positions.reversed().map(point)
+            + [lowerCliff ? lowerBottom : point(span.lowerBound - 0.25)]
+        createJungleChain(body: body, points: points, cliff: false)
+        if lowerCliff {
+            createJungleChain(body: body, points: [point(positions[1]), lowerTop, lowerBottom,
+                b2Vec2(x: lowerBottom.x, y: lowerBottom.y - 0.25)], cliff: true)
+        }
+        if upperCliff {
+            createJungleChain(body: body, points: [b2Vec2(x: upperBottom.x, y: upperBottom.y - 0.25),
+                upperBottom, upperTop, point(positions[positions.count - 2])], cliff: true)
+        }
+    }
+
+    private func createJungleChain(body: b2BodyId, points: [b2Vec2], cliff: Bool) {
+        var material = b2SurfaceMaterial()
+        material.friction = Float(configuration.tireGrip); material.restitution = 0
+        material.userMaterialId = cliff ? Self.jungleCliffMaterial : 0
+        var chain = b2DefaultChainDef()
+        chain.filter.categoryBits = 1; chain.filter.maskBits = 2
+        chain.count = Int32(points.count); chain.materialCount = 1
+        points.withUnsafeBufferPointer { buffer in
+            chain.points = buffer.baseAddress
+            withUnsafePointer(to: &material) { materials in
+                chain.materials = materials
+                _ = b2CreateChain(body, &chain)
+            }
         }
     }
 
