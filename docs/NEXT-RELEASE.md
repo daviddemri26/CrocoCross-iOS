@@ -1,5 +1,9 @@
 # Next CrocoCross release
 
+## Submitted update — October 6, 2026
+
+The accumulated Milo and Tropical Jungle route-6 changes below are included in **1.2.0 (19)**, now **Waiting for Review** with Endless Jungle v3. Submission `54239666-7a03-4a66-9762-be463dae2b97` contains those two items, dated October 6 at 23:10 PDT with minute precision. The owner's explicit Store-update request supersedes the development release holds in the historical entries below. No new physical-device gameplay assessment or real Game Center score/rank round-trip was completed this session. Approval and automatic public release remain pending. See [current release](RELEASE.md) and `artifacts/release-2026-10-06/asc-state-final.json`.
+
 ## Jungle route 6 diversity, pause sound and scenery — September 27, 2026
 
 Jungle mixes ramp launches with horizontal departures: 16 m gaps to banks 5.5 m lower and 24 m gaps to banks 10.5 m lower. Twelve metres of level road before the edge make these real flat takeoffs; receiving shelves and gradual run-outs keep momentum for the next jump. About one in three crossings uses this style, starting at section four. Existing ramp motifs, occasional 38/40 m gaps, natural physics and the close camera remain.
@@ -129,11 +133,11 @@ Added September 23, 2026 (local development):
 
 Use fresh boards so both modes start at zero, with no migration of previous entries:
 
-| Board | New identifier | Behavior |
-|---|---|---|
-| Weekly Score | `com.daviddemri.crococross.weekly.score.v3` | Recurring seven days, highest points |
-| Weekly Time | `com.daviddemri.crococross.weekly.time.v3` | Recurring seven days, lowest centiseconds |
-| Endless Score | `com.daviddemri.crococross.endless.score.v3` | Classic, highest points |
+
+- Weekly Score: New identifier: `com.daviddemri.crococross.weekly.score.v3`; Behavior: Recurring seven days, highest points.
+- Weekly Time: New identifier: `com.daviddemri.crococross.weekly.time.v3`; Behavior: Recurring seven days, lowest centiseconds.
+- Endless Score: New identifier: `com.daviddemri.crococross.endless.score.v3`; Behavior: Classic, highest points.
+
 
 All three identifiers are staged in the app; none has been created or reset remotely by this work. At the authorized release, configure/attach the new boards, use matching Monday 00:00 UTC periods for Weekly, and retire the old boards from the new version's visible leaderboard list. Until the new configuration is available and confirmed, local play remains available.
 

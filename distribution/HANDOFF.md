@@ -1,25 +1,34 @@
-# CrocoCross 1.1.0 (18) handoff
+# CrocoCross 1.2.0 (19) handoff
 
-Verified on **September 24, 2026 at 00:32 America/Los_Angeles**: TestFlight **1.1.0 (18)** is processed (**Terminé**, **Prêt à soumettre**). Build 18 is selected and saved for version 1.1.0; the Save button is disabled. The existing **iOS review draft contains exactly five items: app 1.1.0 (18) and the four v3 leaderboards**, with no achievements. Its dialog confirms the items will be reviewed with version 1.1.0 on iOS. **The final Envoyer pour vérification button has not been clicked.**
+**Submitted to Apple; Waiting for Review.** The submission contains exactly two items: iOS App 1.2.0 (19) and Endless Jungle v3. Both statuses were verified in the submitted dossier at 2026-10-07T06:11:27Z. Apple's Date Submitted is October 6, 2026 at 23:10 America/Los_Angeles, with minute precision.
 
-## Prepared and verified
+- [Submitted dossier](https://appstoreconnect.apple.com/apps/6812979862/distribution/reviewsubmissions/details/54239666-7a03-4a66-9762-be463dae2b97).
+- Build 19 processed, selected and saved; build UUID `60c2e477-7c82-4c00-a8cb-da8bdb9c7e4b`.
+- Automatic release after approval, to all users immediately; existing rating retained.
+- Version 1.1.0 (18) remains Ready for Distribution. Its review submission `090917e1-ee95-49e9-b17f-4d559a08253d` is Review Completed.
 
-The final local archive and Apple Distribution export passed signature, identifier, entitlement and **629 package checks**; 199 source fingerprints were unchanged. Evidence is in `artifacts/qa/release-1.1.0/final-ipa-metadata.json`. Xcode upload succeeded at **2026-09-24T07:24:44Z** (`artifacts/app-store-1.1.0-final/upload.log`). The upload used a separate export from the same archive; the local IPA SHA-256 is not asserted as the uploaded-byte hash. Earlier evidence records **97 passing core tests** and Release Store-capture tests on iPhone 17 Pro Max and iPad Pro 13-inch (M5).
+## Included in this update
 
-The current description, promotional text, keywords, What’s New and review notes are saved. All **10 replacement screenshots** are processed and visually reviewed in the 1.1.0 draft: five iPhone 6.9-inch and five iPad 13-inch, ordered Weekly, Endless, Home, Controls, Audio.
+Milo's electric scooter, Tropical Jungle route 6 with platforms/gaps and revised camera/scenery, and the Pause sound toggle. Milo unlocks after 100 safely landed backflips; Jungle after 100 safely landed frontflips. Existing unlock progress and personal records are preserved.
 
-The draft retains **Automatic** release. The live baseline remains 1.0.0 (17), Ready for Distribution; September 17 files under `review/` are historical evidence.
+Saved English copy includes **Bike Flips & Scooter Stunts**, description, promotional text, keywords, What's New and reviewer notes. Six iPhone screenshots, three iPad screenshots and both creative assets are processed and assigned to the app. The complete original logo and three-character composition were verified in Apple's final live Header and Search previews.
 
-## Remaining before final submission
+The Jungle identifier is `com.daviddemri.crococross.endless.jungle.route_6.score.v3`, remote UUID `e49c53af-f72e-494c-8912-061329f87c54`. Existing four v3 boards are Live and were not resubmitted. Remote achievement synchronization remains disabled; forty achievements remain available locally and no achievements were submitted.
 
-- The App Review phone and email fields are blank. Permission to reuse the prepared private contact file is pending. Keep its contents out of Git.
-- Real Game Center score/rank round-trip testing has not been attempted. Keep `sandboxGameCenterRoundTripPassed=false`; association of the boards does not prove gameplay read-back.
-- Review outstanding physical-device, account/declaration and public-page checks, then make the final submission decision separately. **No final Envoyer pour vérification action has been performed.**
+Existing reviewer contact fields were complete and retained, with sign-in required unchecked. Privacy remains Data Not Collected. Age/category/availability declarations were retained; no new legal agreement was accepted.
 
-## Game Center scope
+## Remaining verification
 
-The draft includes Weekly Score v3, Weekly Time v3, Endless Canyon v3 and Endless Japan v3, including `endless.japan.route_1.score.v3`. Both Weekly boards begin **2026-09-28 00:00 UTC**, with seven-day duration and immediate restart. They are configured once; Game Center creates later occurrences automatically. The app has no weekly history UI.
+- Apple approval and public release are pending. Waiting for Review does not establish publication.
+- Physical-device gameplay and a live Game Center score submission/rank read-back were not performed this session; the paired iPhone was locked. `sandboxGameCenterRoundTripPassed` remains false.
+- The local package passed 114 core tests and 630 package checks plus signing/source/artwork checks. Those package checks include historical image sets; current media has separate manifest and upload evidence. No claim is made that the separately uploaded Xcode export has the inspected local IPA's byte hash.
 
-All **40 achievements / 1,000 points** work locally. Game Center achievement synchronization is **deferred and disabled** (`CrocoGameCenterAchievementsEnabled` absent/false). Seven complete remote records are preserved but are not included in the review draft: first backflip, first frontflip, double, triple, 10 total rotations, 1 km and first Weekly finish. There are no partial records to complete. The other 33 remote entries remain deferred; do not create, edit or delete more achievements.
+## Evidence and continuity
 
-The local-only achievement mode deliberately exempts remote achievement configuration/testing from release gates; leaderboard score testing remains a separate requirement. No demo account is required. Signed archives/IPAs and private contacts stay outside public Git. [Machine-readable readiness](release-readiness.json).
+- `artifacts/release-2026-10-06/asc-state-final.json` and `asc-waiting-for-review.jpg`: final remote evidence.
+- `artifacts/release-2026-10-06/submission-report.md`: complete report and evidence links.
+- `artifacts/release-2026-10-06/package-verification.json` and `upload-verification.json`: signed package and upload evidence.
+- `artifacts/marketing/app-store-release-2026-10-06/index.html` and `source-manifest.json`: all eleven deliverables, source identity and hashes.
+- [Machine-readable readiness](release-readiness.json): current state with prior 1.1.0 snapshots under `historical1_1_0`.
+
+Older preparation holds describe dated historical candidates and are superseded by this verified submission. Signed packages, private contacts and local artifacts remain outside public Git. Website publication is a separate operation.

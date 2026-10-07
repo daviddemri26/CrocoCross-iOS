@@ -1,12 +1,20 @@
 # CrocoCross — native Game Center setup
 
+## Current remote state — October 6, 2026
+
+App **1.2.0 (19)** and the new **Endless Jungle v3** are both **Waiting for Review**, the two items in submission `54239666-7a03-4a66-9762-be463dae2b97`. Date Submitted is October 6 at 23:10 PDT, with minute precision. The four existing v3 boards are verified **Live** and were not resubmitted. No achievements are included.
+
+Jungle identifier `com.daviddemri.crococross.endless.jungle.route_6.score.v3`, resource `e49c53af-f72e-494c-8912-061329f87c54`, is configured as Classic / integer points / high to low / Best Score and associated with this version. It retains local `box2d-2.jungle.route-6` records and frozen queues. Approval, live availability of the new board and a genuine gameplay score/rank round-trip remain separate from submission. No score round-trip was performed this session; the gate remains false.
+
+All 40 achievements remain local-only; existing seven remote records are preserved with synchronization disabled. Current ASC evidence is `artifacts/release-2026-10-06/asc-state-final.json`. The September entries below are dated history; their source-only Jungle and unsubmitted 1.1.0 statements no longer describe the current remote state.
+
 ## Jungle local preparation — September 26, 2026
 
 Tropical Jungle route 6 has an independent Endless scope: `box2d-2.jungle.route-6`, local key `bestEndless.box2d-2.jungle.route-6`, and configured board `com.daviddemri.crococross.endless.jungle.route_6.score.v3`. Its mixed horizontal departures and ramp crossings do not reuse scores from routes 1, 2, 3, 4 or 5; those earlier local values remain stored under their original keys. The intended display name is **Endless — Tropical Jungle**, Classic / integer points / high to low / Best Score. This board is prepared in source only; no remote creation, review-draft modification or publication was performed for this change. The earlier remote snapshot below remains dated evidence.
 
 Only an authenticated, individually confirmed Jungle board enables ranked Jungle starts. A missing Jungle board leaves Jungle playable offline and does not disable Canyon, Japan or Weekly. Pending submissions retain their world and revision; Jungle scores cannot enter another board. Weekly continues to use Canyon for every player, regardless of selected or unlocked world.
 
-## Current remote preparation — September 24, 2026
+## Historical remote preparation — September 24, 2026
 
 Four v3 boards are created, localized and associated with **app 1.1.0 (18) in one iOS review draft**, verified September 24 at 00:32 local time. Its five items are the app plus Weekly Score v3, Weekly Time v3, Endless Canyon v3 and Endless Japan v3; there are no achievements. The dialog confirms review with version 1.1.0 on iOS. The final send button was not clicked.
 
@@ -31,12 +39,12 @@ Entry requests do not block course confirmation, submission retries or gameplay.
 
 Weekly stays on Canyon route 1: every player receives the exact same 2,600 m course for a given confirmed server occurrence. The Weekly points and time boards remain shared; a selected Japan world does not change the Weekly course. Endless generates a new seed for each run and keeps records and rankings separate for each world and terrain revision.
 
-| English display name | Next-version identifier | Type | Ordering |
-|---|---|---|---|
-| Weekly Score | `com.daviddemri.crococross.weekly.score.v3` | Recurring | High to low |
-| Weekly Time | `com.daviddemri.crococross.weekly.time.v3` | Recurring | Low to high |
-| Endless — Canyon | `com.daviddemri.crococross.endless.score.v3` | Classic | High to low |
-| Endless — Japan Mountains | `com.daviddemri.crococross.endless.japan.route_1.score.v3` | Classic | High to low |
+
+- Weekly Score: Next-version identifier: `com.daviddemri.crococross.weekly.score.v3`; Type: Recurring; Ordering: High to low.
+- Weekly Time: Next-version identifier: `com.daviddemri.crococross.weekly.time.v3`; Type: Recurring; Ordering: Low to high.
+- Endless — Canyon: Next-version identifier: `com.daviddemri.crococross.endless.score.v3`; Type: Classic; Ordering: High to low.
+- Endless — Japan Mountains: Next-version identifier: `com.daviddemri.crococross.endless.japan.route_1.score.v3`; Type: Classic; Ordering: High to low.
+
 
 Both Endless boards use integer points and Best Score. Keep Canyon's existing v3 identifier and `bestEndless.box2d-2` local key. Japan uses `bestEndless.box2d-2.japan.route-1`; future terrain revisions require a separately registered board and local key. Do not combine Japan scores into the Canyon leaderboard.
 
@@ -79,11 +87,11 @@ Use Xcode's native GameKit editor and its connected developer account. This work
 
 Let Xcode generate the package contents; no public serialization schema was established during this preparation.
 
-| Reference name and English display name | Identifier | Type | Score format | Ordering |
-|---|---|---|---|---|
-| Weekly Score | `com.daviddemri.crococross.weekly.score.v2` | Recurring | Integer | High to low |
-| Weekly Time | `com.daviddemri.crococross.weekly.time.v2` | Recurring | Elapsed time in centiseconds | Low to high |
-| Endless Score | `com.daviddemri.crococross.endless.score.v2` | Classic | Integer | High to low |
+
+- Weekly Score: Identifier: `com.daviddemri.crococross.weekly.score.v2`; Type: Recurring; Score format: Integer; Ordering: High to low.
+- Weekly Time: Identifier: `com.daviddemri.crococross.weekly.time.v2`; Type: Recurring; Score format: Elapsed time in centiseconds; Ordering: Low to high.
+- Endless Score: Identifier: `com.daviddemri.crococross.endless.score.v2`; Type: Classic; Score format: Integer; Ordering: High to low.
+
 
 Use **Best Score** for all three. Do not use Most Recent Score. Keep optional score limits unset unless a validated range has been established for the final physics and scoring. Add at least an English localization before synchronization. The time board receives an integer count of hundredths of a second, not seconds or milliseconds. [Apple leaderboard properties](https://developer.apple.com/help/app-store-connect/reference/game-center/leaderboards).
 

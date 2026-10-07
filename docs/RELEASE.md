@@ -1,45 +1,47 @@
-# Release configuration and gates
+# Release configuration and evidence
 
-## Current candidate: 1.1.0 (18)
+## Current update: 1.2.0 (19)
 
-Verified on **September 24, 2026 at 00:32 America/Los_Angeles**: TestFlight **1.1.0 (18)** is processed (**Terminé**, **Prêt à soumettre**). Build 18 is selected and saved for version 1.1.0; the Save button is disabled. The existing **iOS review draft contains exactly five items: app 1.1.0 (18) and the four v3 leaderboards**, with no achievements. Its dialog confirms the items will be reviewed with version 1.1.0 on iOS. **The final Envoyer pour vérification button has not been clicked.**
+App Store Connect confirms **Waiting for Review** for iOS App 1.2.0 (19) and Endless Jungle v3. Submission `54239666-7a03-4a66-9762-be463dae2b97` was sent October 6, 2026 at 23:10 America/Los_Angeles, with minute precision. Publication is automatic after approval, to all users immediately, with the existing rating retained. The published baseline remains 1.1.0 (18), Ready for Distribution.
 
-The final local archive and Apple Distribution export passed signature, identifier, entitlement and **629 package checks**; 199 source fingerprints were unchanged. Evidence is in `artifacts/qa/release-1.1.0/final-ipa-metadata.json`. Xcode upload succeeded at **2026-09-24T07:24:44Z** (`artifacts/app-store-1.1.0-final/upload.log`). The upload used a separate export from the same archive; the local IPA SHA-256 is not asserted as the uploaded-byte hash. Earlier evidence records **97 passing core tests** and Release Store-capture tests on iPhone 17 Pro Max and iPad Pro 13-inch (M5).
+- App identity: CrocoCross, `com.daviddemri.crococross`, app `6812979862`, team `57XAAX65VC`.
+- iPhone and iPad, iOS/iPadOS 18 or later; Mac and Vision availability remain disabled.
+- Source baseline: `bd426186619b25c4bd4ea3fc9243bd14d2d1179b`, with 1.2.0 (19) settings in `scripts/generate-project.py` and the generated project. Automatic export build-number management is disabled.
+- Free, no ads or purchases, no separate app account and no background-audio entitlement.
+- Existing original logo, app icon, license credits and genuine native UI are preserved.
 
-The App Review **phone and email fields are blank**. Permission to reuse the prepared private contact file is pending; do not copy its contents into Git or upload them without that permission. **Real Game Center score round-trip testing has not been attempted**, so its readiness gate remains false. Preparation of the draft is not a final submission or a public release.
+## Build and validation
 
-## Identity and local configuration
+Release arm64 compilation, Apple Distribution export and upload succeeded. Build 19 was processed by Apple, selected and saved for the new version. Final signed package checks confirm the correct identifiers/team, Game Center entitlement, no development debugging entitlement, matching binary/dSYM UUIDs, 314 unchanged source fingerprints and 139 byte-identical bundled game assets.
 
-- CrocoCross · `com.daviddemri.crococross` · App Store Connect app `6812979862`.
-- Team `57XAAX65VC`; iPhone and iPad, iOS/iPadOS 18 or later. Mac and Vision targets remain disabled.
-- Free, no ads, no purchases, no separate CrocoCross account and no background-audio entitlement.
-- Keep version/build settings in `scripts/generate-project.py`, the generated project and package metadata consistent. Automatic export build-number management is disabled.
-- The app declares the Game Center entitlement, OS-only exempt encryption, no tracking, and the documented UserDefaults/SystemBootTime privacy reasons. Recheck the final signed bundle, not only these source files.
-- The opaque 1024-pixel icon and bundled Box2D/license credits are present. Apple currently requires Xcode 26 or later and the iOS 26 SDK or later for uploads; recheck at upload time. [Apple SDK requirements](https://developer.apple.com/news/upcoming-requirements/).
+114 core tests and 630 package checks passed, along with persistence, audio, competition, panorama and Rocco articulation checks. The package validator includes historical five-per-device image sets. Current six-iPhone/three-iPad screenshots and Header/Search assets were checked separately for dimensions, opaque RGB, source hashes, complete UI composition, actual upload processing/order and live creative previews.
 
-## Game Center: boards created, remote achievements deferred
+A separate Xcode distribution export from the verified archive was uploaded; the inspected local IPA hash is not asserted as the uploaded-byte hash. This session did not perform physical-device gameplay or a genuine live Game Center score/rank round-trip; the paired phone was locked. Those gates remain unverified.
 
-The four v3 boards are created, localized and **associated with app 1.1.0 (18) in the same iOS review draft**. Their state is ready for review; they have not been sent to Apple. Japan uses `endless.japan.route_1.score.v3`; the local route/storage identity is unchanged.
+Evidence is in `artifacts/release-2026-10-06/`: `package-verification.json`, `upload-verification.json`, `asc-state-final.json`, `asc-waiting-for-review.jpg` and `submission-report.md`. Current metadata is in `distribution/metadata/en-US/`; current media is in `artifacts/marketing/app-store-release-2026-10-06/`.
 
-| Identifier suffix under `com.daviddemri.crococross.` | Type | Value | Ordering |
-|---|---|---|---|
-| `weekly.score.v3` | Recurring | Points | High to low |
-| `weekly.time.v3` | Recurring | Centiseconds | Low to high |
-| `endless.score.v3` | Classic | Canyon points | High to low |
-| `endless.japan.route_1.score.v3` | Classic | Japan points | High to low |
+## Game Center configuration
 
-The two Weekly recurring boards share a configured first start of **2026-09-28 00:00 UTC**, a seven-day duration and an immediate seven-day restart (604,800 seconds). They are configured once: Game Center creates subsequent occurrences automatically. The app presents the current week only, with no advance week creation or history UI. A ranked Weekly start still requires confirmed matching active schedules, and completing 2,600 m is required to submit points/time. See [Game Center setup](GAME-CENTER-SETUP.md).
+All leaderboard identifiers share the `com.daviddemri.crococross.` prefix:
 
-All **40 achievements / 1,000 points** work locally. Game Center achievement synchronization is **deferred and disabled** (`CrocoGameCenterAchievementsEnabled` absent/false). Seven complete remote records are preserved but are not included in the review draft: first backflip, first frontflip, double, triple, 10 total rotations, 1 km and first Weekly finish. There are no partial records to complete. The other 33 remote entries remain deferred; do not create, edit or delete more achievements.
+- `weekly.score.v3`: recurring, points, high to low; Live.
+- `weekly.time.v3`: recurring, centiseconds, low to high; Live.
+- `endless.score.v3`: Classic, Canyon points, high to low; Live.
+- `endless.japan.route_1.score.v3`: Classic, Japan points, high to low; Live.
+- `endless.jungle.route_6.score.v3`: Classic Single, integer points, Best Score, high to low, not hidden; Waiting for Review. English name: **Endless — Tropical Jungle**. Remote UUID: `e49c53af-f72e-494c-8912-061329f87c54`.
 
-Genuine score/rank read-back, matching active Weekly occurrences and account/retry behavior remain unverified. Fake gateways and offline fixtures do not establish live Game Center behavior. Remote achievement restoration is deferred with the feature.
+The four existing v3 boards were not resubmitted. The two Weekly recurring boards have a configured first start of September 28, 2026 at 00:00 UTC, seven-day duration and immediate seven-day restart. Future occurrences are automatic. Ranked Weekly start requires confirmed matching active schedules and a completed 2,600 m course before score/time submission. The app presents the current week; no history UI is claimed. See [Game Center setup](GAME-CENTER-SETUP.md).
 
-## Store material and validation
+All forty achievements remain local. Game Center achievement synchronization is disabled (`CrocoGameCenterAchievementsEnabled` absent/false). Seven remote achievement records are preserved and the remaining thirty-three deferred; none were included in this submission. Physical score/rank read-back, active Weekly occurrence matching and account/retry behavior remain separately unverified.
 
-The current description, promotional text, keywords, What’s New and review notes are saved. All **10 replacement screenshots** are processed and visually reviewed in the 1.1.0 draft: five iPhone 6.9-inch and five iPad 13-inch, ordered Weekly, Endless, Home, Controls, Audio.
+## Store and inherited declarations
 
-The draft retains **Automatic** release; recommending manual release has not changed that setting. The live baseline remains 1.0.0 (17), Ready for Distribution. Historical September 17 evidence in `distribution/review/` remains unchanged. Review any outstanding physical-device, account/declaration and public-page checks before final submission; installation or automated captures alone do not establish them. See [current handoff](../distribution/HANDOFF.md).
+English subtitle **Bike Flips & Scooter Stunts**, description, promo, keywords, What's New and review notes are saved. Six iPhone Dynamic Island Large screenshots and three iPad 13-inch screenshots are processed in the documented order; required iPhone Medium uses the existing scaled assets. Header and Search Results assets are assigned and reviewed with the app version, rather than separate submission items.
 
-## Automation boundary
+Existing complete review contact fields were retained, with sign-in required unchecked; no private values are copied into Git. Privacy remains Data Not Collected. Age ratings, category and availability remain unchanged; no new legal agreement or pricing change occurred. Submission is not evidence of Apple approval or public release.
 
-The existing GitHub workflow runs tests and a simulator build. Signing/archive/upload automation can be prepared separately with protected credentials and a manual trigger; no App Store deployment workflow is claimed operational here. GitHub Pages publishes `distribution/web` changes pushed to main, so website changes require a deliberate publication decision. A local archive/export remains distinct from upload, TestFlight distribution, App Review and public release.
+## Automation and historical evidence
+
+The existing GitHub workflow tests and builds the simulator app. It is not claimed to be an App Store deployment workflow. Website changes under `distribution/web` can trigger GitHub Pages publication on main and require a deliberate publication decision; no website source changed in this release.
+
+Older release state is preserved in Git history, dated `distribution/review/` evidence and `historical1_1_0` JSON snapshots. Earlier blank-contact, unsubmitted-draft and public 1.0.0 statements describe their historical verification dates and are superseded by the current state above. See [handoff](../distribution/HANDOFF.md).

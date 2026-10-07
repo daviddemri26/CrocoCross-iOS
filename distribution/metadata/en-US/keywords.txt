@@ -1,1 +1,1 @@
-motorbike,motocross,hills,stunts,flips,shiba,japan,endless,offline,arcade,balance
+motorbike,motocross,hills,stunts,flips,scooter,monkey,jungle,shiba,japan,endless,offline,arcade
